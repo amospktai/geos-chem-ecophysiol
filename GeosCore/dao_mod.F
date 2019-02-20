@@ -27,7 +27,6 @@
 !
       PUBLIC  :: AVGPOLE
       PUBLIC  :: AIRQNT
-      PUBLIC  :: COPY_I3_I6_FIELDS
       PUBLIC  :: GET_COSINE_SZA
       PUBLIC  :: GET_OBK
       PUBLIC  :: INTERP
@@ -36,6 +35,7 @@
       PUBLIC  :: IS_ICE
       PUBLIC  :: IS_NEAR      
       PUBLIC  :: SET_DRY_SURFACE_PRESSURE
+      PUBLIC  :: Set_Met_AgeOfAir
 #if defined( ESMF_ ) || defined( EXTERNAL_GRID )
       PUBLIC  :: GIGC_Cap_Tropopause_Prs
 #endif
@@ -140,6 +140,7 @@
 !  29 Nov 2016 - R. Yantosca - grid_mod.F90 is now gc_grid_mod.F90
 !  24 Aug 2017 - M. Sulprizio- Remove support for GCAP, GEOS-4, GEOS-5 and MERRA
 !  08 Mar 2018 - E. Lundgren - Add GIGC_Cap_Tropopause_Prs from GCHP gchp_util
+!  21 Dec 2018 - M. Sulprizio- Add new routine Set_Met_AgeOfAir
 !EOP
 !------------------------------------------------------------------------------
 !BOC
@@ -893,16 +894,18 @@
 !$OMP+DEFAULT( SHARED )
 !$OMP+PRIVATE( I, J, L, N )
             DO N = 1, State_Chm%nSpecies
-            DO L = 1, LLPAR
-            DO J = 1, JJPAR
-            DO I = 1, IIPAR
+
+               DO L = 1, LLPAR
+               DO J = 1, JJPAR
+               DO I = 1, IIPAR
+
                State_Chm%Species(I,J,L,N) = State_Chm%Species(I,J,L,N)
      &                                    * State_Met%DP_DRY_PREV(I,J,L)
      &                                    / State_Met%DELP_DRY(I,J,L) 
-            ENDDO
-            ENDDO
-            ENDDO
-            ENDDO
+               ENDDO
+               ENDDO
+               ENDDO
+               ENDDO
 !$OMP END PARALLEL DO
 
          ELSE
@@ -1231,10 +1234,6 @@
 ! !INPUT/OUTPUT PARAMETERS: 
 !
       TYPE(MetState), INTENT(INOUT)  :: State_Met   ! Object for met fields
-!
-! !REVISION HISTORY:
-!  03 May 2002 - E. Lundgren - Initial version (M. Lee, JPL) 
-!  18 Feb 2017 - S. D. Eastham - Updated to include TOA pressure
 ! 
 ! !REMARKS:
 !  This subroutine is an adaptation of the GEOS-Chem moisture fix 
@@ -1247,6 +1246,10 @@
 !  calculate delta dry pressures across a level by utilitizing GMAO 
 !  parameters Ap and Bp but should not be used to extract dry pressure 
 !  edge values as a height proxy.
+!
+! !REVISION HISTORY:
+!  03 May 2002 - E. Lundgren - Initial version (M. Lee, JPL) 
+!  18 Feb 2017 - S. D. Eastham - Updated to include TOA pressure
 !EOP
 !------------------------------------------------------------------------------
 !BOC
@@ -2031,60 +2034,66 @@
 !------------------------------------------------------------------------------
 !BOP
 !
-! !IROUTINE: copy_i3_i6_fields
+! !IROUTINE: set_met_ageofair
 !
-! !DESCRIPTION: Subroutine COPY\_I3\_I6\_FIELDS copies the I-6 fields at the 
-!  end of a 6-hr timestep.  The I-6 fields at the end of a given 6-hr timestep 
-!  become the fields at the beginning of the next 6-hr timestep. 
+! !DESCRIPTION: Subroutine Set\_Met\_AgeOfAir adds the time step (in seconds)
+!  to every grid box every time step with a total sink at the surface every 
+!  time step to reproduce GMI tracer mechanism.
 !\\
 !\\
 ! !INTERFACE:
 !
-      SUBROUTINE COPY_I3_I6_FIELDS( State_Met )
+      SUBROUTINE Set_Met_AgeOfAir( State_Met )
 !
 ! !USES:
 !
-      USE State_Met_Mod,        ONLY : MetState
+      USE CMN_SIZE_MOD
+      USE State_Met_Mod,      ONLY : MetState
+      USE TIME_MOD,           ONLY : GET_TS_DYN
 !
-! !INPUT PARAMETERS:
+! !OUTPUT PARAMETERS: 
 !
-      TYPE(MetState), INTENT(INOUT) :: State_Met   ! Meteorology State object
-! 
+      TYPE(MetState), INTENT(INOUT) :: State_Met
+!
 ! !REVISION HISTORY: 
-!  13 Apr 2004 - R. Yantosca - Initial version
-!  (1 ) Added parallel DO-loops (bmy, 4/13/04)
-!  (2 ) Remove support for GEOS-1 and GEOS-STRAT met fields (bmy, 8/4/06)
-!  (3 ) Added TROPP (phs 11/10/06)
-!  (4 ) Don't copy TROPP2 to TROPP1 for GEOS-5 (bmy, 1/17/07) 
-!  16 Aug 2010 - R. Yantosca - Added ProTeX headers
-!  20 Aug 2010 - R. Yantosca - Rewrite #if block for clarity
-!  20 Aug 2010 - R. Yantosca - Added #if block for MERRA met fields
-!  06 Feb 2012 - R. Yantosca - Added #if block for GEOS-5.7.x met fields
-!  07 Feb 2012 - R. Yantosca - Renamed to COPY_I3_I6_FIELDS
-!  28 Feb 2012 - R. Yantosca - Removed support for GEOS-3
-!  09 Nov 2012 - M. Payer    - Replaced all met field arrays with State_Met
-!                              derived type object
-!  26 Sep 2013 - R. Yantosca - Renamed GEOS_57 Cpp switch to GEOS_FP
-!  11 Aug 2015 - R. Yantosca - MERRA2 behaves in the same way as GEOS-FP
-!  03 May 2016 - E. Lundgren - Add PS1_DRY update
-
+!  21 Dec 2018 - M. Sulprizio- Initial version
 !EOP
 !------------------------------------------------------------------------------
 !BOC
 !
 ! !LOCAL VARIABLES:
 !
-      INTEGER :: I, J, L
+      INTEGER        :: I, J, L
+      REAL(fp), SAVE :: TimeStep
 
       !=================================================================
-      ! COPY_I3_I6_FIELDS begins here!
+      ! SET_MET_AGEOFAIR begins here!
       !=================================================================
 
-      State_Met%PS1_WET = State_Met%PS2_WET ! I3 surface pressure    [hPa]
-      State_Met%PS1_DRY = State_Met%PS2_DRY ! I3 surface pressure    [hPa] 
-      State_Met%SPHU1   = State_Met%SPHU2   ! I3 specific humidity   [g/kg]
-      State_Met%TMPU1   = State_Met%TMPU2   ! I3 temperature         [K]
+      ! Get timestep [s]
+      TimeStep = GET_TS_DYN()
 
-      END SUBROUTINE COPY_I3_I6_FIELDS
+!$OMP PARALLEL DO
+!$OMP+DEFAULT( SHARED )
+!$OMP+PRIVATE( I, J, L )
+      DO L=1,LLPAR
+      DO J=1,JJPAR
+      DO I=1,IIPAR
+
+         IF ( L == 1 ) THEN
+            ! Set the surface to a sink
+            State_Met%AgeOfAir(I,J,L) = 0
+         ELSE
+            ! Otherwise add time step [s]
+            State_Met%AgeOfAir(I,J,L) = State_Met%AgeOfAir(I,J,L) + 
+     &                                  TimeStep
+         ENDIF
+
+      ENDDO
+      ENDDO
+      ENDDO
+!$OMP END PARALLEL DO
+
+      END SUBROUTINE Set_Met_AgeOfAir
 !EOC
       END MODULE DAO_MOD

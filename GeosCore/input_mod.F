@@ -42,6 +42,8 @@
       PRIVATE :: READ_DEPOSITION_MENU
       PRIVATE :: READ_OUTPUT_MENU
       PRIVATE :: READ_DIAGNOSTIC_MENU
+      PRIVATE :: READ_PLANEFLIGHT_MENU
+      PRIVATE :: READ_OBSPACK_MENU
       PRIVATE :: SET_TINDEX
       PRIVATE :: READ_ND49_MENU      
       PRIVATE :: READ_ND50_MENU  
@@ -445,7 +447,15 @@
                CALL GC_Error( ErrMsg, RC, ThisLoc )
                RETURN
             ENDIF
-                                                  
+
+         ELSE IF ( INDEX( LINE, 'OBSPACK MENU' ) > 0 ) THEN
+            CALL READ_OBSPACK_MENU( am_I_Root, Input_Opt, RC )   
+            IF ( RC /= GC_SUCCESS ) THEN
+               ErrMsg = 'Error in "Read_ObsPack_Menu"!'
+               CALL GC_Error( ErrMsg, RC, ThisLoc )
+               RETURN
+            ENDIF
+
          ! Read even if BPCH_DIAG=n so that time series diags may be
          ! output if other diagnostics are output as netcdf (ewl, 4/5/18)
          ELSE IF ( INDEX( LINE, 'ND48 MENU'        ) > 0 ) THEN
@@ -802,7 +812,8 @@
 !
       ! Scalars
       INTEGER            :: N, C
-#if defined(  ESMF_ ) 
+      REAL(fp)           :: JulianDateStart,  JulianDateEnd
+#if defined( ESMF_ ) || defined( MODEL_ )
       INTEGER            :: H,       M,       S
       REAL(f4)           :: init_UTC
 #endif
@@ -824,6 +835,10 @@
       ErrMsg  = 'Error reading the "input.geos" file!'
       ThisLoc = ' -> at Read_Simulation_Menu (in GeosCore/input_mod.F)'
 
+      !-----------------------------------------------------------------
+      ! Simulation start and end time
+      !-----------------------------------------------------------------
+
       ! Start YYYYMMDD, HHMMSS
       CALL SPLIT_ONE_LINE( SUBSTRS, N, 2, 'NYMDb, NHMSb', RC )
       IF ( RC /= GC_SUCCESS ) THEN
@@ -842,7 +857,7 @@
          RETURN
       ENDIF
 
-      ! Make sure the starting time NYMDb is valid
+      ! Make sure the starting time NHMSb is valid
       IF ( .not. Valid_Time( Input_Opt%NHMSb ) ) THEN
          WRITE( TimeStr, '(i6.6)' ) Input_Opt%NHMSb
          ErrMsg = 'Input%Opt%NHMSb = ' // TimeStr        // 
@@ -870,7 +885,7 @@
          RETURN
       ENDIF
 
-      ! Make sure the ending time NYMDe is valid
+      ! Make sure the ending time NHMSe is valid
       IF ( .not. Valid_Time( Input_Opt%NHMSe ) ) THEN
          WRITE( TimeStr, '(i6.6)' ) Input_Opt%NHMSe
          ErrMsg = 'Input%Opt%NHMSe = ' // TimeStr        // 
@@ -880,6 +895,16 @@
          RETURN
       ENDIF
 
+      ! Compute the length of the simulation, in elapsed seconds
+      JulianDateStart = GET_JD( Input_Opt%NymdB, Input_Opt%NhmsB )
+      JulianDateEnd   = GET_JD( Input_Opt%NymdE, Input_Opt%NhmsE )
+      Input_Opt%SimLengthSec = NINT( ( JulianDateEnd - JulianDateStart )
+     &                         * 86400_f8)
+
+      !-----------------------------------------------------------------
+      ! Data directories
+      !-----------------------------------------------------------------
+
       ! Run directory
       CALL SPLIT_ONE_LINE( SUBSTRS, N, 1, 'RUN_DIR', RC )
       IF ( RC /= GC_SUCCESS ) THEN
@@ -887,14 +912,6 @@
          RETURN
       ENDIF
       READ( SUBSTRS(1:N), '(a)' ) Input_Opt%RUN_DIR
-
-      ! Input restart file
-      CALL SPLIT_ONE_LINE( SUBSTRS, N, 1, 'IN_RST_FILE', RC )
-      IF ( RC /= GC_SUCCESS ) THEN
-         CALL GC_Error( ErrMsg, RC, ThisLoc )
-         RETURN
-      ENDIF
-      READ( SUBSTRS(1:N), '(a)' ) Input_Opt%IN_RST_FILE
 
       ! Root data dir
       CALL SPLIT_ONE_LINE( SUBSTRS, N, 1, 'DATA_DIR', RC )
@@ -904,39 +921,17 @@
       ENDIF
       READ( SUBSTRS(1:N), '(a)' ) Input_Opt%DATA_DIR
 
-      ! GEOS-FP subdir
-      CALL SPLIT_ONE_LINE( SUBSTRS, N, 1, 'GEOS_FP_DIR', RC )
-      IF ( RC /= GC_SUCCESS ) THEN
-         CALL GC_Error( ErrMsg, RC, ThisLoc )
-         RETURN
-      ENDIF
-      READ( SUBSTRS(1:N), '(a)' ) Input_Opt%GEOS_FP_DIR
-
-      ! MERRA2 subdir
-      CALL SPLIT_ONE_LINE( SUBSTRS, N, 1, 'MERRA2_DIR',  RC )
-      IF ( RC /= GC_SUCCESS ) THEN
-         CALL GC_Error( ErrMsg, RC, ThisLoc )
-         RETURN
-      ENDIF
-      READ( SUBSTRS(1:N), '(a)' ) Input_Opt%MERRA2_DIR
-
-      !-----------------------------------------------------------------
       ! Make sure DATA-DIR ends with a "/" character
-      !-----------------------------------------------------------------
       C = LEN_TRIM( Input_Opt%DATA_DIR )
       IF ( Input_Opt%DATA_DIR(C:C) /= '/' ) THEN
          Input_Opt%DATA_DIR = TRIM( Input_Opt%DATA_DIR ) // '/'
       ENDIF
 
-      !-----------------------------------------------------------------
       ! Create CHEM_INPUTS directory
-      !-----------------------------------------------------------------
       Input_Opt%CHEM_INPUTS_DIR = TRIM( Input_Opt%DATA_DIR ) // 
      &                            'CHEM_INPUTS/'
 
-      !-----------------------------------------------------------------
       ! Define resolution-specific directory name RES_DIR
-      !-----------------------------------------------------------------
 #if   defined( GRID4x5 )
       Input_Opt%RES_DIR = 'GEOS_4x5/'
 #elif defined( GRID2x25 ) 
@@ -955,20 +950,8 @@
       Input_Opt%RES_DIR = 'GEOS_0.25x0.3125_NA/'
 #endif
 
-      !-----------------------------------------------------------------
-      ! Append the resolution specific directory name 
-      ! to each of the met field subdirectories
-      !-----------------------------------------------------------------
-      Input_Opt%GEOS_FP_DIR = TRIM( Input_Opt%RES_DIR     ) //
-     &                        TRIM( Input_Opt%GEOS_FP_DIR )
-
-      Input_Opt%MERRA2_DIR =  TRIM( Input_Opt%RES_DIR     ) //
-     &                        TRIM( Input_Opt%MERRA2_DIR  )
-
-      !-----------------------------------------------------------------
       ! Determine if we are running a nested-grid simulation based on
       ! the settings of the C-preprocessor switches.
-      !-----------------------------------------------------------------
 #if defined( NESTED_CH ) || defined( NESTED_EU ) || defined( NESTED_NA ) || defined( NESTED_AS )
       Input_Opt%ITS_A_NESTED_GRID = .TRUE.
 #endif
@@ -1010,12 +993,6 @@
      &                    TRIM( Input_Opt%CHEM_INPUTS_DIR )
          WRITE( 6, 110 ) 'Resolution-specific dir     : ',
      &                    TRIM( Input_Opt%RES_DIR )
-         WRITE( 6, 110 ) 'GEOS-FP    sub-directory    : ', 
-     &                    TRIM( Input_Opt%GEOS_FP_DIR )
-         WRITE( 6, 110 ) 'MERRA-2    sub-directory    : ', 
-     &                    TRIM( Input_Opt%MERRA2_DIR )
-         WRITE( 6, 110 ) 'Input restart file          : ', 
-     &                    TRIM( Input_Opt%IN_RST_FILE )
          WRITE( 6, 120 ) 'Is this a nested-grid sim?  : ', 
      &                    Input_Opt%ITS_A_NESTED_GRID
          WRITE( 6, 130 ) 'Global offsets I0, J0       : ', 
@@ -1197,6 +1174,28 @@
       !=================================================================
       ! Error checks
       !=================================================================
+
+      IF ( Input_Opt%SimLengthSec < Input_Opt%TS_DYN .or.
+     &     Input_Opt%SimLengthSec < Input_Opt%TS_CHEM ) THEN
+         IF ( am_I_Root ) THEN
+
+            WRITE( 6, *   ) '' 
+            WRITE( 6, *   ) 'The length of the simulation is shorter '
+            WRITE( 6, *   ) 'than the transport and/or chemistry '
+            WRITE( 6, *   ) 'timesteps. Check the settings in '
+            WRITE( 6, *   ) 'the "input.geos" file.'
+            WRITE( 6, *   ) '' 
+            WRITE( 6, 100 ) 'Transport/Convection [sec]  : ', 
+     &                       Input_Opt%TS_DYN
+            WRITE( 6, 100 ) 'Chemistry/Emissions  [sec]  : ', 
+     &                       Input_Opt%TS_CHEM
+            WRITE( 6, 100 ) 'Simulation duration  [sec]  : ',
+     &                       Input_Opt%SimLengthSec
+            CALL GC_Error( ErrMsg, RC, ThisLoc )
+            RETURN
+
+         ENDIF
+      ENDIF
 
 #if   defined( MERRA2 ) && defined( GRID05x0625 )
       IF ( Input_Opt%ITS_A_CH4_SIM .or. Input_Opt%ITS_A_CO2_SIM ) THEN
@@ -1424,12 +1423,10 @@
          T = T + 1
 
          ! Stop simulation and print warning if we exceed maximum number
-         ! of species currently hardcoded for Input_Opt%AdvectSpc_Name in
-         ! input_opt_mod.F90. Eventually we need to think of a better way
-         ! to do this. (mps, 1/26/18)
-         IF ( T > 600 ) THEN
-            ErrMsg = 'SIMULATION MENU & ADVECTED SPECIES MENU ' //
-     &             'must be read in first!'
+         ! of advected species hardcoded in input_opt_mod.F90
+         IF ( T > Input_Opt%Max_AdvectSpc ) THEN
+            ErrMsg = 'Number of advected species exceeds maximum. ' //
+     &             'This value can be modified in input_opt_mod.F90.'
             CALL GC_Error( ErrMsg, RC, ThisLoc )
             RETURN
          ENDIF
@@ -2136,9 +2133,6 @@
       ENDIF
       READ( SUBSTRS(1:N), '(i4)') Input_Opt%CFCYEAR
 
-      ! Do we apply an offset?
-      Input_Opt%LFUTURECFC = ( Input_Opt%CFCYEAR .gt. 1950 )
-
       ! Separator line
       CALL SPLIT_ONE_LINE( SUBSTRS, N, 1, 'separator 4', RC )
       IF ( RC /= GC_SUCCESS ) THEN
@@ -2247,7 +2241,6 @@
       USE CMN_O3_MOD
       USE CMN_SIZE_MOD
       USE ErrCode_Mod
-      USE ERROR_MOD,          ONLY : ERROR_STOP
       USE Input_Opt_Mod,      ONLY : OptInput
 !
 ! !INPUT PARAMETERS:
@@ -2285,13 +2278,14 @@
       RC = GC_SUCCESS
 
       ! Location for error messages
-      LOC = 'READ_CO_SIM_MENU ("input_mod.f")'
+      LOC = ' -> at READ_CO_SIM_MENU (in GeosCore/input_mod.f)'
 
       ! Error check
       IF ( CT1 /= 2 ) THEN 
          MSG = 'SIMULATION MENU & ADVECTED SPECIES MENU ' //
      &         'must be read in first!'
-         CALL ERROR_STOP( MSG, LOC )
+         CALL GC_Error( Msg, RC, Loc )
+         RETURN
       ENDIF
 
       ! Use P(CO) from CH4 from full chemistry simulation?
@@ -3313,36 +3307,6 @@
       IF ( RC /= GC_SUCCESS ) THEN
          CALL GC_Error( ErrMsg, RC, ThisLoc )
          RETURN
-      ENDIF
-
-      !=================================================================
-      ! Error checks
-      !=================================================================
-
-      IF ( Input_Opt%ITS_A_CH4_SIM .or. Input_Opt%ITS_A_CO2_SIM ) THEN
-         IF ( Input_Opt%LNLPBL .and. am_I_Root ) THEN
-
-            WRITE( 6,* ) '' 
-            WRITE( 6,* ) 'It has been noted in GEOS-Chem v11-01 and'
-            WRITE( 6,* ) ' later that VDIFF (the non-local mixing'
-            WRITE( 6,* ) ' option) does not strictly conserve mass.'
-            WRITE( 6,* ) ' This will be more of a problem for long-'
-            WRITE( 6,* ) ' lived species like CH4 and CO2. Therefore,'
-            WRITE( 6,* ) ' if you are using the CH4 or CO2 specialty'
-            WRITE( 6,* ) ' simulations, we recommend to use the full'
-            WRITE( 6,* ) ' TURBDAY mixing by setting the non-local PBL'
-            WRITE( 6,* ) ' switch to F.'
-            WRITE( 6,* ) ''
-            WRITE( 6,* ) 'You may remove this trap at your own peril,'
-            WRITE( 6,* ) ' by commenting out the call to GC_ERROR in'
-            WRITE( 6,* ) ' GeosCore/input_mod.F. '
-            WRITE( 6,* ) ''
-            WRITE( 6,* ) 'See this GEOS-Chem wiki page for details:'
-            WRITE( 6,* ) ' wiki.geos-chem.org/Boundary_layer_mixing'
-            CALL GC_Error( ErrMsg, RC, ThisLoc )
-            RETURN
-
-         ENDIF
       ENDIF
 
       ! Return success
@@ -4668,10 +4632,6 @@
          RETURN
       ENDIF
       READ( SUBSTRS(1), * ) ND58x
-      IF ( .not. Input_Opt%LEMIS ) ND58x = 0
-#if defined( BPCH_DIAG )
-      CALL SET_TINDEX( am_I_Root, 58, ND58x, SUBSTRS(2:N), N-1, PD58 )
-#endif
 
       !--------------------------
       ! ND59: TOMAS aerosol emiss
@@ -4922,7 +4882,6 @@
       ND55                         = ND55x
       ND56                         = ND56x
       ND57                         = ND57x
-      ND58                         = ND58x
       ND59                         = ND59x
       ND60                         = ND60x
       ND61                         = ND61x
@@ -4986,7 +4945,6 @@
       Input_Opt%ND55               = ND55x
       Input_Opt%ND56               = ND56x
       Input_Opt%ND57               = ND57x
-      Input_Opt%ND58               = ND58x
       Input_Opt%ND59               = ND59x
       Input_Opt%ND60               = ND60x
       Input_Opt%ND61               = ND61x
@@ -5009,7 +4967,7 @@
       HR2_OTH                      = HR2_OTHx
 
       ! Loop over # of diagnostics
-      DO M = 1, Input_Opt%MAX_DIAG
+      DO M = 1, Input_Opt%Max_BPCH_Diag
          Input_Opt%TCOUNT(M)       = TCOUNT(M)
          Input_Opt%TMAX(M)         = TMAX(M)
 
@@ -5045,6 +5003,9 @@
       Input_Opt%ND70 = ND70x
       Input_Opt%LPRT = ( ND70x > 0 )
 
+#endif
+#if defined( MODEL_GEOS )
+      Input_Opt%ND21 = ND21x
 #endif
 
       ! Return success
@@ -5380,6 +5341,146 @@
      &                      Input_Opt%PF_OFILE )
    
       END SUBROUTINE READ_PLANEFLIGHT_MENU
+!EOC
+!------------------------------------------------------------------------------
+!                  GEOS-Chem Global Chemical Transport Model                  !
+!------------------------------------------------------------------------------
+!BOP
+!
+! !IROUTINE: read_obspack_menu
+!
+! !DESCRIPTION: Subroutine READ\_OBSPACK\_MENU reads the OBSPACK MENU
+!  section of the GEOS-Chem input file.  This turns on the ObsPack diagnostic.
+!\\
+!\\
+! !INTERFACE:
+!
+      SUBROUTINE READ_OBSPACK_MENU( am_I_Root, Input_Opt, RC )
+!
+! !USES:
+!
+      USE ErrCode_Mod
+      USE Input_Opt_Mod, ONLY : OptInput
+!
+! !INPUT PARAMETERS:
+!
+      LOGICAL,        INTENT(IN)    :: am_I_Root   ! Is this the root CPU?
+!
+! !INPUT/OUTPUT PARAMETERS:
+!
+      TYPE(OptInput), INTENT(INOUT) :: Input_Opt   ! Input options
+!
+! !OUTPUT PARAMETERS:
+!
+      INTEGER,        INTENT(OUT)   :: RC          ! Success or failure
+!
+! !REVISION HISTORY:
+!  20 Jul 2004 - R. Yantosca - Initial version
+!  27 Aug 2010 - R. Yantosca - Added ProTeX headers
+!  30 Jul 2012 - R. Yantosca - Now accept am_I_Root as an argument when
+!                              running with the traditional driver main.F
+!  01 Nov 2012 - R. Yantosca - Now pass Input_Opt, RC as arguments
+!  08 Nov 2017 - R. Yantosca - Return error condition to calling program
+!  04 Jan 2019 - R. Yantosca - Add extra ObsPack fields from Input_Opt
+!EOP
+!------------------------------------------------------------------------------
+!BOC
+!
+! !LOCAL VARIABLES:
+!
+      ! Scalars
+      INTEGER            :: N, S
+
+      ! Strings
+      CHARACTER(LEN=255) :: ErrMsg, ThisLoc
+
+      ! Arrays
+      CHARACTER(LEN=255) :: SUBSTRS(MAXDIM)
+
+      !=================================================================
+      ! READ_OBSPACK_MENU begins here!
+      !=================================================================
+
+      ! Initialize
+      RC      = GC_SUCCESS
+      ErrMsg  = 'Error reading the "input.geos" file!'
+      ThisLoc =
+     &  ' -> at Read_ObsPack_Menu (in module GeosCore/input_mod.F)'
+
+      ! Error check
+      IF ( CT1 /= 2 ) THEN
+         ErrMsg = 'SIMULATION MENU & ADVECTED SPECIES MENU ' //
+     &            'must be read in first!'
+         CALL GC_Error( ErrMsg, RC, ThisLoc )
+         RETURN
+      ENDIF
+
+      ! Turn on ObsPack diagnostic?
+      CALL SPLIT_ONE_LINE( SUBSTRS, N, 1, 'Do_ObsPack', RC )
+      IF ( RC /= GC_SUCCESS ) THEN
+         CALL GC_Error( ErrMsg, RC, ThisLoc )
+         RETURN
+      ENDIF
+      READ( SUBSTRS(1:N), * ) Input_Opt%Do_ObsPack
+
+      ! ObsPack quiet output?
+      CALL SPLIT_ONE_LINE( SUBSTRS, N, 1, 'Do_ObsPack', RC )
+      IF ( RC /= GC_SUCCESS ) THEN
+         CALL GC_Error( ErrMsg, RC, ThisLoc )
+         RETURN
+      ENDIF
+      READ( SUBSTRS(1:N), * ) Input_Opt%ObsPack_Quiet
+
+      ! Input file name (w/ coordinates and sampling strategy)
+      CALL SPLIT_ONE_LINE( SUBSTRS, N, 1, 'ObsPack_InputFile', RC )
+      IF ( RC /= GC_SUCCESS ) THEN
+         CALL GC_Error( ErrMsg, RC, ThisLoc )
+         RETURN
+      ENDIF
+      READ( SUBSTRS(1:N), '(a)' ) Input_Opt%ObsPack_InputFile
+
+      ! Output file name
+      CALL SPLIT_ONE_LINE( SUBSTRS, N, 1, 'ObsPack_OutputFile', RC )
+      IF ( RC /= GC_SUCCESS ) THEN
+         CALL GC_Error( ErrMsg, RC, ThisLoc )
+         RETURN
+      ENDIF
+      READ( SUBSTRS(1:N), '(a)' ) Input_Opt%ObsPack_OutputFile
+
+      ! Species names
+      CALL SPLIT_ONE_LINE( SUBSTRS, N, -1, 'ObsPack_SpecName', RC )
+      IF ( RC /= GC_SUCCESS ) THEN
+         CALL GC_Error( ErrMsg, RC, ThisLoc )
+         RETURN
+      ENDIF
+      
+      ! Populate the ObsPack species name list
+      Input_Opt%ObsPack_nSpc = N
+      DO S = 1, Input_Opt%ObsPack_nSpc
+         Input_Opt%ObsPack_SpcName(S) = TRIM( SUBSTRS(S) )
+      ENDDO
+
+      !=================================================================
+      ! Print to screen
+      !=================================================================
+      IF( am_I_Root ) THEN
+         WRITE( 6, '(/,a)' ) 'OBSPACK_MENU'
+         WRITE( 6, '(  a)' ) '----------------'
+         WRITE( 6, 100 ) 'Turn on ObsPack diagnostic? : ',
+     &                    Input_Opt%Do_ObsPack
+         WRITE( 6, 100 ) 'Suppress logfile output?    : ',
+     &                    Input_Opt%ObsPack_Quiet
+         WRITE( 6, 110 ) 'ObsPack input file          : ',
+     &                    TRIM( Input_Opt%ObsPack_InputFile  )
+         WRITE( 6, 110 ) 'ObsPack output file         : ',
+     &                    TRIM( Input_Opt%ObsPack_OutputFile )
+      ENDIF
+
+      ! FORMAT statements
+ 100  FORMAT( A, L5    )
+ 110  FORMAT( A, A     )
+
+      END SUBROUTINE READ_OBSPACK_MENU
 !EOC
 !------------------------------------------------------------------------------
 !                  GEOS-Chem Global Chemical Transport Model                  !
@@ -7630,7 +7731,7 @@
 ! !USES:
 !
       USE ErrCode_Mod
-      USE Input_Opt_Mod,  ONLY : OptInput, Set_Input_Opt_Passive
+      USE Input_Opt_Mod, ONLY : OptInput
 !
 ! !INPUT PARAMETERS:
 !
@@ -7653,6 +7754,7 @@
 !                              the returned # of substrings
 !  08 Nov 2017 - R. Yantosca - Return error condition to calling program
 !  04 Apr 2018 - E. Lundgren - Call routine to init Input_Opt passive spc arrays
+!  21 Dec 2018 - M. Sulprizio- Update passive species menu to include long name
 !EOP
 !------------------------------------------------------------------------------
 !BOC
@@ -7678,80 +7780,104 @@
       ThisLoc = 
      & ' -> at Read_Passive_Species_Menu (in mod. GeosCore/input_mod.F)'
 
-      ! # of passive species
-      CALL SPLIT_ONE_LINE( SUBSTRS, N, 1, 'NPASSIVE', RC )
-      IF ( RC /= GC_SUCCESS ) THEN
-         CALL GC_Error( ErrMsg, RC, ThisLoc )
-         RETURN
-      ENDIF
-      READ( SUBSTRS(1), * ) Input_Opt%NPASSIVE
-
-      ! Initialize Input_Opt arrays that are dependent on Input_Opt%NPASSIVE
-      CALL Set_Input_Opt_Passive( am_I_Root, Input_Opt, RC )
+      ! Initialize
+      P = 0
+      D = 0
 
       IF ( am_I_Root ) THEN
          WRITE( 6, '(/,a)' ) 'PASSIVE SPECIES MENU'
          WRITE( 6, '(  a)' ) '---------------------'
       ENDIF
 
-      ! Read passive species information for each passive species
-      ! Every passive species line is expected to have 3 entries:
-      ! - Species name
-      ! - Species molecular weight 
-      ! - Atmospheric lifetime (s)
-      ! - Default atmospheric concentration (v/v)
-      IF ( Input_Opt%NPASSIVE > 0 ) THEN
+      ! Do until exit
+      DO
 
-         ! Index for decaying passive species
-         D = 0
-
-         ! Loop over the number of listed passive species
-         DO P = 1, Input_Opt%NPASSIVE
-
-            ! Expect 4 metadata parameters to define the passive species
-            CALL SPLIT_ONE_LINE( SUBSTRS, N, 4, 'Pasv Species', RC )
-            IF ( RC /= GC_SUCCESS ) THEN
-               CALL GC_Error( ErrMsg, RC, ThisLoc )
-               RETURN
-            ENDIF
+         ! Read passive species information for each passive species
+         ! Every passive species line is expected to have 4 entries:
+         ! - Species name
+         ! - Species molecular weight 
+         ! - Atmospheric lifetime (s)
+         ! - Initial atmospheric concentration (v/v)
+         CALL SPLIT_ONE_LINE( SUBSTRS, N, -1, 'Passive Species', RC )
+         IF ( RC /= GC_SUCCESS ) THEN
+            CALL GC_Error( ErrMsg, RC, ThisLoc )
+            RETURN
+         ENDIF
      
-            ! Read and store species information
-            Input_Opt%PASSIVE_ID(P)   = P
-            Input_Opt%PASSIVE_NAME(P) = TRIM( SUBSTRS(1) )
-            READ( SUBSTRS(2), * ) Input_Opt%PASSIVE_MW(P)
-            READ( SUBSTRS(3), * ) Input_Opt%PASSIVE_TAU(P)
-            READ( SUBSTRS(4), * ) Input_Opt%PASSIVE_INITCONC(P)
+         ! Exit here if separator line is encountered
+         IF ( INDEX ( TRIM(SUBSTRS(1)), '-----' ) > 0 ) EXIT
 
-            ! Determine if the passive species decays (i.e. if it has 
-            ! an atmospheric lifetime that is not -1).  This will allow
-            ! us to skip those passive species that do not decay in
-            ! routine CHEM_PASSIVE_SPECIES, to speed up execution.
-            IF ( Input_Opt%PASSIVE_TAU(P) > 0.0_fp ) THEN
-               D                            = D + 1
-               Input_Opt%NPASSIVE_DECAY     = D
-               Input_Opt%PASSIVE_DECAYID(D) = P
-            ENDIF
+         ! Make sure there are at least 4 entries
+         IF ( N < 4 ) THEN
+            ErrMsg = 'Each passive species is expected to have ' //
+     &             'at least four entries: Name, MW, TAU, initial ' //
+     &             'concentration, and long name (optional).'
+            CALL GC_Error( ErrMsg, RC, ThisLoc )
+            RETURN
+         ENDIF
 
-            ! Verbose
-            IF ( am_I_Root ) THEN
-               WRITE( 6, '(a)' ) 'Added passive species: '
-               WRITE( 6, 110   ) ' - Species name                : ', 
-     &               TRIM( Input_Opt%PASSIVE_NAME(P) ) 
-               WRITE( 6, 120   ) ' - Molec. weight [g/mol]       : ', 
-     &               Input_Opt%PASSIVE_MW(P)
-               WRITE( 6, 120   ) ' - Lifetime [s]                : ', 
-     &               Input_Opt%PASSIVE_TAU(P)
-               WRITE( 6, 130   ) ' - Default concentration [v/v] : ', 
-     &               Input_Opt%PASSIVE_INITCONC(P)
-            ENDIF
-         ENDDO
-      ELSE
+         ! Increase number of passive species by one
+         P = P + 1
+
+         ! Stop simulation and print warning if we exceed maximum number
+         ! of passive species hardcoded in input_opt_mod.F90.
+         IF ( P > Input_Opt%Max_PassiveSpc ) THEN
+            ErrMsg = 'Number of passive species exceeds maximum. ' //
+     &             'This value can be modified in input_opt_mod.F90.'
+            CALL GC_Error( ErrMsg, RC, ThisLoc )
+            RETURN
+         ENDIF
+
+         ! Read and store species information
+         Input_Opt%PASSIVE_ID(P)   = P
+         Input_Opt%PASSIVE_NAME(P) = TRIM( SUBSTRS(1) )
+         READ( SUBSTRS(2), * ) Input_Opt%PASSIVE_MW(P)
+         READ( SUBSTRS(3), * ) Input_Opt%PASSIVE_TAU(P)
+         READ( SUBSTRS(4), * ) Input_Opt%PASSIVE_INITCONC(P)
+
+         ! Check if optional entry for long name is included
+         IF ( N > 4 ) THEN
+            READ( SUBSTRS(5), * ) Input_Opt%PASSIVE_LONGNAME(P)
+         ENDIF
+
+         ! Determine if the passive species decays (i.e. if it has 
+         ! an atmospheric lifetime that is not -1).  This will allow
+         ! us to skip those passive species that do not decay in
+         ! routine CHEM_PASSIVE_SPECIES, to speed up execution.
+         IF ( Input_Opt%PASSIVE_TAU(P) > 0.0_fp ) THEN
+            D                            = D + 1
+            Input_Opt%NPASSIVE_DECAY     = D
+            Input_Opt%PASSIVE_DECAYID(D) = P
+         ENDIF
+
+
+         ! Verbose
+         IF ( am_I_Root ) THEN
+            WRITE( 6, '(a)' ) 'Added passive species: '
+            WRITE( 6, 110   ) ' - Species name                : ', 
+     &            TRIM( Input_Opt%PASSIVE_NAME(P) ) 
+            WRITE( 6, 120   ) ' - Molec. weight [g/mol]       : ', 
+     &            Input_Opt%PASSIVE_MW(P)
+            WRITE( 6, 130   ) ' - Lifetime [s]                : ', 
+     &            Input_Opt%PASSIVE_TAU(P)
+            WRITE( 6, 130   ) ' - Initial concentration [v/v] : ', 
+     &            Input_Opt%PASSIVE_INITCONC(P)
+            WRITE( 6, 110   ) ' - Species long name           : ',
+     &            TRIM( Input_Opt%PASSIVE_LONGNAME(P) )
+         ENDIF
+
+      ENDDO
+
+      IF ( P < 0 ) THEN
          ErrMsg = 'Cannot add passive species ' //
-     &            TRIM(Input_Opt%PASSIVE_NAME(P) ) //
+     &             TRIM(Input_Opt%PASSIVE_NAME(P) ) //
      &            ': # of passive species is smaller than 1!'
          CALL GC_Error( ErrMsg, RC, ThisLoc )
          RETURN 
       ENDIF
+
+      ! Total number of passive species
+      Input_Opt%NPASSIVE = P
 
  110  FORMAT( A, A )
  120  FORMAT( A, F10.2  )
@@ -7924,52 +8050,6 @@
             RETURN
          ENDIF
       ENDIF
-
-#if defined( GEOS_FP )
-
-      ! Check GEOS-FP met field directory (starting date)
-      DIR = Input_Opt%GEOS_FP_DIR
-      CALL EXPAND_DATE( DIR, Input_Opt%NYMDb, 000000 )
-      DIR = TRIM( Input_Opt%DATA_DIR ) // TRIM( DIR )
-      CALL CHECK_DIRECTORY( Input_Opt, DIR, RC )
-      IF ( RC /= GC_SUCCESS ) THEN
-         CALL GC_Error( ErrMsg, RC, ThisLoc )
-         RETURN
-      ENDIF
-
-      ! Check GEOS-FP met field directory (ending date)
-      DIR = Input_Opt%GEOS_FP_DIR
-      CALL EXPAND_DATE( DIR, Input_Opt%NYMDe, 000000 )
-      DIR = TRIM( Input_Opt%DATA_DIR ) // TRIM( DIR )
-      CALL CHECK_DIRECTORY( Input_Opt, DIR, RC )
-      IF ( RC /= GC_SUCCESS ) THEN
-         CALL GC_Error( ErrMsg, RC, ThisLoc )
-         RETURN
-      ENDIF
-
-#elif defined( MERRA2 )
-
-      ! Check MERRA2 met field directory (starting date)
-      DIR = Input_Opt%MERRA2_DIR
-      CALL EXPAND_DATE( DIR, Input_Opt%NYMDb, 000000 )
-      DIR = TRIM( Input_Opt%DATA_DIR ) // TRIM( DIR )
-      CALL CHECK_DIRECTORY( Input_Opt, DIR, RC )
-      IF ( RC /= GC_SUCCESS ) THEN
-         CALL GC_Error( ErrMsg, RC, ThisLoc )
-         RETURN
-      ENDIF
-
-      ! Check MERRA2 met field directory (ending date)
-      DIR = Input_Opt%MERRA2_DIR
-      CALL EXPAND_DATE( DIR, Input_Opt%NYMDe, 000000 )
-      DIR = TRIM( Input_Opt%DATA_DIR ) // TRIM( DIR )
-      CALL CHECK_DIRECTORY( Input_Opt, DIR, RC )
-      IF ( RC /= GC_SUCCESS ) THEN
-         CALL GC_Error( ErrMsg, RC, ThisLoc )
-         RETURN
-      ENDIF
-
-#endif
 
       END SUBROUTINE VALIDATE_DIRECTORIES
 !EOC

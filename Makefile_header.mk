@@ -203,6 +203,11 @@
 #                              throughout GEOS-Chem.
 #  07 Aug 2018 - R. Yantosca - For now, don't compile TOMAS/ APM when NC_DIAG=y
 #  21 Aug 2018 - R. Yantosca - Simplify testing for netCDF-Fortran 
+#  23 Aug 2018 - H.P. Lin    - Add NO_EXE=y to inhibit "geos" executable build
+#                              and build libGeosCore.a instead for coupled
+#                              models driving GEOS-Chem externally (by calling
+#                              its libraries)
+#  28 Aug 2018 - M. Sulprizio- Export EXE_NEEDED to be used in GeosCore/Makefile
 #EOP
 #------------------------------------------------------------------------------
 #BOC
@@ -223,7 +228,7 @@ ERR_CMPLR            :="Unknown Fortran compiler!  Must be one of ifort, gfortra
 ERR_OSCOMP           :="Makefile_header.mk not set up for this compiler/OS combination"
 
 # Error message for bad MET input
-ERR_MET              :="Select a met field: MET=geosfp, MET=merra2)"
+ERR_MET              :="Select a met field: MET=geosfp, MET=merra2"
 
 # Error message for bad GRID input
 ERR_GRID             :="Select a horizontal grid: GRID=4x5. GRID=2x25, GRID=05x0625, GRID=025x03125"
@@ -239,9 +244,6 @@ ERR_COUPLE           :="Select a coupled choice: COUPLE=yes"
 
 # Error message for bad GIGC config
 ERR_GIGC             :="Unable to find the GIGC configuration file. Have you downloaded the GIGC?"
-
-# Error message for diagnostics
-ERR_DIAG             :="Select one diagnostic output type: NC_DIAG=y or BPCH_DIAG=y"
 
 # Error message for TOMAS error message
 ERR_MICPHYS           :="At present, microphysics packages (TOMAS, APM) cannot be used when NC_DIAG=y!"
@@ -376,6 +378,10 @@ else
  COMPILER_VERSION :=$(word 4, $(COMPILER_VERSION_LONG))
 endif
 
+# Major version number of the compiler
+# e.g. for gfortran 8.2.0, this would be "8"
+COMPILER_MAJOR_VERSION   :=$(word 1,$(subst ., ,$(COMPILER_VERSION)))
+
 #------------------------------------------------------------------------------
 # Special flags for enabling experimental or development code
 #------------------------------------------------------------------------------
@@ -390,7 +396,6 @@ endif
 REGEXP               :=(^[Yy]|^[Yy][Ee][Ss])
 ifeq ($(shell [[ "$(DIAG_DEVEL)" =~ $(REGEXP) ]] && echo true),true)
   USER_DEFS          += -DDIAG_DEVEL
-  NC_DIAG            :=yes
   BPCH_DIAG          :=no
 endif
 
@@ -410,7 +415,6 @@ endif
 REGEXP               :=(^[Yy]|^[Yy][Ee][Ss])
 ifeq ($(shell [[ "$(USE_TEND)" =~ $(REGEXP) ]] && echo true),true)
   USER_DEFS          += -DUSE_TEND
-  NC_DIAG            :=yes
   BPCH_DIAG          :=no
 endif
 
@@ -440,24 +444,46 @@ ifeq ($(shell [[ "$(EXTERNAL_FORCING)" =~ $(REGEXP) ]] && echo true),true)
 endif
 
 #------------------------------------------------------------------------------
+# Coupling GEOS-Chem to External Models settings
+#------------------------------------------------------------------------------
+
+# %%%%% NO_EXE %%%%%
+# Setting NO_EXE=y will inhibit the creation of a final "geos" executable
+# and create a "libGeosCore.a" in the lib folder instead.
+# Used if you are linking GEOS-Chem routines to be driven by an external model.
+# (hplin, 8/23/18)
+EXE_NEEDED           :=1
+REGEXP               :=(^[Yy]|^[Yy][Ee][Ss])
+ifeq ($(shell [[ "$(NO_EXE)" =~ $(REGEXP) ]] && echo true),true)
+  USER_DEFS          += -DMODEL_
+  EXE_NEEDED         :=0
+endif
+
+#------------------------------------------------------------------------------
 # Diagnostic settings
 #------------------------------------------------------------------------------
 
-# %%%%% Use netCDF diagnostics if DEVEL=y %%%%%
-ifdef DEVEL
-  NC_DIAG            :=yes
-  BPCH_DIAG          :=no
-  BPCH_TBPC          :=no
+# Turn on bpch diagnostics UNLESS specified otherwis
+ifdef BPCH_DIAG
+  BPCH_DIAG          :=yes
 endif
-
-# %%%%% Turn on bpch code for TPCORE BC's if NEST is defined %%%%%
-ifdef NEST
-  BPCH_TPBC          :=yes
-endif
-
-# %%%%% Determine options for netCDF or BPCH diagnostics %%%%%
 REGEXP               :=(^[Yy]|^[Yy][Ee][Ss])
+ifeq ($(shell [[ "$(BPCH_DIAG)" =~ $(REGEXP) ]] && echo true),true)
+  USER_DEFS        += -DBPCH_DIAG
+endif
+
+# %%%%% Turn netCDF diagnostics on by default to save out restart file %%%%%
+REGEXP               :=(^[Nn]|^[Nn][Oo])
 ifeq ($(shell [[ "$(NC_DIAG)" =~ $(REGEXP) ]] && echo true),true)
+
+  # Set a flag to denote netCDF diagnostics are off
+  IS_NC_DIAG         :=0
+
+  # If netCDF diagnostics have not been explicitly specified, then activate
+  # bpch diagnostics, bpch timeseries, AND bpch code for nested-grid BC's
+  USER_DEFS          += -DBPCH_DIAG -DBPCH_TIMESER -DBPCH_TPBC
+
+else
 
   # Set a flag to denote netCDF diagnostics are on
   IS_NC_DIAG         :=1
@@ -474,24 +500,9 @@ ifeq ($(shell [[ "$(NC_DIAG)" =~ $(REGEXP) ]] && echo true),true)
      USER_DEFS       += -DBPCH_TIMESER
   endif
 
-  # AND turn off bpch diagnostics UNLESS specified otherwise
-  ifeq ($(shell [[ "$(BPCH_DIAG)" =~ $(REGEXP) ]] && echo true),true)
-    USER_DEFS        += -DBPCH_DIAG
-  endif
-
-  # AND turn off bpch code for nested BC's code UNLESS specified otherwise
-  ifeq ($(shell [[ "$(BPCH_TPBC)" =~ $(REGEXP) ]] && echo true),true)
-    USER_DEFS        += -DBPCH_TPBC
-  endif
-
-else
-
-  # Set a flag to denote netCDF diagnostics are off
-  IS_NC_DIAG         :=0
-
-  # If netCDF diagnostics have not been explicitly specified, then activate
-  # bpch diagnostics, bpch timeseries, AND bpch code for nested-grid BC's
-  USER_DEFS          += -DBPCH_DIAG -DBPCH_TIMESER -DBPCH_TPBC
+  # Turn on bpch code for nested-grid BC's by default
+  # Needed for both global and nested simulations
+  USER_DEFS          += -DBPCH_TPBC
 
 endif
 
@@ -601,6 +612,12 @@ ifndef NO_MET_NEEDED
     USER_DEFS        += -DGEOS_FP
   endif
 
+  # %%%%% FLEXGRID %%%%%
+  REGEXP             :=(^[Ff][Ll][Ee][Xx][Gg][Rr][Ii][Dd])
+  ifeq ($(shell [[ "$(MET)" =~ $(REGEXP) ]] && echo true),true)
+    USER_DEFS        += -DFLEXGRID
+  endif
+
   # %%%%% REDUCED VERTICAL GRID (default, unless specified otherwise) %%%%
   ifndef NO_REDUCED
     NO_REDUCED       :=no
@@ -658,7 +675,7 @@ ifndef NO_GRID_NEEDED
   ifeq ($(shell [[ "$(GRID)" =~ $(REGEXP) ]] && echo true),true)
 
     # Ensure that MET=merra2
-    REGEXP           :=(^[Mm][Ee][Rr][Rr][Aa]2)|(^[Mm][Ee][Rr][Rr][Aa].2)
+    REGEXP           :=(^[Mm][Ee][Rr][Rr][Aa]2)|(^[Mm][Ee][Rr][Rr][Aa].2)|(^[Ff][Ll][Ee][Xx][Gg][Rr][Ii][Dd])
     ifneq ($(shell [[ "$(MET)" =~ $(REGEXP) ]] && echo true),true)
       $(error When GRID=05x0625, you can only use MET=merra2)
     endif
@@ -679,9 +696,9 @@ ifndef NO_GRID_NEEDED
   ifeq ($(shell [[ "$(GRID)" =~ $(REGEXP) ]] && echo true),true)
 
     # Ensure that MET=geosfp
-    REGEXP           :=(^[Gg][Ee][Oo][Ss][Ff][Pp])|(^[Gg][Ee][Oo][Ss].[Ff][Pp])
+    REGEXP           :=(^[Gg][Ee][Oo][Ss][Ff][Pp])|(^[Gg][Ee][Oo][Ss].[Ff][Pp])|(^[Ff][Ll][Ee][Xx][Gg][Rr][Ii][Dd])
     ifneq ($(shell [[ "$(MET)" =~ $(REGEXP) ]] && echo true),true)
-      $(error When GRID=025x03125, you can only use MET=geos-fp)
+      $(error When GRID=025x03125, you can only use MET=geosfp)
     endif
 
     # Ensure that a nested-grid option is selected
@@ -1002,7 +1019,8 @@ ifeq ($(RRTMG_NEEDED),1)
 endif
 
 # Create linker command to create the GEOS-Chem executable
-LINK                 :=$(LINK) -lIsoropia -lHistory -lHCOI -lHCOX -lHCO 
+LINK                 :=$(LINK) -lIsoropia -lObsPack -lHistory
+LINK                 :=$(LINK) -lHCOI -lHCOX -lHCO
 LINK                 :=$(LINK) -lGeosUtil -lKpp -lHeaders -lNcUtils 
 LINK                 :=$(LINK) $(NC_LINK_CMD)
 
@@ -1276,7 +1294,8 @@ ifeq ($(COMPILER_FAMILY),Intel)
   # NOTE: ifort 18 and higher users -qopenmp instead of -openmp
   REGEXP             :=(^[Yy]|^[Yy][Ee][Ss])
   ifeq ($(shell [[ "$(OMP)" =~ $(REGEXP) ]] && echo true),true)
-    ifeq ($(shell [[ "$(COMPILER_VERSION)" =~ 18. ]] && echo true),true)
+     REGEXP          :=^1[8-9]|^2|^3|^4|^5|^6|^7|^8|^9
+     ifeq ($(shell [[ "$(COMPILER_MAJOR_VERSION)" =~ $(REGEXP) ]] && echo true),true)
       FFLAGS         += -qopenmp
     else
       FFLAGS         += -openmp

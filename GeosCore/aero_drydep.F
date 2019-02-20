@@ -21,13 +21,13 @@
 ! !USES:
 !
       USE CMN_SIZE_MOD
-      USE DRYDEP_MOD,         ONLY : DEPSAV
       USE DUST_MOD,           ONLY : SETTLEDUST   
       USE ErrCode_Mod
       USE ERROR_MOD
       USE GC_GRID_MOD,        ONLY : GET_AREA_CM2
       USE Input_Opt_Mod,      ONLY : OptInput
       USE PhysConstants,      ONLY : g0
+      USE PhysConstants,      ONLY : AVO
       USE PBL_MIX_MOD,        ONLY : GET_FRAC_UNDER_PBLTOP
       USE PRECISION_MOD
       USE State_Chm_Mod,      ONLY : ChmState
@@ -84,6 +84,7 @@
 !                              species ID from State_Chm%Map_Advect.
 !  29 Nov 2016 - R. Yantosca - grid_mod.F90 is now gc_grid_mod.F90
 !  04 Jan 2018 - M. Sulprizio- Now accept State_Diag as an argument
+!  21 Sep 2018 - P.F. Liu    - Fix the bug in unit conversion
 !EOP
 !------------------------------------------------------------------------------
 !BOC
@@ -125,6 +126,7 @@
       REAL(fp), POINTER  :: Spc     (:,:,:,:)
       REAL(fp), POINTER  :: BXHEIGHT(:,:,:  )
       REAL(fp), POINTER  :: T       (:,:,:  )
+      REAL(fp), POINTER  :: DEPSAV  (:,:,:  )                ! IM, JM, nDryDep
 
       ! SAVEd arrays
       INTEGER,  SAVE     :: DRYD(IBINS)
@@ -160,6 +162,7 @@
       Spc      => State_Chm%Species
       BXHEIGHT => State_Met%BXHEIGHT
       T        => State_Met%T
+      DEPSAV   => State_Chm%DryDepSav
 
       ! First-time setup
       IF ( FIRST ) THEN
@@ -491,8 +494,8 @@ c     &           print *,'JC=',JC,'BIN=',BIN,'ID=',ID,'RKT',RKT
                ! Convert from [kg/timestep] to [molec/cm2/s] 
                ! Store in AD44
                FLUX = X0(BIN,JC) - X
-               FLUX = FLUX * State_Chm%SpcData(ID)%Info%emMW_g * 
-     &                1.e-3_fp / AREA_CM2 / DTCHEM
+               FLUX = FLUX / (State_Chm%SpcData(ID)%Info%emMW_g * 
+     &                1.e-3_fp) / AREA_CM2 / DTCHEM * AVO
 
                IF ( JC == 1 ) THEN 
                   AD44(I,J,DRYD(BIN),1) = AD44(I,J,DRYD(BIN),1)+ FLUX   
@@ -546,8 +549,8 @@ c     &           AD44(I,J,nDryDep+BIN+(JC-2)*IBINS,1)
             ! Convert from [kg/timestep] to [molec/cm2/s] 
             ! Store in AD44
             FLUX = Y0 - Y
-            FLUX = FLUX * State_Chm%SpcData(id_H2SO4)%Info%emMW_g *
-     &             1.e-3_fp / AREA_CM2 / DTCHEM
+            FLUX = FLUX / (State_Chm%SpcData(id_H2SO4)%Info%emMW_g *
+     &             1.e-3_fp) / AREA_CM2 / DTCHEM * AVO
 
             AD44(I,J,H2SO4ID,1) = AD44(I,J,H2SO4ID,1) + FLUX   
 
@@ -568,6 +571,7 @@ c     &           AD44(I,J,nDryDep+BIN+(JC-2)*IBINS,1)
       Spc      => NULL()
       BXHEIGHT => NULL()
       T        => NULL()
+      DEPSAV   => NULL()
 
       ! Check that species units are still in [kg] (ewl, 8/13/15)
       IF ( TRIM( State_Chm%Spc_Units ) /= 'kg' ) THEN
