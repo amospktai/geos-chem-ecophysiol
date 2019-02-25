@@ -1149,6 +1149,9 @@
       !LOGICAL           :: WriteRa10m
 #endif
 
+      ! Turn on ecophysiology module?
+      LOGICAL       :: LECOPHY
+
       ! For the species database
       INTEGER                :: SpcId
       TYPE(Species), POINTER :: SpcInfo
@@ -1188,6 +1191,9 @@
 
       ! Is this a POPs simmulation?
       IS_POPS = Input_Opt%ITS_A_POPS_SIM  ! clf, 1/3/2011
+
+      ! Turn on ecophysiology module? (Joey Lam, 2/26/2019)
+      LECOPHY = Input_Opt%LECOPHY        
 
       ! Size of drycoeff (ckeller, 05/19/14)
       NN = SIZE(DRYCOEFF)
@@ -1764,11 +1770,18 @@ C  170     CONTINUE
 
             RAD0 = RADIAT(I,J)
 
+            !-----------------------------------------------------------------
+            ! In order to include ecophysiology module as an option, the 
+            ! orders of calculation of surface resistance and aerodynamic 
+            ! resistance are interchanged. (Joey Lam, 2/26/2019)
+            !-----------------------------------------------------------------
+
             IF ( LECOPHY ) THEN
-               ! Get plant functional type index
-               PFT = IPFT(LDT)
                ! Call from ecophysiology module to get RIX (should exclude PFT = 0)
-               RIX = 
+               DO_ECOPHY ( am_I_Root, Input_Opt,  State_Met, &
+                           State_Chm, State_Diag, RC,        & 
+                           I, J,      LDT,        RS         )
+               RIX = RS
             ELSE
                RIX = RI(LDT)
                IF (RIX .GE. 9999.e+0_f8) GO TO 150

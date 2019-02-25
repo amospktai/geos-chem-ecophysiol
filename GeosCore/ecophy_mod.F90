@@ -3,16 +3,16 @@
 !------------------------------------------------------------------------------
 !BOP
 !
-! !MODULE: ecophysiology.F90
+! !MODULE: ecophy_mod.F90
 !
-! !DESCRIPTION: Module ECOPHYSIOLOGY contains variables and routines for the
+! !DESCRIPTION: Module ECOPHY\_MOD contains variables and routines for the
 !  GEOS-Chem ecophysiology scheme. It modifies the bulk canopy stomatal 
 !  resistance RIX in the dry deposition scheme.
 !\\
 !\\
 ! !INTERFACE: 
 !
-      MODULE ECOPHYSIOLOGY
+      MODULE ECOPHY_MOD
 ! 
 ! !USES:
 ! 
@@ -27,7 +27,7 @@
 !
       PUBLIC :: DO_ECOPHY
       PUBLIC :: INIT_ECOPHY
-!      PUBLIC :: CLEANUP_ECOPHY
+      PUBLIC :: CLEANUP_ECOPHY
 !
 ! !REMARKS:
 !  References:
@@ -71,8 +71,6 @@
       REAL,     PARAMETER   :: K_EXTINCT     (NUMPFT) = 0.5
       REAL,     PARAMETER   :: PARAM_A       (NUMPFT) = (/ 0.04, 0.02, 0.25, 0.13, 0.03 /)
       REAL,     PARAMETER   :: FLUXO3_CRIT   (NUMPFT) = (/ 1.6,  1.6,  5.0,  5.0,  1.6  /)
-      REAL,     PARAMETER   :: THETA_WILT             = 0.1
-      REAL,     PARAMETER   :: THETA_CRIT             = 0.25
       REAL,     PARAMETER   :: THRESHOLD              = 1.0e-3
       ! Constants
       REAL,     PARAMETER   :: RSTARG = 8.31446        ! Switch to call physconstant.F later (in Headers) 
@@ -81,9 +79,21 @@
 ! PRIVATE TYPES:
 !
       !========================================================================
-      !  MODULE VARIABLES:
+      ! MODULE VARIABLES:
+      ! THETA_SATU    : Soil moisture at saturation point                 [mm]
+      ! THETA_CRIT    : Soil moisture at critical point                   [mm]
+      ! THETA_WILT    : Soil moisture at wilting point                    [mm]
+      ! LO3_DAMAGE    : Logical switch for ozone damage scheme            []
+      ! NUMPFT        : Total number of PFTs                              []
       !========================================================================
-      
+      REAL,     ALLOCATABLE :: THETA_SATU    ( :,: )    
+      REAL,     ALLOCATABLE :: THETA_CRIT    ( :,: )    
+      REAL,     ALLOCATABLE :: THETA_WILT    ( :,: )  
+      INTEGER,  ALLOCATABLE :: IPFT          ( :   )
+      LOGICAL               :: LECOPHY
+      LOGICAL               :: LO3_DAMAGE
+      INTEGER               :: NUMPFT
+
       !=================================================================
       ! MODULE ROUTINES -- follow below the "CONTAINS" statement
       !=================================================================
@@ -96,7 +106,8 @@
 !
 ! !IROUTINE: do_ecophy
 !
-! !DESCRIPTION: Subroutine DO\_ECOPHY is the interface that computes the
+! !DESCRIPTION: Subroutine DO\_ECOPHY is the interface between dry 
+!  deposition module and the ecophysiology module. It computes the
 !  bulk canopy stomatal resistance r_s according to meterological inputs, 
 !  plant functional types, and soil types.
 !\\
@@ -105,7 +116,7 @@
 !      
       SUBROUTINE DO_ECOPHY ( am_I_Root, Input_Opt,  State_Met, &
                              State_Chm, State_Diag, RC,        & 
-                             I, J,  PFT, LDT, RS               )
+                             I, J,      LDT, RS                )
 !
 ! !USES:
 !
@@ -123,27 +134,105 @@
       INTEGER,        INTENT(IN)    :: J           ! latitude index
       INTEGER,        INTENT(IN)    :: PFT         ! PFT index
       INTEGER,        INTENT(IN)    :: LDT         ! Land type index
+      TYPE(OptInput), INTENT(INOUT) :: Input_Opt   ! Input Options object
+      TYPE(MetState), INTENT(INOUT) :: State_Met   ! Meteorology State object
 !
 ! !INPUT/OUTPUT PARAMETERS:
 !
-      TYPE(OptInput), INTENT(INOUT) :: Input_Opt   ! Input Options object
       TYPE(ChmState), INTENT(INOUT) :: State_Chm   ! Chemistry State object
-      TYPE(MetState), INTENT(INOUT) :: State_Met   ! Meteorology State object
       TYPE(DgnState), INTENT(INOUT) :: State_Diag  ! Diagnostics State object
 !
 ! !OUTPUT PARAMETERS:
 !
       INTEGER,        INTENT(OUT)   :: RC          ! Success or failure
       REAL,           INTENT(OUT)   :: RS          ! Bulk canopy stomatal resistance
+!
+!EOP
+!------------------------------------------------------------------------------
+!BOC
+!
+! !LOCAL VARIABLES:
+!
+      ! Scalars
+      !  Note: Read subroutine DO_PHOTOSYNTHESIS for descriptions. 
+      REAL       :: TEMPK         
+      REAL       :: SPHU          
+      REAL       :: RA            
+      REAL       :: PAR_ABSORBED  
+      REAL       :: PRESSURE      
+      REAL       :: CO2           
+      REAL       :: O2            
+      REAL       :: O3            
+      REAL       :: LAI           
+      LOGICAL    :: LO3_DAMAGE    
+      REAL       :: SOIL_WETNESS  
+      INTEGER    :: PFT     
+      REAL       :: G_CAN_OUT     
+      REAL       :: G_LEAF_OUT    
+      REAL       :: CO2_IN        
+      REAL       :: A_CAN_OUT    
+      REAL       :: A_NET_OUT     
+      REAL       :: RESP_CAN_OUT  
+      REAL       :: RESP_OUT      
+      REAL       :: FLUXO3_CAN    
+      REAL       :: FLUXO3        
+      REAL       :: FACTOR_O3     
+      REAL       :: BETA       
+      ! Arrays
+
+      ! Pointers
+      REAL(fp), POINTER :: G_CANOPY       ( :,:,: )
+      REAL(fp), POINTER :: A_CANOPY       ( :,:,: )
+      REAL(fp), POINTER :: R_CANOPY       ( :,:,: )
+      REAL(fp), POINTER :: A_NET_CANOPY   ( :,:,: )
+      REAL(fp), POINTER :: FLXO3_CANOPY   ( :,:,: )
+      REAL(fp), POINTER :: BETA_O3        ( :,:,: )
+      REAL(fp), POINTER :: BETA_SM        ( :,:,: )   
+
+      ! For ESMF, need to assign these from Input_Opt (copied from drydep_mod)
+      LOGICAL       :: LPRT
+
+      !=================================================================
+      ! DO_ECOPHY begins here!
+      !=================================================================
+      ! Assume success 
+      RC = GC_SUCCESS
+
+      ! Initialize
+      SpcInfo => NULL()
+      ErrMsg  = ''
+      ThisLoc = &
+      ' -> at Do_ECOPHY (in module GeosCore/ecophysiology.F90)' 
+
+      ! Point to columns of derived-type object fields
+      G_CANOPY     => State_Chm%G_CAN     
+      A_CANOPY     => State_Chm%A_CAN     
+      R_CANOPY     => State_Chm%RESP     
+      A_NET_CANOPY => State_Chm%A_NET 
+      FLXO3_CANOPY => State_Chm%FLXO3 
+      BETA_O3      => State_Chm%BETA_O3      
+      BETA_SM      => State_Chm%BETA_SM   
 
       ! get inputs for the module
       CALL GET_ECOPHY_INPUTS( State_Met,    State_Chm, Input_Opt,&
-                              TEMPK,        SPHU,      Ra,       &
+                              TEMPK,        SPHU,                &
                               PAR_ABSORBED, PRESSURE,  CO2,      &
                               O2,           LAI,       O3,       &
                               LO3_DAMAGE,   SOIL_WETNESS         &
-                              )   
-      CALL DO_PHOTOSYNTHESIS( TEMPK,        SPHU,       Ra,           &
+                              )  
+
+      ! Trap potential errors
+      IF ( RC /= GC_SUCCESS ) THEN
+         ErrMsg = 'Error encountered in call to "GET_ECOPHY_INPUTS!'
+         CALL GC_Error( ErrMsg, RC, ThisLoc )
+         RETURN
+      ENDIF 
+
+      ! Get plant functional type index
+      PFT = IPFT(LDT)
+
+      ! simulate plant processes
+      CALL DO_PHOTOSYNTHESIS( TEMPK,        SPHU,       RA,           &
                               PAR_ABSORBED, PRESSURE,   CO2,          &
                               O2,           LAI,        O3,           &
                               LO3_DAMAGE,   SOIL_WETNESS,             &
@@ -152,7 +241,39 @@
                               RESP_OUT,     FLUXO3_CAN, FLUXO3,       &
                               FACTOR_O3,    BETA,       PFT           &
                               )
-      END FUNCTION
+
+      ! Trap potential errors
+      IF ( RC /= GC_SUCCESS ) THEN
+         ErrMsg = 'Error encountered in call to "GET_ECOPHY_INPUTS!'
+         CALL GC_Error( ErrMsg, RC, ThisLoc )
+         RETURN
+      ENDIF
+
+! #if defined( NC_DIAG )
+!             ! send to diagnostics outputs
+!             State_Diag%G_CAN(I,J) = G_CAN_OUT
+! #endif
+
+      ! Write a subroutine to get PFT-weighted values
+
+      ! Output RS to dry deposition module
+      RS = 1.0 / G_CAN_OUT
+
+      !### Debug
+      IF ( LPRT .and. am_I_Root ) THEN
+         CALL DEBUG_MSG( '### DO_DRYDEP: after dry dep' )
+      ENDIF
+
+      ! Nullify pointers
+      NULLIFY( G_CANOPY     )
+      NULLIFY( A_CANOPY     )
+      NULLIFY( R_CANOPY     )
+      NULLIFY( A_NET_CANOPY )
+      NULLIFY( FLXO3_CANOPY )
+      NULLIFY( BETA_O3      )
+      NULLIFY( BETA_SM      )
+
+      END SUBROUTINE DO_ECOPHY
 !EOC
 !------------------------------------------------------------------------------
 !                  GEOS-Chem Global Chemical Transport Model                  !
@@ -161,12 +282,13 @@
 !
 ! !IROUTINE: do_photosynthesis
 !
-! !DESCRIPTION: Subroutine DO\_PHOTOSYNTHESIS
+! !DESCRIPTION: Subroutine DO\_PHOTOSYNTHESIS is the main driver of this 
+!  module. 
 !\\
 !\\
 ! !INTERFACE:
 !      
-      SUBROUTINE DO_PHOTOSYNTHESIS( TEMPK,        SPHU,       Ra,           &
+      SUBROUTINE DO_PHOTOSYNTHESIS( TEMPK,        SPHU,       RA,           &
                                     PAR_ABSORBED, PRESSURE,   CO2,          &
                                     O2,           LAI,        O3,           &
                                     LO3_DAMAGE,   SOIL_WETNESS,             &
@@ -177,25 +299,28 @@
                                     )
 ! Main driver of the photosynthesis-stomatal conductance model
 !
-! !INPUT PARAMETERS:
+!INPUT PARAMETERS:
+!
+!
+!INPUT PARAMETERS:
 !
       !---------------------------------------------------------------------------------------
-      ! TEMPK         : Temperature in Kelvin                             [K]
+      ! TEMPK         : Leaf temperature in Kelvin                        [K]
       ! SPHU          : Specific humidity in canopy layer                 [kg H2O / kg air]
-      ! Ra            : Aerodynamic and boundary layer resistance         [s m^-1]
+      ! RA            : Aerodynamic and boundary layer resistance         [s m^-1]
       ! PAR_ABSORBED  : Absorbed PAR                                      [W m^-2]
       ! PRESSURE      : Atmospheric Pressure in canopy layer              [Pa]
       ! CO2           : Ambient CO2 mole fraction                         [mol/mol air]
       ! O2            : Ambient O2 mole fraction                          [mol/mol air]
       ! O3            : Ozone mole fraction in canopy layer               [mol/mol air]
-      ! LAI           : Leaf area indices                                 [m^2 m^-2]
+      ! LAI           : Leaf area index for the PFT                       [m^2 m^-2]
       ! LO3_DAMAGE    : Logical switch for ozone damage scheme            []
       ! SOIL_WETNESS  : Fraction of moisture in soil pores                []
-      ! PFT          : Index for PFT                                     []
+      ! PFT           : Index for PFT                                     []
       !---------------------------------------------------------------------------------------
       REAL,     INTENT(IN)  :: TEMPK         
       REAL,     INTENT(IN)  :: SPHU          
-      REAL,     INTENT(IN)  :: Ra            
+      REAL,     INTENT(IN)  :: RA            
       REAL,     INTENT(IN)  :: PAR_ABSORBED  
       REAL,     INTENT(IN)  :: PRESSURE      
       REAL,     INTENT(IN)  :: CO2           
@@ -204,16 +329,16 @@
       REAL,     INTENT(IN)  :: LAI           
       LOGICAL,  INTENT(IN)  :: LO3_DAMAGE    
       REAL,     INTENT(IN)  :: SOIL_WETNESS  
-      INTEGER,  INTENT(IN)  :: PFT          
+      INTEGER,  INTENT(IN)  :: PFT           
 !
-! !OUTPUT PARAMETERS:
+!OUTPUT PARAMETERS:
 !
       !---------------------------------------------------------------------------------------
       ! G_CAN_OUT     : Canopy conductance for H2O (output)               [m s^-1]
       ! G_LEAF_OUT    : Leaf level stomatal conductance for H2O (output)  [m s^-1]
       ! CO2_IN        : Leaf internal partial pressure of CO2             [Pa]
-      ! A_CAN_OUT    	: Canopy net photosynthetic rate (output)           [mol CO2 m^-2 s^-1]
-      ! A_NET_OUT    	: Leaf level net photosynthetic rate (output)       [mol CO2 m^-2 s^-1]
+      ! A_CAN_OUT       : Canopy net photosynthetic rate (output)           [mol CO2 m^-2 s^-1]
+      ! A_NET_OUT       : Leaf level net photosynthetic rate (output)       [mol CO2 m^-2 s^-1]
       ! RESP_CAN_OUT  : Canopy dark respiration (output)                  [mol CO2 m^-2 s^-1]
       ! RESP_OUT      : Leaf level dark respiration (output)              [mol CO2 m^-2 s^-1]
       ! FLUXO3_CAN    : Canopy ozone uptake                               [nmol m^-2 s^-1]
@@ -225,7 +350,7 @@
       REAL,     INTENT(OUT) :: G_LEAF_OUT    
       REAL,     INTENT(OUT) :: CO2_IN        
       REAL,     INTENT(OUT) :: A_CAN_OUT    
-      REAL,     INTENT(OUT) :: A_NET_OUT    
+      REAL,     INTENT(OUT) :: A_NET_OUT     
       REAL,     INTENT(OUT) :: RESP_CAN_OUT  
       REAL,     INTENT(OUT) :: RESP_OUT      
       REAL,     INTENT(OUT) :: FLUXO3_CAN    
@@ -233,10 +358,10 @@
       REAL,     INTENT(OUT) :: FACTOR_O3     
       REAL,     INTENT(OUT) :: BETA          
 !
-! !LOCAL VARIABLES:
+!LOCAL VARIABLES:
 !
       !---------------------------------------------------------------------------------------
-      ! TEMPC         : Temperature in degree Celsius                     [deg C]
+      ! TEMPC         : Leaf temperature in degree Celsius                [deg C]
       ! SPHU_SAT      : SPHU at saturation in canopy layer                [kg H2O / kg air]
       ! DEFICIT_Q     : Specific humidity deficit at leaf surface         [kg H2O / kg air]
       ! APAR          : Absorbed PAR                                      [mol m^-2 s^-1]
@@ -290,7 +415,10 @@
       REAL                  :: ERR1          
       REAL                  :: ERR2          
       REAL                  :: ERR3          
-      REAL                  :: DELTA        
+      REAL                  :: DELTA         
+
+
+
 
       TEMPC             = TEMPK - 273.15
       ! Calculate V_CMAX and respiration which depends on V_CMAX only
@@ -313,7 +441,8 @@
     
       ! To modify net photosynthesis rate by soil moisture stress later
       ! Not needed to be inside the loop
-      CALL MOIST_STRESS ( SOIL_WETNESS, BETA )
+      CALL MOIST_STRESS( SOIL_WETNESS, THETA_SATU, THETA_CRIT, &
+                         THETA_WILT,   BETA                    )
       
       ! Iterate to find a self-consistent set of photosynthesis,
       ! stomatal conductance and leaf internal CO2 concentration 
@@ -332,7 +461,7 @@
         ! Step 1: Closure condition by Jacobs (1994)
         SPHU_SAT          = 0.622 * E_SAT( TEMPC ) / PRESSURE
         G_CAN             = G_LEAF * BIGLEAFSCALE
-        DEFICIT_Q         = ( SPHU_SAT - SPHU ) / ( 1 + Ra * G_CAN )                   ! Should be Ra + Rb? Need to check
+        DEFICIT_Q         = ( SPHU_SAT - SPHU ) / ( 1 + RA * G_CAN )     
         CO2_IN            = CO2_GAMMA + f0(PFT)*( 1 - DEFICIT_Q / D_STAR(PFT) ) &
                           * ( CO2_AMBIENT - CO2_GAMMA ) 
         IF ( BETA == 0.0 .OR. DEFICIT_Q >= D_STAR(PFT) .OR. PAR_ABSORBED == 0.0 ) THEN 
@@ -345,7 +474,7 @@
           CALL PHOTOSYNTHESIS_LIMITS( CO2_IN,       CO2_GAMMA,    &
                                       O2, APAR,     PRESSURE,     &
                                       TEMPC,        V_CMAX,       & 
-                                      PFT,         RATE_LIGHT,   &
+                                      PFT,         RATE_LIGHT,    &
                                       RATE_PRODUCT, RATE_RUBISCO  )                                
           CALL SOLVE_COLIMIT( RATE_LIGHT,   RATE_PRODUCT, &
                               RATE_RUBISCO, A_GROSS      )
@@ -362,8 +491,8 @@
           END IF
           ! Apply ozone damage scheme by Sitch et al. (2007)
           IF ( LO3_DAMAGE ) THEN
-            CALL OZONE_DAMAGE ( O3_CONC,  Ra,          &                           ! Should be Ra + Rb? Need to check
-                                G_LEAF,   PFT,        &
+            CALL OZONE_DAMAGE ( O3_CONC,  RA,          &    
+                                G_LEAF,   PFT,         &
                                 FLUXO3,   FACTOR_O3    )
             PRINT *, "Ozone damage calculated."
             A_NET_OUT     = FACTOR_O3 * A_NET
@@ -535,15 +664,23 @@
       A_GROSS  = 0.5 * ( - B - SQRT( B * B - 4 * C ) ) 
       END SUBROUTINE SOLVE_COLIMIT
       
-      SUBROUTINE MOIST_STRESS ( SOIL_WETNESS, BETA )
+      SUBROUTINE MOIST_STRESS( SOIL_WETNESS, THETA_SATU, THETA_CRIT, &
+                               THETA_WILT,   BETA                    )
 ! Calculate the moisture stress factor BETA
 
       !---------------------------------------------------------------------------------------
       ! SOIL_WETNESS    : Volumetric mean moisture concentration in root zone divided by porosity 
-      ! PFT             : Index for PFT
+      ! THETA_SATU      : Volumetric soil moisture at saturation (= porosity)
+      ! THETA_CRIT      : Volumetric soil moisture at critical point (above which
+      !                   plants are no longer stressed by soil moisture)
+      ! THETA_WILT      : Volumetric soil moisture at wilting point (below which
+      !                   photosynthesis is stopped by limited soil moisture)
       ! BETA            : Moisture stress factor
       !---------------------------------------------------------------------------------------
       REAL,     INTENT(IN)  :: SOIL_WETNESS 
+      REAL,     INTENT(IN)  :: THETA_SATU 
+      REAL,     INTENT(IN)  :: THETA_CRIT 
+      REAL,     INTENT(IN)  :: THETA_WILT   
       REAL,     INTENT(OUT) :: BETA
       
       BETA =  ( SOIL_WETNESS - THETA_WILT ) / ( THETA_CRIT - THETA_WILT ) 
@@ -571,20 +708,20 @@
              * A_NET / ( CO2_AMBIENT - CO2_IN )
       END SUBROUTINE LEAF_CONDUCTANCE
       
-      SUBROUTINE OZONE_DAMAGE ( O3_CONC, Ra,          &                          ! Should be Ra + Rb? Need to check
+      SUBROUTINE OZONE_DAMAGE ( O3_CONC, RA,          &                          ! Should be Ra + Rb? Need to check
                                 G_LEAF,  PFT,         &
                                 FLUXO3,  FACTOR_O3    )
 ! Calculate ozone damage factor based on Sitch et al. (2008)
       !---------------------------------------------------------------------------------------
       ! O3_CONC         : Ozone concentration in canopy layer                     [nmol m^-3]
-      ! Ra              : Aerodynamic and boundary resistance                     [s m^-1]
+      ! RA              : Aerodynamic and boundary resistance                     [s m^-1]
       ! G_LEAF          : Leaf conductance for H2O in the absence of O3 effects   [m s^-1]
       ! PFT             : Index for PFT                                           []
       ! FLUXO3          : Leaf uptake of O3                                       [nmol m^-2 s^-1]
       ! FACTOR_O3       : Ozone damage factor                                     []
       !---------------------------------------------------------------------------------------        
       REAL,     INTENT(IN)    :: O3_CONC         
-      REAL,     INTENT(IN)    :: Ra              
+      REAL,     INTENT(IN)    :: RA              
       REAL,     INTENT(IN)    :: G_LEAF
       INTEGER,  INTENT(IN)    :: PFT
       REAL,     INTENT(OUT)   :: FLUXO3
@@ -598,18 +735,18 @@
       TEMP1       = 1 + PARAM_A(PFT) * FLUXO3_CRIT(PFT)
       TEMP2       = 1.67 / G_LEAF        
       ! Calculate coefficients for quadratic equation F^2 + B*F + C = 0
-      IF ( ABS(Ra) < EPSILON(1.0) ) THEN
-!        Ra        = 0.0  
+      IF ( ABS(RA) < EPSILON(1.0) ) THEN
+!        RA        = 0.0  
         FACTOR_O3 = TEMP1 / ( 1 + PARAM_A(PFT) * O3_CONC / TEMP2 )
       ELSE
-        B         = TEMP2 / Ra - TEMP1 + PARAM_A(PFT) * O3_CONC / Ra 
-        C         = - TEMP1 * TEMP2 / Ra
+        B         = TEMP2 / RA - TEMP1 + PARAM_A(PFT) * O3_CONC / RA 
+        C         = - TEMP1 * TEMP2 / RA
         ! Note that C < 0, SQRT( B^2 - 4*C ) > ABS(B)
         ! Take positive root
         F         = 0.5 * ( SQRT( B * B - 4 * C ) - B ) 
         FACTOR_O3 = MIN( MAX( F, 0.0 ), 1.0 )
       END IF
-      FLUXO3      = O3_CONC / ( Ra + TEMP2 / FACTOR_O3 )      ! MAYBE NOT NEEDED?
+      FLUXO3      = O3_CONC / ( RA + TEMP2 / FACTOR_O3 )      ! MAYBE NOT NEEDED?
       END SUBROUTINE OZONE_DAMAGE
       
       FUNCTION FACTOR_Q10( Q10, TEMPC ) RESULT( FACTOR )
@@ -679,14 +816,14 @@
 !
 ! !IROUTINE: get_ecophy_inputs
 !
-! !DESCRIPTION: Subroutine GET\_ECOPHY_INPUTS get inputs from Met and 
-!  Chem State objects and Input Options
+! !DESCRIPTION: Subroutine GET\_ECOPHY_INPUTS get time-dependent inputs 
+!  from Met and Chem State objects and Input Options.
 !\\
 !\\
 ! !INTERFACE:
 !
-      SUBROUTINE GET_ECOPHY_INPUTS( State_Met,    State_Chm, Input_Opt,&
-                                    TEMPK,        SPHU,      Ra,       &
+      SUBROUTINE GET_ECOPHY_INPUTS( State_Met,    State_Chm,           &
+                                    TEMPK,        SPHU,                &
                                     PAR_ABSORBED, PRESSURE,  CO2,      &
                                     O2,           LAI,       O3,       &
                                     LO3_DAMAGE,   SOIL_WETNESS,        &
@@ -694,7 +831,6 @@
 !
 ! !USES:
 !
-      USE Input_Opt_Mod,      ONLY : OptInput
       USE State_Chm_Mod,      ONLY : ChmState, Ind_
       USE State_Met_Mod,      ONLY : MetState
 !
@@ -703,18 +839,16 @@
       !---------------------------------------------------------------------------------------
       ! State_Met     : Meteorology State Object
       ! State_Chm     : Chemistry State Object
-      ! Input_Opt     : Input Options Object
       !---------------------------------------------------------------------------------------
       Type(MetState), INTENT(IN)  :: State_Met
       Type(ChmState), INTENT(IN)  :: State_Chm
-      Type(OptInput), INTENT(IN)  :: Input_Opt
 !
 ! !OUTPUT PARAMETERS:
 !
       !---------------------------------------------------------------------------------------
       ! TEMPK         : Temperature in Kelvin                             [K]
       ! SPHU          : Specific humidity in canopy layer                 [kg H2O / kg air]
-      ! Ra            : Aerodynamic and boundary layer resistance         [s m^-1]
+      ! RA            : Aerodynamic and boundary layer resistance         [s m^-1]
       ! PAR_ABSORBED  : Absorbed PAR                                      [W m^-2]
       ! PRESSURE      : Atmospheric Pressure in canopy layer              [Pa]
       ! CO2           : Ambient CO2 mole fraction                         [kg / kg dry]
@@ -726,7 +860,7 @@
       !---------------------------------------------------------------------------------------
       REAL,     INTENT(OUT) :: TEMPK         
       REAL,     INTENT(OUT) :: SPHU          
-      REAL,     INTENT(OUT) :: Ra            
+      REAL,     INTENT(OUT) :: RA            
       REAL,     INTENT(OUT) :: PAR_ABSORBED  
       REAL,     INTENT(OUT) :: PRESSURE      
       REAL,     INTENT(OUT) :: CO2           
@@ -754,8 +888,6 @@
       TEMPK         = State_Met%TS( I,J )
       ! Specific humidity [kg/kg]  
       SPHU          = State_Met%SPHU( I,J,1 ) / 1000
-      ! Aerodynamic and boundary layer resistance [s m^-1]
-      Ra            = State_Chm%Ra
       ! Photosynthetically active radiation absorbed [W m^-2] 
       PARDR         = State_Met%PARDR( I,J ) 
       PARDF         = State_Met%PARDF( I,J )
@@ -770,11 +902,9 @@
                     \ State_Chm%SpcData( id_O2  )%Info%MW_g
       ! O3 mole fraction [mol/mol]
       O3            = State_Chm%Species( I,J,1,id_O3  ) * AIRMW &
-                   \ State_Chm%SpcData( id_O3  )%Info%MW_g
+                    \ State_Chm%SpcData( id_O3  )%Info%MW_g
       ! LAI [m^2 m^-2]
       LAI           = State_Met%XLAI( I,J,: )
-      ! Switch for ozone damage scheme on vegetations
-      LO3_DAMAGE    = Input_Opt&LO3_DAMAGE
       ! Root zone soil wetness
       SOIL_WETNESS  = State_Met%GWETROOT(I,J)
        ! END DO
@@ -829,6 +959,7 @@
       LOGICAL                :: LECOPHY
       LOGICAL                :: LO3_DAMAGE
       INTEGER                :: NUMPFT
+      INTEGER                :: N
 
       ! Strings
       CHARACTER(LEN=255)     :: Msg, ErrMsg, ThisLoc
@@ -849,10 +980,32 @@
       ! Arrays that hold inputs for the main driver do_ecophy
       ! Only allocate these if ecophysiology is activated
       !===================================================================
+      ALLOCATE( THETA_SATU( IIPAR, JJPAR ), STAT=RC )
+      CALL GC_CheckVar( 'ecophy_mod:THETA_SATU', 0, RC)
+      IF ( RC /= GC_SUCCESS ) RETURN 
+      THETA_SATU( :,: ) = 0e+0_f8
+
+      ALLOCATE( THETA_CRIT( IIPAR, JJPAR ), STAT=RC )
+      CALL GC_CheckVar( 'ecophy_mod:THETA_CRIT', 0, RC)
+      IF ( RC /= GC_SUCCESS ) RETURN 
+      THETA_CRIT( :,: ) = 0e+0_f8
+
+      ALLOCATE( THETA_WILT( IIPAR, JJPAR ), STAT=RC )
+      CALL GC_CheckVar( 'ecophy_mod:THETA_WILT', 0, RC)
+      IF ( RC /= GC_SUCCESS ) RETURN 
+      THETA_WILT( :,: ) = 0e+0_f8
+
+      ALLOCATE( IPFT( NUMPFT ), STAT=RC )
+      CALL GC_CheckVar( 'ecophy_mod:IPFT', 0, RC)
+      IF ( RC /= GC_SUCCESS ) RETURN 
+      IPFT( : ) = 0
+
+      ! Get soil map
+      ! Get PFT mapping?
 
 !EOC
-!-----------------------------------------------------------------------------
-!          Harvard University Atmospheric Chemistry Modeling Group            !
+!------------------------------------------------------------------------------
+!                  GEOS-Chem Global Chemical Transport Model                  !
 !------------------------------------------------------------------------------
 !BOP
 !
@@ -874,12 +1027,15 @@
       !=================================================================
       ! CLEANUP_ECOPHY begins here!
       !=================================================================
-      IF ( ALLOCATED( B ) ) DEALLOCATE( B )
+      IF ( ALLOCATED ( THETA_SATU ) ) DEALLOCATE ( THETA_SATU )
+      IF ( ALLOCATED ( THETA_CRIT ) ) DEALLOCATE ( THETA_CRIT )
+      IF ( ALLOCATED ( THETA_WILT ) ) DEALLOCATE ( THETA_WILT )
+      IF ( ALLOCATED ( IPFT       ) ) DEALLOCATE ( IPFT       )
 
       ! Return to calling program
       END SUBROUTINE CLEANUP_ECOPHY
 !EOC
-      END MODULE ECOPHYSIOLOGY
+      END MODULE ECOPHY_MOD
 
 
       
