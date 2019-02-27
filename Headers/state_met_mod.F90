@@ -229,6 +229,12 @@ MODULE State_Met_Mod
      REAL(fp), POINTER :: LandTypeFrac  (:,:,:) ! Olson frac per type (I,J,type)
      REAL(fp), POINTER :: XLAI_NATIVE   (:,:,:) ! avg LAI per type (I,J,type)
      REAL(fp), POINTER :: XCHLR_NATIVE  (:,:,:) ! avg CHLR per type (I,J,type)
+     REAL(fp), POINTER :: THETA_WILT    (:,:  ) ! Soil moisture at wilting 
+                                                ! point (I,J)
+     REAL(fp), POINTER :: THETA_CRIT    (:,:  ) ! Soil moisture at critical 
+                                                ! point (I,J)
+     REAL(fp), POINTER :: THETA_SATU    (:,:  ) ! Soil moisture at saturation
+                                                ! point (I,J)
 
      !----------------------------------------------------------------------
      ! Fields for querying in which vertical regime a grid box is in
@@ -507,6 +513,9 @@ CONTAINS
     State_Met%SPHU1          => NULL()
     State_Met%SPHU2          => NULL()
     State_Met%T              => NULL()
+    State_Met%THETA_WILT     => NULL()
+    State_Met%THETA_CRIT     => NULL()
+    State_Met%THETA_SATU     => NULL()
     State_Met%TMPU1          => NULL()
     State_Met%TMPU2          => NULL()
     State_Met%TV             => NULL()
@@ -1815,6 +1824,39 @@ CONTAINS
     IF ( RC /= GC_SUCCESS ) RETURN
     State_Met%XCHLR_NATIVE = 0.0_fp
     CALL Register_MetField( am_I_Root, 'XCHLRNATIVE', State_Met%XCHLR_NATIVE, &
+                            State_Met, RC )
+    IF ( RC /= GC_SUCCESS ) RETURN
+
+    !-------------------------
+    ! THETA_WILT [1]
+    !-------------------------
+    ALLOCATE( State_Met%THETA_WILT( IM, JM ), STAT=RC )
+    CALL GC_CheckVar( 'State_Met%THETA_WILT', 0, RC )
+    IF ( RC /= GC_SUCCESS ) RETURN
+    State_Met%THETA_WILT = 0
+    CALL Register_MetField( am_I_Root, 'THETA_WILT', State_Met%THETA_WILT, &
+                            State_Met, RC )
+    IF ( RC /= GC_SUCCESS ) RETURN
+
+    !-------------------------
+    ! THETA_CRIT [1]
+    !-------------------------
+    ALLOCATE( State_Met%THETA_CRIT( IM, JM ), STAT=RC )
+    CALL GC_CheckVar( 'State_Met%THETA_CRIT', 0, RC )
+    IF ( RC /= GC_SUCCESS ) RETURN
+    State_Met%THETA_CRIT = 0
+    CALL Register_MetField( am_I_Root, 'THETA_CRIT', State_Met%THETA_CRIT, &
+                            State_Met, RC )
+    IF ( RC /= GC_SUCCESS ) RETURN
+
+    !-------------------------
+    ! THETA_SATU [1]
+    !-------------------------
+    ALLOCATE( State_Met%THETA_SATU( IM, JM ), STAT=RC )
+    CALL GC_CheckVar( 'State_Met%THETA_SATU', 0, RC )
+    IF ( RC /= GC_SUCCESS ) RETURN
+    State_Met%THETA_SATU = 0
+    CALL Register_MetField( am_I_Root, 'THETA_SATU', State_Met%THETA_SATU, &
                             State_Met, RC )
     IF ( RC /= GC_SUCCESS ) RETURN
 

@@ -39,5 +39,8 @@ THETA_WILT:units        = fraction
 #-            
 THETA_CRIT              = REAL*4::lon,lat
 THETA_CRIT:units        = fraction
+#-            
+THETA_SATU              = REAL*4::lon,lat
+THETA_SATU:units        = fraction
 
 #EOP

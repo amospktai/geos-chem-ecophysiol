@@ -872,6 +872,7 @@
       USE State_Chm_Mod,      ONLY : ChmState
       USE State_Met_Mod,      ONLY : MetState
       USE State_Diag_Mod,     ONLY : DgnState
+      USE Ecophy_Mod,         ONLY : DO_ECOPHY
 !
 ! !INPUT PARAMETERS:
 !

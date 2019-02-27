@@ -671,6 +671,7 @@ CONTAINS
     USE Ocean_Mercury_Mod,  ONLY : Init_Ocean_Mercury
     USE POPs_Mod,           ONLY : Init_POPs
     USE Seasalt_Mod,        ONLY : Init_SeaSalt
+    USE SoilMap_Mod,        ONLY : Init_Soilmap
     USE State_Chm_Mod,      ONLY : ChmState
     USE State_Diag_Mod,     ONLY : DgnState
     USE Sulfate_Mod,        ONLY : Init_Sulfate
@@ -790,8 +791,15 @@ CONTAINS
        !       deposition is turned off.
        !--------------------------------------------------------------
        IF ( Input_Opt%LECOPHY ) THEN
+          ! Initialize soil parameters map first
+          CALL Init_SoilMap( am_I_Root, Input_Opt, RC )
+          IF ( RC /= GC_SUCCESS ) THEN
+             ErrMsg = 'Error encountered in "Init_SoilMap"!'
+             CALL GC_Error( ErrMsg, RC, ThisLoc )
+             RETURN
+          ENDIF
 
-          ! Setup for ecophysiology
+          ! Initialize for ecophysiology module
           CALL Init_Ecophy( am_I_Root, Input_Opt, State_Chm, State_Diag, RC )
           IF ( RC /= GC_SUCCESS ) THEN
              ErrMsg = 'Error encountered in "Init_Ecophy"!'
