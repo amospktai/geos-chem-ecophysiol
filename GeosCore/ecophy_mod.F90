@@ -73,7 +73,7 @@
       REAL,     PARAMETER   :: FLUXO3_CRIT   (NUMPFT) = (/ 1.6,  1.6,  5.0,  5.0,  1.6  /)
       REAL,     PARAMETER   :: THRESHOLD              = 1.0e-3
       ! Constants
-      REAL,     PARAMETER   :: RSTARG = 8.31446        ! Switch to call physconstant.F later (in Headers) 
+      ! REAL,     PARAMETER   :: RSTARG = 8.31446        ! Switch to call physconstant.F later (in Headers) 
       REAL,     PARAMETER   :: CO2_O2_RATIO = 1.6
 !
 ! PRIVATE TYPES:
@@ -92,7 +92,7 @@
       INTEGER,  ALLOCATABLE :: IPFT          ( :   )
       LOGICAL               :: LECOPHY
       LOGICAL               :: LO3_DAMAGE
-      INTEGER               :: NUMPFT
+      ! INTEGER               :: NUMPFT
 
       !=================================================================
       ! MODULE ROUTINES -- follow below the "CONTAINS" statement
@@ -166,7 +166,7 @@
       REAL       :: LAI           
       LOGICAL    :: LO3_DAMAGE    
       REAL       :: SOIL_WETNESS  
-      INTEGER    :: PFT     
+      ! INTEGER    :: PFT     
       REAL       :: G_CAN_OUT     
       REAL       :: G_LEAF_OUT    
       REAL       :: CO2_IN        
@@ -181,13 +181,13 @@
       ! Arrays
 
       ! Pointers
-      REAL(fp), POINTER :: G_CANOPY       ( :,:,: )
-      REAL(fp), POINTER :: A_CANOPY       ( :,:,: )
-      REAL(fp), POINTER :: R_CANOPY       ( :,:,: )
-      REAL(fp), POINTER :: A_NET_CANOPY   ( :,:,: )
-      REAL(fp), POINTER :: FLXO3_CANOPY   ( :,:,: )
-      REAL(fp), POINTER :: BETA_O3        ( :,:,: )
-      REAL(fp), POINTER :: BETA_SM        ( :,:,: )   
+      ! REAL(fp), POINTER :: G_CANOPY       ( :,:,: )
+      ! REAL(fp), POINTER :: A_CANOPY       ( :,:,: )
+      ! REAL(fp), POINTER :: R_CANOPY       ( :,:,: )
+      ! REAL(fp), POINTER :: A_NET_CANOPY   ( :,:,: )
+      ! REAL(fp), POINTER :: FLXO3_CANOPY   ( :,:,: )
+      ! REAL(fp), POINTER :: BETA_O3        ( :,:,: )
+      ! REAL(fp), POINTER :: BETA_SM        ( :,:,: )   
 
       ! For ESMF, need to assign these from Input_Opt (copied from drydep_mod)
       LOGICAL       :: LPRT
@@ -205,13 +205,13 @@
       ' -> at Do_ECOPHY (in module GeosCore/ecophysiology.F90)' 
 
       ! Point to columns of derived-type object fields
-      G_CANOPY     => State_Chm%G_CAN     
-      A_CANOPY     => State_Chm%A_CAN     
-      R_CANOPY     => State_Chm%RESP     
-      A_NET_CANOPY => State_Chm%A_NET 
-      FLXO3_CANOPY => State_Chm%FLXO3 
-      BETA_O3      => State_Chm%BETA_O3      
-      BETA_SM      => State_Chm%BETA_SM   
+      ! G_CANOPY     => State_Chm%G_CAN     
+      ! A_CANOPY     => State_Chm%A_CAN     
+      ! R_CANOPY     => State_Chm%RESP     
+      ! A_NET_CANOPY => State_Chm%A_NET 
+      ! FLXO3_CANOPY => State_Chm%FLXO3 
+      ! BETA_O3      => State_Chm%BETA_O3      
+      ! BETA_SM      => State_Chm%BETA_SM   
 
       ! get inputs for the module
       CALL GET_ECOPHY_INPUTS( State_Met,    State_Chm, Input_Opt,&
@@ -826,7 +826,7 @@
                                     TEMPK,        SPHU,                &
                                     PAR_ABSORBED, PRESSURE,  CO2,      &
                                     O2,           LAI,       O3,       &
-                                    LO3_DAMAGE,   SOIL_WETNESS,        &
+                                    LO3_DAMAGE,   SOIL_WETNESS         &
                                     )
 !
 ! !USES:
