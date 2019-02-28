@@ -132,7 +132,7 @@
       LOGICAL,        INTENT(IN)    :: am_I_Root   ! Is this the root CPU?!
       INTEGER,        INTENT(IN)    :: I           ! longitude index
       INTEGER,        INTENT(IN)    :: J           ! latitude index
-      INTEGER,        INTENT(IN)    :: PFT         ! PFT index
+!       INTEGER,        INTENT(IN)    :: PFT         ! PFT index
       INTEGER,        INTENT(IN)    :: LDT         ! Land type index
       TYPE(OptInput), INTENT(INOUT) :: Input_Opt   ! Input Options object
       TYPE(MetState), INTENT(INOUT) :: State_Met   ! Meteorology State object
@@ -154,22 +154,24 @@
 ! !LOCAL VARIABLES:
 !
       ! Scalars
-      !  Note: Read subroutine DO_PHOTOSYNTHESIS for descriptions. 
-      REAL       :: TEMPK         
-      REAL       :: SPHU          
+      CHARACTER(LEN=255) :: ErrMsg, ThisLoc
+
+      !  Note: Read subroutine DO_PHOTOSYNTHESIS for descriptions.
+      REAL       :: TEMPK
+      REAL       :: SPHU
       REAL       :: RA            
       REAL       :: PAR_ABSORBED  
       REAL       :: PRESSURE      
       REAL       :: CO2           
       REAL       :: O2            
       REAL       :: O3            
-      REAL       :: LAI           
-      LOGICAL    :: LO3_DAMAGE    
-      REAL       :: SOIL_WETNESS  
-      ! INTEGER    :: PFT     
-      REAL       :: G_CAN_OUT     
-      REAL       :: G_LEAF_OUT    
-      REAL       :: CO2_IN        
+      REAL       :: LAI
+      LOGICAL    :: LO3_DAMAGE
+      REAL       :: SOIL_WETNESS
+      INTEGER    :: PFT
+      REAL       :: G_CAN_OUT
+      REAL       :: G_LEAF_OUT
+      REAL       :: CO2_IN
       REAL       :: A_CAN_OUT    
       REAL       :: A_NET_OUT     
       REAL       :: RESP_CAN_OUT  
@@ -199,10 +201,9 @@
       RC = GC_SUCCESS
 
       ! Initialize
-      SpcInfo => NULL()
       ErrMsg  = ''
       ThisLoc = &
-      ' -> at Do_ECOPHY (in module GeosCore/ecophysiology.F90)' 
+      ' -> at Do_ECOPHY (in module GeosCore/ecophysiology.F90)'
 
       ! Point to columns of derived-type object fields
       ! G_CANOPY     => State_Chm%G_CAN     
@@ -211,10 +212,10 @@
       ! A_NET_CANOPY => State_Chm%A_NET 
       ! FLXO3_CANOPY => State_Chm%FLXO3 
       ! BETA_O3      => State_Chm%BETA_O3      
-      ! BETA_SM      => State_Chm%BETA_SM   
+      ! BETA_SM      => State_Chm%BETA_SM
 
       ! get inputs for the module
-      CALL GET_ECOPHY_INPUTS( State_Met,    State_Chm, Input_Opt,&
+      CALL GET_ECOPHY_INPUTS( State_Met,    State_Chm,           &
                               TEMPK,        SPHU,                &
                               PAR_ABSORBED, PRESSURE,  CO2,      &
                               O2,           LAI,       O3,       &
@@ -265,13 +266,13 @@
       ENDIF
 
       ! Nullify pointers
-      NULLIFY( G_CANOPY     )
-      NULLIFY( A_CANOPY     )
-      NULLIFY( R_CANOPY     )
-      NULLIFY( A_NET_CANOPY )
-      NULLIFY( FLXO3_CANOPY )
-      NULLIFY( BETA_O3      )
-      NULLIFY( BETA_SM      )
+!       NULLIFY( G_CANOPY     )
+!       NULLIFY( A_CANOPY     )
+!       NULLIFY( R_CANOPY     )
+!       NULLIFY( A_NET_CANOPY )
+!       NULLIFY( FLXO3_CANOPY )
+!       NULLIFY( BETA_O3      )
+!       NULLIFY( BETA_SM      )
 
       END SUBROUTINE DO_ECOPHY
 !EOC
@@ -848,7 +849,6 @@
       !---------------------------------------------------------------------------------------
       ! TEMPK         : Temperature in Kelvin                             [K]
       ! SPHU          : Specific humidity in canopy layer                 [kg H2O / kg air]
-      ! RA            : Aerodynamic and boundary layer resistance         [s m^-1]
       ! PAR_ABSORBED  : Absorbed PAR                                      [W m^-2]
       ! PRESSURE      : Atmospheric Pressure in canopy layer              [Pa]
       ! CO2           : Ambient CO2 mole fraction                         [kg / kg dry]
@@ -858,12 +858,11 @@
       ! LO3_DAMAGE    : Logical switch for ozone damage scheme            []
       ! SOIL_WETNESS  : Fraction of moisture in soil pores                []
       !---------------------------------------------------------------------------------------
-      REAL,     INTENT(OUT) :: TEMPK         
-      REAL,     INTENT(OUT) :: SPHU          
-      REAL,     INTENT(OUT) :: RA            
-      REAL,     INTENT(OUT) :: PAR_ABSORBED  
-      REAL,     INTENT(OUT) :: PRESSURE      
-      REAL,     INTENT(OUT) :: CO2           
+      REAL,     INTENT(OUT) :: TEMPK
+      REAL,     INTENT(OUT) :: SPHU
+      REAL,     INTENT(OUT) :: PAR_ABSORBED
+      REAL,     INTENT(OUT) :: PRESSURE
+      REAL,     INTENT(OUT) :: CO2
       REAL,     INTENT(OUT) :: O2            
       REAL,     INTENT(OUT) :: O3            
       REAL,     INTENT(OUT) :: LAI           
@@ -896,13 +895,13 @@
       PRESSURE      = State_Met%SLP( I,J )
       ! CO2 mole fraction [mol/mol]
       CO2           = State_Chm%Species( I,J,1,id_CO2 ) * AIRMW &
-                    \ State_Chm%SpcData( id_CO2 )%Info%MW_g
+                    / State_Chm%SpcData( id_CO2 )%Info%MW_g
       ! O2 mole fraction [mol/mol]
       O2            = State_Chm%Species( I,J,1,id_O2  ) * AIRMW &
-                    \ State_Chm%SpcData( id_O2  )%Info%MW_g
+                    / State_Chm%SpcData( id_O2  )%Info%MW_g
       ! O3 mole fraction [mol/mol]
       O3            = State_Chm%Species( I,J,1,id_O3  ) * AIRMW &
-                    \ State_Chm%SpcData( id_O3  )%Info%MW_g
+                    / State_Chm%SpcData( id_O3  )%Info%MW_g
       ! LAI [m^2 m^-2]
       LAI           = State_Met%XLAI( I,J,: )
       ! Root zone soil wetness
@@ -924,7 +923,7 @@
 !\\
 ! !INTERFACE:
 !
-      SUBROUTINE INIT_ECOPHY( am_I_Root, Input_Opt, 
+      SUBROUTINE INIT_ECOPHY( am_I_Root, Input_Opt,     &
                               State_Chm, State_Diag, RC )
 !
 ! !USES:
@@ -1003,6 +1002,7 @@
       ! Get soil map
       ! Get PFT mapping?
 
+      END SUBROUTINE INIT_ECOPHY
 !EOC
 !------------------------------------------------------------------------------
 !                  GEOS-Chem Global Chemical Transport Model                  !

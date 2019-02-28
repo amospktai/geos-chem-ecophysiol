@@ -231,6 +231,7 @@ MODULE Input_Opt_Mod
      REAL(fp)                    :: WETD_CONV_SCAL
      LOGICAL                     :: PBL_DRYDEP    
      LOGICAL                     :: LECOPHY  
+     LOGICAL                     :: LO3_DAMAGE
 
      !----------------------------------------
      ! GAMAP MENU fields
