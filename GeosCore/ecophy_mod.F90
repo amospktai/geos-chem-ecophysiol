@@ -81,14 +81,20 @@
       !========================================================================
       ! MODULE VARIABLES:
       ! THETA_SATU    : Soil moisture at saturation point                 [mm]
+      ! SATU          : THETA_SATU in a single grid box
       ! THETA_CRIT    : Soil moisture at critical point                   [mm]
+      ! CRIT          : THETA_CRIT in a single grid box
       ! THETA_WILT    : Soil moisture at wilting point                    [mm]
+      ! WILT          : THETA_WILT in a single grid box
       ! LO3_DAMAGE    : Logical switch for ozone damage scheme            []
       ! NUMPFT        : Total number of PFTs                              []
       !========================================================================
       REAL,     ALLOCATABLE :: THETA_SATU    ( :,: )    
+      REAL                  :: SATU
       REAL,     ALLOCATABLE :: THETA_CRIT    ( :,: )    
-      REAL,     ALLOCATABLE :: THETA_WILT    ( :,: )  
+      REAL                  :: CRIT
+      REAL,     ALLOCATABLE :: THETA_WILT    ( :,: )   
+      REAL                  :: WILT
       INTEGER,  ALLOCATABLE :: IPFT          ( :   )
       LOGICAL               :: LECOPHY
       LOGICAL               :: LO3_DAMAGE
@@ -165,7 +171,6 @@
       REAL       :: CO2           
       REAL       :: O2            
       REAL       :: O3            
-      REAL       :: LAI
       LOGICAL    :: LO3_DAMAGE
       REAL       :: SOIL_WETNESS
       INTEGER    :: PFT
@@ -181,7 +186,7 @@
       REAL       :: FACTOR_O3     
       REAL       :: BETA       
       ! Arrays
-
+      REAL       :: LAI( : )
       ! Pointers
       ! REAL(fp), POINTER :: G_CANOPY       ( :,:,: )
       ! REAL(fp), POINTER :: A_CANOPY       ( :,:,: )
@@ -235,7 +240,7 @@
       ! simulate plant processes
       CALL DO_PHOTOSYNTHESIS( TEMPK,        SPHU,       RA,           &
                               PAR_ABSORBED, PRESSURE,   CO2,          &
-                              O2,           LAI,        O3,           &
+                              O2,           LAI(PFT),   O3,           &
                               LO3_DAMAGE,   SOIL_WETNESS,             &
                               G_CAN_OUT,    A_CAN_OUT,  RESP_CAN_OUT, &
                               G_LEAF_OUT,   CO2_IN,     A_NET_OUT,    &
@@ -475,7 +480,7 @@
           CALL PHOTOSYNTHESIS_LIMITS( CO2_IN,       CO2_GAMMA,    &
                                       O2, APAR,     PRESSURE,     &
                                       TEMPC,        V_CMAX,       & 
-                                      PFT,         RATE_LIGHT,    &
+                                      PFT,          RATE_LIGHT,   &
                                       RATE_PRODUCT, RATE_RUBISCO  )                                
           CALL SOLVE_COLIMIT( RATE_LIGHT,   RATE_PRODUCT, &
                               RATE_RUBISCO, A_GROSS      )
@@ -671,20 +676,20 @@
 
       !---------------------------------------------------------------------------------------
       ! SOIL_WETNESS    : Volumetric mean moisture concentration in root zone divided by porosity 
-      ! THETA_SATU      : Volumetric soil moisture at saturation (= porosity)
-      ! THETA_CRIT      : Volumetric soil moisture at critical point (above which
+      ! SATU            : Volumetric soil moisture at saturation (= porosity)
+      ! CRIT            : Volumetric soil moisture at critical point (above which
       !                   plants are no longer stressed by soil moisture)
-      ! THETA_WILT      : Volumetric soil moisture at wilting point (below which
+      ! WILT            : Volumetric soil moisture at wilting point (below which
       !                   photosynthesis is stopped by limited soil moisture)
       ! BETA            : Moisture stress factor
       !---------------------------------------------------------------------------------------
       REAL,     INTENT(IN)  :: SOIL_WETNESS 
-      REAL,     INTENT(IN)  :: THETA_SATU 
-      REAL,     INTENT(IN)  :: THETA_CRIT 
-      REAL,     INTENT(IN)  :: THETA_WILT   
+      REAL,     INTENT(IN)  :: SATU 
+      REAL,     INTENT(IN)  :: CRIT 
+      REAL,     INTENT(IN)  :: WILT   
       REAL,     INTENT(OUT) :: BETA
       
-      BETA =  ( SOIL_WETNESS - THETA_WILT ) / ( THETA_CRIT - THETA_WILT ) 
+      BETA =  ( SOIL_WETNESS*SATU - WILT ) / ( CRIT - WILT ) 
       BETA = MIN( MAX( 0.0, BETA ), 1.0 )
       END SUBROUTINE MOIST_STRESS
       
@@ -782,33 +787,6 @@
                    * ( a3 + TEMPC * ( a4 + TEMPC * ( a5 + TEMPC * a6 ) ) ) ) ) )
       END FUNCTION E_SAT
       
-!      SUBROUTINE PFT_PARAMS( NUMPFT,      K_EXTINCT,   ALPHA,       &
-!                             OMEGA,       F_DARKRESP,  K_EXTINCT,   &
-!                             R_GROWTH,    LEAF_N_TOP,  T_LOW,       &
-!                             T_UPP,       FLUXO3_CRIT, FACTOR_O3,   &
-!                             G_LEAF_MIN,  IS_C4_PLANT, f0,          &
-!                             )
-!! Define all PFT-specific parameters
-!! Input parameters
-!      INTEGER,  INTENT(IN)    :: NUMPFT
-!! Output parameters 
-!      REAL,     INTENT(OUT)   :: K_EXTINCT   (NUMPFT) ! PAR extinction coefficient [m^-1]
-!      REAL,     INTENT(OUT)   :: ALPHA       (NUMPFT) ! Quantum efficiency [mol CO2 m^-2 s^-1]
-!      REAL,     INTENT(OUT)   :: OMEGA       (NUMPFT) ! Leaf scattering coefficient for PAR
-!      REAL,     INTENT(OUT)   :: F_DARKRESP  (NUMPFT) ! Dark respiration coefficient
-!      REAL,     INTENT(OUT)   :: R_GROWTH    (NUMPFT) ! Growth respiration coefficient
-!      REAL,     INTENT(OUT)   :: LEAF_N_TOP  (NUMPFT) ! Leaf N concentration at canopy top
-!      REAL,     INTENT(OUT)   :: T_LOW       (NUMPFT) ! Lower temperature parameter [deg C]
-!      REAL,     INTENT(OUT)   :: T_UPP       (NUMPFT) ! Upper temperature parameter [deg C]
-!      REAL,     INTENT(OUT)   :: FLUXO3_CRIT (NUMPFT) ! Threshold ozone flux [nmol m^-2 s^-1]
-!      REAL,     INTENT(OUT)   :: FACTOR_O3   (NUMPFT) ! Ozone factor [mmol^-1 m^-2]
-!      REAL,     INTENT(OUT)   :: G_LEAF_MIN  (NUMPFT) ! Minimum leaf conductance for H2O [m s^-1]
-!      INTEGER,  INTENT(OUT)   :: IS_C4_PLANT (NUMPFT) ! IS_C4_PLANT = 1 if the PFT is C4 plant, 
-!                                                      !             = 0 if it is not
-!      REAL,     INTENT(OUT)   :: f0          (NUMPFT) ! Calibration parameter, from Cox et al. (1998)
-!      REAL,     INTENT(OUT)   :: D_STAR      (NUMPFT) ! Calibration parameter, from Cox et al. (1998)
-!      
-!      END SUBROUTINE PFT_PARAMS
 
 !------------------------------------------------------------------------------
 !                  GEOS-Chem Global Chemical Transport Model                  !
@@ -817,17 +795,18 @@
 !
 ! !IROUTINE: get_ecophy_inputs
 !
-! !DESCRIPTION: Subroutine GET\_ECOPHY_INPUTS get time-dependent inputs 
+! !DESCRIPTION: Subroutine GET\_ECOPHY_INPUTS get inputs 
 !  from Met and Chem State objects and Input Options.
 !\\
 !\\
 ! !INTERFACE:
 !
-      SUBROUTINE GET_ECOPHY_INPUTS( State_Met,    State_Chm,           &
+      SUBROUTINE GET_ECOPHY_INPUTS( State_Met,    State_Chm, I, J,     &
                                     TEMPK,        SPHU,                &
                                     PAR_ABSORBED, PRESSURE,  CO2,      &
                                     O2,           LAI,       O3,       &
                                     LO3_DAMAGE,   SOIL_WETNESS         &
+                                    WILT, CRIT,   SATU,                &
                                     )
 !
 ! !USES:
@@ -840,9 +819,13 @@
       !---------------------------------------------------------------------------------------
       ! State_Met     : Meteorology State Object
       ! State_Chm     : Chemistry State Object
+      ! I             : Current lon index
+      ! J             : Current lat index
       !---------------------------------------------------------------------------------------
       Type(MetState), INTENT(IN)  :: State_Met
       Type(ChmState), INTENT(IN)  :: State_Chm
+      INTEGER,        INTENT(IN)  :: I
+      INTEGER,        INTENT(IN)  :: J
 !
 ! !OUTPUT PARAMETERS:
 !
@@ -865,14 +848,14 @@
       REAL,     INTENT(OUT) :: CO2
       REAL,     INTENT(OUT) :: O2            
       REAL,     INTENT(OUT) :: O3            
-      REAL,     INTENT(OUT) :: LAI           
+      REAL,     INTENT(OUT) :: LAI ( : )       
       LOGICAL,  INTENT(OUT) :: LO3_DAMAGE    
       REAL,     INTENT(OUT) :: SOIL_WETNESS  
 !
 ! !LOCAL VARIABLES:
 !
       REAL    :: PARDR, PARDF, PAR
-      INTEGER :: I, J
+      ! INTEGER :: I, J
       INTEGER :: id_CO2, id_O2, id_O3
 
       ! Find tracer indices with function the Ind_() function
@@ -905,11 +888,349 @@
       ! LAI [m^2 m^-2]
       LAI           = State_Met%XLAI( I,J,: )
       ! Root zone soil wetness
-      SOIL_WETNESS  = State_Met%GWETROOT(I,J)
+      SOIL_WETNESS  = State_Met%GWETROOT( I,J )
+      ! Soil moisture at saturation 
+      SATU          = THETA_SATU( I,J )
+      ! Soil moisture at critical point 
+      CRIT          = THETA_CRIT( I,J )
+      ! Soil moisture at wilting point 
+      WILT          = THETA_WILT( I,J )
+      ! NOTE: Leave possibility to call soil matric potentials instead 
+      !       of soil moistures
        ! END DO
        ! END DO
       END SUBROUTINE GET_ECOPHY_INPUTS
 !EOC
+!------------------------------------------------------------------------------
+!                  GEOS-Chem Global Chemical Transport Model                  !
+!------------------------------------------------------------------------------
+!BOP
+!
+! !MODULE: hadgem2_soilmap_mod.F90
+!
+! !DESCRIPTION: Module HADGEM2\_SOILMAP\_MOD reads the HadGEM2 soil map and
+!  computes the THETA_WILT and THETA_CRIT State\_Met arrays. 
+!\\
+!\\
+! !INTERFACE: 
+!
+MODULE HadGEM2_SoilMap_Mod
+!
+! !USES:
+!
+!  USE CMN_SIZE_MOD                      ! Size parameters
+  USE ERROR_MOD                         ! Error checking routines
+  USE GC_GRID_MOD                       ! Horizontal grid definition
+  USE MAPPING_MOD                       ! Mapping weights & areas
+!  USE PhysConstants                     ! Physical constants
+  USE PRECISION_MOD                     ! For GEOS-Chem Precision (fp)
+
+  IMPLICIT NONE
+  PRIVATE
+!
+! !PUBLIC MEMBER FUNCTIONS:
+!
+  PUBLIC  :: Init_Soilmap
+  PUBLIC  :: Compute_Soilmap
+  PUBLIC  :: Cleanup_SoilMap
+!                                                                                              
+!  The variables are defined as follows:
+!      State_Met%THETA_WILT(I,J)    : Volumetric soil moisture content at wilting point 
+!      State_Met%THETA_CRIT(I,J)    : Volumetric soil moisture content at critical point
+!      State_Met%THETA_SATU(I,J)    : Volumetric soil moisture content at saturation
+!                                                  
+!  NOTES: 
+!  (1) These parameters are used by ecophysiology modules
+!
+! !REVISION HISTORY: 
+!  09 Feb 2019 - J. Lam - Initial version
+!EOP
+!------------------------------------------------------------------------------
+!BOC
+!
+! !PRIVATE TYPES:
+!
+  ! Scalars
+  INTEGER              :: I_SOIL       ! # of lons (0.5 x 0.5)
+  INTEGER              :: J_SOIL       ! # of lats (0.5 x 0.5)
+  REAL(fp)             :: D_LON         ! Delta longitude, HadGEM2 grid [degrees]
+  REAL(fp)             :: D_LAT         ! Delta latitude,  HadGEM2 grid [degrees]
+
+  ! Arrays
+  REAL*4,  ALLOCATABLE :: lon       (:  )  ! Lon centers, HadGEM2 grid [degrees]
+  REAL*4,  ALLOCATABLE :: lat       (  :)  ! Lat centers, HadGEM2 grid [degrees]
+  INTEGER, ALLOCATABLE :: THETA_WILT(:,:)  ! Soil moisture at wilting point 
+  INTEGER, ALLOCATABLE :: THETA_CRIT(:,:)  ! Soil moisture at critical point 
+  INTEGER, ALLOCATABLE :: THETA_SATU(:,:)  ! Soil moisture at saturation point   
+
+CONTAINS
+!EOC
+!------------------------------------------------------------------------------
+!                  GEOS-Chem Global Chemical Transport Model                  !
+!------------------------------------------------------------------------------
+!BOP
+!
+! !IROUTINE: init_soilmap
+!
+! !DESCRIPTION: Subroutine INIT\_SOILMAP reads HadGEM2 soil map 
+! information from disk (in netCDF format).
+!\\
+!\\
+! !INTERFACE:
+!
+  SUBROUTINE Init_SoilMap( am_I_Root, Input_Opt, RC )
+!
+! !USES:
+!
+
+    USE ErrCode_Mod
+    USE Input_Opt_Mod, ONLY : OptInput
+    USE m_netcdf_io_open
+    USE m_netcdf_io_read
+    USE m_netcdf_io_readattr
+    USE m_netcdf_io_close
+    
+    IMPLICIT NONE
+    
+#   include "netcdf.inc"
+!
+! !INPUT PARAMETERS:
+!
+    LOGICAL,        INTENT(IN)  :: am_I_Root   ! Are we on the root CPU?
+    TYPE(OptInput), INTENT(IN)  :: Input_Opt   ! Input Options object
+!
+! !OUTPUT PARAMETERS:
+!
+    INTEGER,        INTENT(OUT) :: RC          ! Success or failure?
+!
+! !REMARKS:
+!  Assumes that you have:
+!  (1) A netCDF library (either v3 or v4) installed on your system
+!  (2) The NcdfUtilities package (from Bob Yantosca) source code
+!  
+! !REVISION HISTORY:
+!  09 Feb 2019 - J. Lam - Initial version
+!EOP
+!------------------------------------------------------------------------------
+!BOC
+!
+! !LOCAL VARIABLES:
+!
+      !======================================================================
+      ! Variable declarations
+      !======================================================================
+       
+      ! Scalars
+      INTEGER            :: I, J               ! Loop indices
+      INTEGER            :: fId                ! netCDF file ID
+      INTEGER            :: as                 ! Allocation status
+       
+      ! Character strings
+      CHARACTER(LEN=255) :: nc_dir             ! netCDF directory name
+      CHARACTER(LEN=255) :: nc_file            ! netCDF file name
+      CHARACTER(LEN=255) :: nc_path            ! netCDF path name
+      CHARACTER(LEN=255) :: v_name             ! netCDF variable name 
+      CHARACTER(LEN=255) :: a_name             ! netCDF attribute name
+      CHARACTER(LEN=255) :: a_val              ! netCDF attribute value
+       
+      ! Arrays for netCDF start and count values
+      INTEGER            :: st1d(1), ct1d(1)   ! For 1D arrays    
+      INTEGER            :: st2d(2), ct2d(2)   ! For 2D arrays 
+      
+      !=================================================================
+      ! Init_Soilmap begins here!
+      !=================================================================
+        
+      ! Initialize
+      RC        = GC_SUCCESS
+      ErrMsg    = ''
+      ThisLoc   = ' -> at Init_Soilmap (in module GeosCore/soilmap_mod.F90)'
+      
+      !======================================================================
+      ! Initialize variables
+      !======================================================================
+
+      ! I_SOIL  = 192                                      ! # lons (1.25x1.875)
+      ! J_SOIL  = 145                                      ! # lats (1.25x1.875)
+      ! D_LON   = 1.875e+0_fp                              ! Delta lon [degrees]
+      ! D_LAT   = 1.250e+0_fp                              ! Delta lat [degrees]
+      ! nc_file = 'HadGEM2ES_Soil_Ancil.nc'                ! Input file name
+      I_SOIL  = IIPAR
+      J_SOIL  = JJPAR
+      D_LON   = 2.5e+0_fp
+      D_LAT   = 2.0e+0_fp
+      nc_file = 'HadGEM2ES_Soil_Ancil_2x2.5.nc'            ! Input file name
+
+      ! Allocate arrays
+      ALLOCATE( lon( I_SOIL ), STAT=RC )
+      CALL GC_CheckVar( 'soilmap_mod:lon', 0, RC)
+      IF ( RC /= GC_SUCCESS ) RETURN 
+      lon( : ) = 0e+0_f8
+
+      ALLOCATE( lat( J_SOIL ), STAT=RC )
+      CALL GC_CheckVar( 'soilmap_mod:lat', 0, RC)
+      IF ( RC /= GC_SUCCESS ) RETURN 
+      lat( :,: ) = 0e+0_f8
+
+      ALLOCATE( THETA_WILT( I_SOIL, J_SOIL ), STAT=RC )
+      CALL GC_CheckVar( 'soilmap_mod:THETA_WILT', 0, RC)
+      IF ( RC /= GC_SUCCESS ) RETURN 
+      THETA_WILT( :,: ) = 0e+0_f8
+      
+      ALLOCATE( THETA_CRIT( I_SOIL, J_SOIL ), STAT=RC )
+      CALL GC_CheckVar( 'soilmap_mod:THETA_CRIT', 0, RC)
+      IF ( RC /= GC_SUCCESS ) RETURN 
+      THETA_CRIT( :,: ) = 0e+0_f8
+
+      ALLOCATE( THETA_SATU( I_SOIL, J_SOIL ), STAT=RC )
+      CALL GC_CheckVar( 'soilmap_mod:THETA_SATU', 0, RC)
+      IF ( RC /= GC_SUCCESS ) RETURN 
+      THETA_SATU( :,: ) = 0e+0_f8
+
+    !======================================================================
+    ! Open and read data from the netCDF file
+    !======================================================================
+
+    ! Construct file path from directory & file name
+    nc_dir  = TRIM( Input_Opt%CHEM_INPUTS_DIR ) // 'HadGEM2ES_Soil_Ancil/'
+    nc_path = TRIM( nc_dir )                    // TRIM( nc_file )
+
+    ! Open file for read
+    CALL Ncop_Rd( fId, TRIM(nc_path) )
+     
+    ! Echo info to stdout
+    IF ( am_I_Root ) THEN
+       WRITE( 6, 100 ) REPEAT( '%', 79 )
+       WRITE( 6, 110 ) TRIM(nc_file)
+       WRITE( 6, 120 ) TRIM(nc_dir)
+    ENDIF
+
+    !----------------------------------------
+    ! VARIABLE: lon
+    !----------------------------------------
+     
+    ! Variable name
+    v_name = "longitude"
+    
+    ! Read lon from file
+    st1d   = (/ 1      /)
+    ct1d   = (/ I_SOIL /)
+    CALL NcRd( lon, fId, TRIM(v_name), st1d, ct1d )
+ 
+    ! Read the lon:units attribute
+    a_name = "units"
+    CALL NcGet_Var_Attributes( fId,TRIM(v_name),TRIM(a_name),a_val )
+    
+    ! Echo info to stdout
+    IF ( am_I_Root ) THEN
+       WRITE( 6, 130 ) TRIM(v_name), TRIM(a_val)     
+    ENDIF
+
+    !----------------------------------------
+    ! VARIABLE: lat
+    !----------------------------------------
+    
+    ! Variable name
+    v_name = "latitude"
+    
+    ! Read lat from file
+    st1d   = (/ 1      /)
+    ct1d   = (/ J_SOIL /)
+    CALL NcRd( lat, fId, TRIM(v_name), st1d, ct1d )
+     
+    ! Read the lat:units attribute
+    a_name = "units"
+    CALL NcGet_Var_Attributes( fId,TRIM(v_name),TRIM(a_name),a_val )
+    
+    ! Echo info to stdout
+    IF ( am_I_Root ) THEN
+       WRITE( 6, 130 ) TRIM(v_name), TRIM(a_val) 
+    ENDIF
+
+    !----------------------------------------
+    ! VARIABLE: THETA_WILT
+    !----------------------------------------
+
+    ! Variable name
+    v_name = "sm_wilt"
+
+    ! Read THETA_WILT from file
+    st2d   = (/ 1, 1 /)
+    ct2d   = (/ I_SOIL, J_SOIL /)
+    CALL NcRd( THETA_WILT, fId, TRIM(v_name), st2d, ct2d )
+
+    ! Read the THETA_WILT:units attribute
+    a_name = "units"
+    CALL NcGet_Var_Attributes( fId,TRIM(v_name),TRIM(a_name),a_val )
+    
+    ! Echo info to stdout
+    IF ( am_I_Root ) THEN
+       WRITE( 6, 130 ) TRIM(v_name), TRIM(a_val) 
+    ENDIF
+
+    !----------------------------------------
+    ! VARIABLE: THETA_CRIT
+    !----------------------------------------
+
+    ! Variable name
+    v_name = "sm_crit"
+
+    ! Read THETA_CRIT from file
+    st2d   = (/ 1, 1 /)
+    ct2d   = (/ I_SOIL, J_SOIL /)
+    CALL NcRd( THETA_CRIT, fId, TRIM(v_name), st2d, ct2d )
+
+    ! Read the THETA_CRIT:units attribute
+    a_name = "units"
+    CALL NcGet_Var_Attributes( fId,TRIM(v_name),TRIM(a_name),a_val )
+    
+    ! Echo info to stdout
+    IF ( am_I_Root ) THEN
+       WRITE( 6, 130 ) TRIM(v_name), TRIM(a_val) 
+    ENDIF
+
+    !----------------------------------------
+    ! VARIABLE: THETA_SATU
+    !----------------------------------------
+
+    ! Variable name
+    v_name = "sm_sat"
+
+    ! Read THETA_SATU from file
+    st2d   = (/ 1, 1 /)
+    ct2d   = (/ I_SOIL, J_SOIL /)
+    CALL NcRd( THETA_SATU, fId, TRIM(v_name), st2d, ct2d )
+
+    ! Read the THETA_SATU:units attribute
+    a_name = "units"
+    CALL NcGet_Var_Attributes( fId,TRIM(v_name),TRIM(a_name),a_val )
+    
+    ! Echo info to stdout
+    IF ( am_I_Root ) THEN
+       WRITE( 6, 130 ) TRIM(v_name), TRIM(a_val) 
+    ENDIF
+    
+    !=================================================================
+    ! Cleanup and quit
+    !=================================================================
+    
+    ! Close netCDF file
+    CALL NcCl( fId )
+    
+    ! Echo info to stdout
+    IF ( am_I_Root ) THEN
+       WRITE( 6, 140 )
+       WRITE( 6, 100 ) REPEAT( '%', 79 )
+    ENDIF
+
+    ! FORMAT statements
+100 FORMAT( a                                              )
+110 FORMAT( '%% Opening file  : ',         a               )
+120 FORMAT( '%%  in directory : ',         a, / , '%%'     )
+130 FORMAT( '%% Successfully read ',       a, ' [', a, ']' )
+140 FORMAT( '%% Successfully closed file!'                 )
+
+  END SUBROUTINE Init_SoilMap
 !------------------------------------------------------------------------------
 !                  GEOS-Chem Global Chemical Transport Model                  !
 !------------------------------------------------------------------------------
@@ -980,26 +1301,27 @@
       ! Only allocate these if ecophysiology is activated
       !===================================================================
       ALLOCATE( THETA_SATU( IIPAR, JJPAR ), STAT=RC )
-      CALL GC_CheckVar( 'ecophy_mod:THETA_SATU', 0, RC)
+      CALL GC_CheckVar( 'ecophy_mod:THETA_SATU', 0, RC )
       IF ( RC /= GC_SUCCESS ) RETURN 
       THETA_SATU( :,: ) = 0e+0_f8
 
       ALLOCATE( THETA_CRIT( IIPAR, JJPAR ), STAT=RC )
-      CALL GC_CheckVar( 'ecophy_mod:THETA_CRIT', 0, RC)
+      CALL GC_CheckVar( 'ecophy_mod:THETA_CRIT', 0, RC )
       IF ( RC /= GC_SUCCESS ) RETURN 
       THETA_CRIT( :,: ) = 0e+0_f8
 
       ALLOCATE( THETA_WILT( IIPAR, JJPAR ), STAT=RC )
-      CALL GC_CheckVar( 'ecophy_mod:THETA_WILT', 0, RC)
+      CALL GC_CheckVar( 'ecophy_mod:THETA_WILT', 0, RC )
       IF ( RC /= GC_SUCCESS ) RETURN 
       THETA_WILT( :,: ) = 0e+0_f8
 
       ALLOCATE( IPFT( NUMPFT ), STAT=RC )
-      CALL GC_CheckVar( 'ecophy_mod:IPFT', 0, RC)
+      CALL GC_CheckVar( 'ecophy_mod:IPFT', 0, RC )
       IF ( RC /= GC_SUCCESS ) RETURN 
       IPFT( : ) = 0
 
       ! Get soil map
+      CALL Init_Soilmap( am_I_Root, Input_Opt, RC )
       ! Get PFT mapping?
 
       END SUBROUTINE INIT_ECOPHY
