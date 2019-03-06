@@ -156,7 +156,7 @@ CONTAINS
       J_SOIL  = JJPAR
       D_LON   = 2.5e+0_fp
       D_LAT   = 2.0e+0_fp
-      nc_file = 'HadGEM2ES_Soil_Ancil_regridded.nc'        ! Input file name
+      nc_file = 'HadGEM2ES_Soil_Ancil_2x2.5.nc'            ! Input file name
 
       ! Allocate arrays
       ALLOCATE( lon( I_SOIL ), STAT=RC )
