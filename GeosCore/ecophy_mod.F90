@@ -225,7 +225,7 @@
                               PAR_ABSORBED, PRESSURE,  CO2,      &
                               O2,           LAI,       O3,       &
                               LO3_DAMAGE,   SOIL_WETNESS         &
-                              WILT, CRIT,   SATU                 &
+                              ! WILT, CRIT,   SATU                 &
                               )  
 
       ! Trap potential errors
@@ -801,8 +801,7 @@
                                     TEMPK,        SPHU,                &
                                     PAR_ABSORBED, PRESSURE,  CO2,      &
                                     O2,           LAI,       O3,       &
-                                    LO3_DAMAGE,   SOIL_WETNESS,        &
-                                    WILT, CRIT,   SATU                 &
+                                    LO3_DAMAGE,   SOIL_WETNESS         &
                                     )
 !
 ! !USES:
@@ -1020,6 +1019,8 @@
       INTEGER            :: I, J               ! Loop indices
       INTEGER            :: fId                ! netCDF file ID
       INTEGER            :: as                 ! Allocation status
+      INTEGER            :: I_OLSON            ! # of lons (0.5 x 0.5)
+      INTEGER            :: J_OLSON            ! # of lats (0.5 x 0.5)
       REAL               :: D_LON              ! Delta longitude, HadGEM2 grid [degrees]
       REAL               :: D_LAT              ! Delta latitude,  HadGEM2 grid [degrees]
 
@@ -1036,6 +1037,8 @@
       ! Arrays for netCDF start and count values
       INTEGER            :: st1d(1), ct1d(1)   ! For 1D arrays    
       INTEGER            :: st2d(2), ct2d(2)   ! For 2D arrays 
+      REAL,  ALLOCATABLE :: lon  (:    )  ! Lon centers, Olson grid [degrees]
+      REAL,  ALLOCATABLE :: lat  (  :  )  ! Lat centers, Olson grid [degrees]
       
       !=================================================================
       ! Init_Soilmap begins here!
