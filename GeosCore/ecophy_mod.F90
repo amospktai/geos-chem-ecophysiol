@@ -225,6 +225,7 @@
                               PAR_ABSORBED, PRESSURE,  CO2,      &
                               O2,           LAI,       O3,       &
                               LO3_DAMAGE,   SOIL_WETNESS         &
+                              WILT, CRIT,   SATU                 &
                               )  
 
       ! Trap potential errors
@@ -447,8 +448,7 @@
     
       ! To modify net photosynthesis rate by soil moisture stress later
       ! Not needed to be inside the loop
-      CALL MOIST_STRESS( SOIL_WETNESS, THETA_SATU, THETA_CRIT, &
-                         THETA_WILT,   BETA                    )
+      CALL MOIST_STRESS( SOIL_WETNESS, BETA )
       
       ! Iterate to find a self-consistent set of photosynthesis,
       ! stomatal conductance and leaf internal CO2 concentration 
@@ -670,8 +670,7 @@
       A_GROSS  = 0.5 * ( - B - SQRT( B * B - 4 * C ) ) 
       END SUBROUTINE SOLVE_COLIMIT
       
-      SUBROUTINE MOIST_STRESS( SOIL_WETNESS, THETA_SATU, THETA_CRIT, &
-                               THETA_WILT,   BETA                    )
+      SUBROUTINE MOIST_STRESS( SOIL_WETNESS, BETA )
 ! Calculate the moisture stress factor BETA
 
       !---------------------------------------------------------------------------------------
@@ -683,10 +682,7 @@
       !                   photosynthesis is stopped by limited soil moisture)
       ! BETA            : Moisture stress factor
       !---------------------------------------------------------------------------------------
-      REAL,     INTENT(IN)  :: SOIL_WETNESS 
-      REAL,     INTENT(IN)  :: SATU 
-      REAL,     INTENT(IN)  :: CRIT 
-      REAL,     INTENT(IN)  :: WILT   
+      REAL,     INTENT(IN)  :: SOIL_WETNESS  
       REAL,     INTENT(OUT) :: BETA
       
       BETA =  ( SOIL_WETNESS*SATU - WILT ) / ( CRIT - WILT ) 
@@ -805,8 +801,8 @@
                                     TEMPK,        SPHU,                &
                                     PAR_ABSORBED, PRESSURE,  CO2,      &
                                     O2,           LAI,       O3,       &
-                                    LO3_DAMAGE,   SOIL_WETNESS         &
-                                    WILT, CRIT,   SATU,                &
+                                    LO3_DAMAGE,   SOIL_WETNESS,        &
+                                    WILT, CRIT,   SATU                 &
                                     )
 !
 ! !USES:
@@ -1024,6 +1020,9 @@
       INTEGER            :: I, J               ! Loop indices
       INTEGER            :: fId                ! netCDF file ID
       INTEGER            :: as                 ! Allocation status
+      REAL               :: D_LON              ! Delta longitude, HadGEM2 grid [degrees]
+      REAL               :: D_LAT              ! Delta latitude,  HadGEM2 grid [degrees]
+
        
       ! Character strings
       CHARACTER(LEN=255) :: nc_dir             ! netCDF directory name
@@ -1032,6 +1031,7 @@
       CHARACTER(LEN=255) :: v_name             ! netCDF variable name 
       CHARACTER(LEN=255) :: a_name             ! netCDF attribute name
       CHARACTER(LEN=255) :: a_val              ! netCDF attribute value
+      CHARACTER(LEN=255) :: Msg, ErrMsg, ThisLoc
        
       ! Arrays for netCDF start and count values
       INTEGER            :: st1d(1), ct1d(1)   ! For 1D arrays    
