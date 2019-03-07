@@ -912,58 +912,58 @@
 !  computes the THETA_WILT and THETA_CRIT State\_Met arrays. 
 !\\
 !\\
-! !INTERFACE: 
-!
-MODULE HadGEM2_SoilMap_Mod
-!
-! !USES:
-!
-!  USE CMN_SIZE_MOD                      ! Size parameters
-  USE ERROR_MOD                         ! Error checking routines
-  USE GC_GRID_MOD                       ! Horizontal grid definition
-  USE MAPPING_MOD                       ! Mapping weights & areas
-!  USE PhysConstants                     ! Physical constants
-  USE PRECISION_MOD                     ! For GEOS-Chem Precision (fp)
+! ! !INTERFACE: 
+! !
+! MODULE HadGEM2_SoilMap_Mod
+! !
+! ! !USES:
+! !
+! !  USE CMN_SIZE_MOD                      ! Size parameters
+!   USE ERROR_MOD                         ! Error checking routines
+!   USE GC_GRID_MOD                       ! Horizontal grid definition
+!   ! USE MAPPING_MOD                       ! Mapping weights & areas
+! !  USE PhysConstants                     ! Physical constants
+!   USE PRECISION_MOD                     ! For GEOS-Chem Precision (fp)
 
-  IMPLICIT NONE
-  PRIVATE
-!
-! !PUBLIC MEMBER FUNCTIONS:
-!
-  PUBLIC  :: Init_Soilmap
-  PUBLIC  :: Compute_Soilmap
-  PUBLIC  :: Cleanup_SoilMap
-!                                                                                              
-!  The variables are defined as follows:
-!      State_Met%THETA_WILT(I,J)    : Volumetric soil moisture content at wilting point 
-!      State_Met%THETA_CRIT(I,J)    : Volumetric soil moisture content at critical point
-!      State_Met%THETA_SATU(I,J)    : Volumetric soil moisture content at saturation
-!                                                  
-!  NOTES: 
-!  (1) These parameters are used by ecophysiology modules
-!
-! !REVISION HISTORY: 
-!  09 Feb 2019 - J. Lam - Initial version
-!EOP
-!------------------------------------------------------------------------------
-!BOC
-!
-! !PRIVATE TYPES:
-!
-  ! Scalars
-  INTEGER              :: I_SOIL       ! # of lons (0.5 x 0.5)
-  INTEGER              :: J_SOIL       ! # of lats (0.5 x 0.5)
-  REAL(fp)             :: D_LON         ! Delta longitude, HadGEM2 grid [degrees]
-  REAL(fp)             :: D_LAT         ! Delta latitude,  HadGEM2 grid [degrees]
+!   IMPLICIT NONE
+!   PRIVATE
+! !
+! ! !PUBLIC MEMBER FUNCTIONS:
+! !
+!   PUBLIC  :: Init_Soilmap
+!   PUBLIC  :: Compute_Soilmap
+!   PUBLIC  :: Cleanup_SoilMap
+! !                                                                                              
+! !  The variables are defined as follows:
+! !      State_Met%THETA_WILT(I,J)    : Volumetric soil moisture content at wilting point 
+! !      State_Met%THETA_CRIT(I,J)    : Volumetric soil moisture content at critical point
+! !      State_Met%THETA_SATU(I,J)    : Volumetric soil moisture content at saturation
+! !                                                  
+! !  NOTES: 
+! !  (1) These parameters are used by ecophysiology modules
+! !
+! ! !REVISION HISTORY: 
+! !  09 Feb 2019 - J. Lam - Initial version
+! !EOP
+! !------------------------------------------------------------------------------
+! !BOC
+! !
+! ! !PRIVATE TYPES:
+! !
+!   ! Scalars
+!   INTEGER              :: I_SOIL       ! # of lons (0.5 x 0.5)
+!   INTEGER              :: J_SOIL       ! # of lats (0.5 x 0.5)
+!   REAL(fp)             :: D_LON         ! Delta longitude, HadGEM2 grid [degrees]
+!   REAL(fp)             :: D_LAT         ! Delta latitude,  HadGEM2 grid [degrees]
 
-  ! Arrays
-  REAL*4,  ALLOCATABLE :: lon       (:  )  ! Lon centers, HadGEM2 grid [degrees]
-  REAL*4,  ALLOCATABLE :: lat       (  :)  ! Lat centers, HadGEM2 grid [degrees]
-  INTEGER, ALLOCATABLE :: THETA_WILT(:,:)  ! Soil moisture at wilting point 
-  INTEGER, ALLOCATABLE :: THETA_CRIT(:,:)  ! Soil moisture at critical point 
-  INTEGER, ALLOCATABLE :: THETA_SATU(:,:)  ! Soil moisture at saturation point   
+!   ! Arrays
+!   REAL*4,  ALLOCATABLE :: lon       (:  )  ! Lon centers, HadGEM2 grid [degrees]
+!   REAL*4,  ALLOCATABLE :: lat       (  :)  ! Lat centers, HadGEM2 grid [degrees]
+!   INTEGER, ALLOCATABLE :: THETA_WILT(:,:)  ! Soil moisture at wilting point 
+!   INTEGER, ALLOCATABLE :: THETA_CRIT(:,:)  ! Soil moisture at critical point 
+!   INTEGER, ALLOCATABLE :: THETA_SATU(:,:)  ! Soil moisture at saturation point   
 
-CONTAINS
+! CONTAINS
 !EOC
 !------------------------------------------------------------------------------
 !                  GEOS-Chem Global Chemical Transport Model                  !
@@ -1105,47 +1105,47 @@ CONTAINS
        WRITE( 6, 120 ) TRIM(nc_dir)
     ENDIF
 
-    !----------------------------------------
-    ! VARIABLE: lon
-    !----------------------------------------
+    ! !----------------------------------------
+    ! ! VARIABLE: lon
+    ! !----------------------------------------
      
-    ! Variable name
-    v_name = "longitude"
+    ! ! Variable name
+    ! v_name = "longitude"
     
-    ! Read lon from file
-    st1d   = (/ 1      /)
-    ct1d   = (/ I_SOIL /)
-    CALL NcRd( lon, fId, TRIM(v_name), st1d, ct1d )
+    ! ! Read lon from file
+    ! st1d   = (/ 1      /)
+    ! ct1d   = (/ I_SOIL /)
+    ! CALL NcRd( lon, fId, TRIM(v_name), st1d, ct1d )
  
-    ! Read the lon:units attribute
-    a_name = "units"
-    CALL NcGet_Var_Attributes( fId,TRIM(v_name),TRIM(a_name),a_val )
+    ! ! Read the lon:units attribute
+    ! a_name = "units"
+    ! CALL NcGet_Var_Attributes( fId,TRIM(v_name),TRIM(a_name),a_val )
     
-    ! Echo info to stdout
-    IF ( am_I_Root ) THEN
-       WRITE( 6, 130 ) TRIM(v_name), TRIM(a_val)     
-    ENDIF
+    ! ! Echo info to stdout
+    ! IF ( am_I_Root ) THEN
+    !    WRITE( 6, 130 ) TRIM(v_name), TRIM(a_val)     
+    ! ENDIF
 
-    !----------------------------------------
-    ! VARIABLE: lat
-    !----------------------------------------
+    ! !----------------------------------------
+    ! ! VARIABLE: lat
+    ! !----------------------------------------
     
-    ! Variable name
-    v_name = "latitude"
+    ! ! Variable name
+    ! v_name = "latitude"
     
-    ! Read lat from file
-    st1d   = (/ 1      /)
-    ct1d   = (/ J_SOIL /)
-    CALL NcRd( lat, fId, TRIM(v_name), st1d, ct1d )
+    ! ! Read lat from file
+    ! st1d   = (/ 1      /)
+    ! ct1d   = (/ J_SOIL /)
+    ! CALL NcRd( lat, fId, TRIM(v_name), st1d, ct1d )
      
-    ! Read the lat:units attribute
-    a_name = "units"
-    CALL NcGet_Var_Attributes( fId,TRIM(v_name),TRIM(a_name),a_val )
+    ! ! Read the lat:units attribute
+    ! a_name = "units"
+    ! CALL NcGet_Var_Attributes( fId,TRIM(v_name),TRIM(a_name),a_val )
     
-    ! Echo info to stdout
-    IF ( am_I_Root ) THEN
-       WRITE( 6, 130 ) TRIM(v_name), TRIM(a_val) 
-    ENDIF
+    ! ! Echo info to stdout
+    ! IF ( am_I_Root ) THEN
+    !    WRITE( 6, 130 ) TRIM(v_name), TRIM(a_val) 
+    ! ENDIF
 
     !----------------------------------------
     ! VARIABLE: THETA_WILT
