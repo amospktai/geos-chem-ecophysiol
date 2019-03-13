@@ -872,13 +872,14 @@
       USE State_Chm_Mod,      ONLY : ChmState
       USE State_Met_Mod,      ONLY : MetState
       USE State_Diag_Mod,     ONLY : DgnState
+      USE Ecophy_Mod,         ONLY : Do_Ecophy
 !
 ! !INPUT PARAMETERS:
 !
       LOGICAL,        INTENT(IN) :: am_I_Root      ! Are we on the root CPU?
       TYPE(OptInput), INTENT(IN) :: Input_Opt      ! Input Options object
       TYPE(MetState), INTENT(IN) :: State_Met      ! Meteorology state object
-      TYPE(DgnState), INTENT(IN) :: State_Diag     ! Diagnostics state object
+      TYPE(DgnState), INTENT(INOUT) :: State_Diag     ! Diagnostics state object
 
       REAL(f8), INTENT(IN) :: RADIAT (IIPAR,JJPAR) ! Solar radiation [W/m2]
       REAL(f8), INTENT(IN) :: TEMP   (IIPAR,JJPAR) ! Temperature [K]
@@ -1106,6 +1107,7 @@
       INTEGER IOLSON,II,IW
       INTEGER K,LDT
       REAL(f8)  RCLX,RIXX    !,BIOFIT
+      REAL      RS
 
 #if   defined( TOMAS )
       ! For TOMAS aerosol (win, 7/15/09)
@@ -1149,6 +1151,9 @@
       !LOGICAL           :: WriteRa10m
 #endif
 
+      ! Turn on ecophysiology module?
+      LOGICAL       :: LECOPHY
+
       ! For the species database
       INTEGER                :: SpcId
       TYPE(Species), POINTER :: SpcInfo
@@ -1188,6 +1193,9 @@
 
       ! Is this a POPs simmulation?
       IS_POPS = Input_Opt%ITS_A_POPS_SIM  ! clf, 1/3/2011
+
+      ! Turn on ecophysiology module? (Joey Lam, 2/26/2019)
+      LECOPHY = Input_Opt%LECOPHY
 
       ! Size of drycoeff (ckeller, 05/19/14)
       NN = SIZE(DRYCOEFF)
@@ -1317,42 +1325,396 @@
 !*        RT = 1000.0*EXP(-(TEMPC-4.0))
          RT = 1000.0e+0_f8*EXP(-TEMPC-4.0e+0_f8)
 !*
+C          ! Loop over the # of Olson land types in this grid box (I,J)
+C          DO 170 LDT = 1, IREG(I,J)
+
+C             ! If the land type is not represented in grid
+C             ! box  (I,J), then skip to the next land type
+C             IF ( IUSE(I,J,LDT) == 0 ) GOTO 170
+
+C             ! Olson land type index + 1
+C             IOLSON = ILAND(I,J,LDT)+1
+
+
+C !*
+C  170     CONTINUE
+!*
+!*    Set max and min values for bulk surface resistances
+!*
+         DO 190 K = 1,NUMDEP
+            IF (.NOT.LDEP(K)) GOTO 190
+            DO 180 LDT = 1, IREG(I,J)
+               IF ( IUSE(I,J,LDT) == 0 ) GOTO 180
+               RSURFC(K,LDT)= MAX(1.e+0_f8, MIN(RSURFC(K,LDT),
+     &                        9999.e+0_f8))
+ 180        CONTINUE
+ 190     CONTINUE
+!*
+!*    Loop through the different landuse types present in the grid square
+!*
+         DO 500 LDT = 1, IREG(I,J)
+            IF ( IUSE(I,J,LDT) == 0 ) GOTO 500
+            IOLSON = ILAND(I,J,LDT) + 1
+
+!***** Get aerodynamic resistances Ra and Rb. ***********************
+!   The aerodynamic resistance Ra is integrated from altitude z0+d up to the
+!   altitude z1 at which the dry deposition velocity is to be referenced.
+!   The integration corrects for stability using Monin-Obukhov similarity
+!   formulas from Businger et al. [1971] which apply over the range
+!   -2.5 < z/zMO < 1.5 (see their Figure 2).
+!   Under very unstable conditions when z1 > -2.5 zMO, we assume that there is
+!   no resistance to transfer in the convective column between zMO and z1.
+!   Under very stable conditions when z1 > 1.5 zMO, we assume that vertical
+!   transfer in the column between zMO and z1 is strongly suppressed so
+!   that the deposition velocity at altitude z1 is very low.  Under these
+!   conditions we just specify a very large Ra=1.E4 s m-1 (LRGERA = T).
+!**
+!   The Reynolds number REYNO diagnoses whether a surface is
+!   aerodynamically rough (REYNO > 1) or smooth.
+!
+!   NOTE: The criterion "REYNO > 1" was originally "REYNO > 10".
+!         See below for an explanation of why it was changed (hyl, 10/15/99)
+!
+!   Surface is rough in all cases except over water with low wind speeds.
+!   In the smooth case, vertical transport IN THE SUBLAYER near the surface
+!   is limited by molecular diffusion and is therefore very slow; we assign
+!   a large value we assign a large value of Ra + Rb to account for this
+!   effect.  [In Versions 3.2 and earlier we used the formulation for Ra + Rb
+!   given in Equation (12) of Walcek et al [1986] to calculate the aerodynamic
+!   resistance over smooth surfaces.  However, that expression fails when
+!   u* is very small, as it yields negative values of Ra + Rb].
+!   (djj, hyl, bmy, 5/8/00)
+!**
+!   In the aerodynamically rough case, the expression for Ra is as
+!   given in equation (5) of Jacob et al. [1992]:
+!
+!          Ra = (1/ku*)*int(from z0 to z1) (phi(x)/z)dz
+!
+!    where x = (z-D)/zMO, z is the height above ground, and D is the
+!    displacement height which is typically 70-80% of the canopy height
+!    [Brutsaert, 1982].  We change the vertical coordinate so that z=0 at
+!    the displacement height; that's OK since for all practical applications
+!    z1 >> D.  In this manner we don't need to assume any specific value for
+!    the displacement height.  Applying the variable transformation
+!    z -> x = z/zMO, the equation above becomes
+!
+!          Ra = (1/ku*)*int(from x0 to x1) (phi(x)/x)dx   with x=z/zMO
+!
+!    Here phi is a stability correction function originally formulated by
+!    Businger et al. [1971] and given in eqns 5a and 5b of Jacob et al. [1992].
+!    For unstable conditions,
+!
+!          phi(x) = a/sqrt(1-bx)  where a=0.74, b = 9
+!
+!    The analytical solution to the integral is
+!    [Dwight, 1957, integral 192.11]:
+!
+!          int(dx/(x*sqrt(1-bx))) = log(abs((sqrt(1-bx)-1)/(sqrt(1-bx)+1)))
+!
+!    which yields the expression for Ra used in the code for unstable
+!    conditions.  For stable conditions,
+!
+!          phi(x) = a + bx        where a=0.74, b = 4.7
+!
+!    and the analytical solution to the integral is
+!
+!          int((a/x)+b)dx = a*ln(x) + bx
+!
+!    which yields the expression of Ra used in the code for stable conditions.
+!**
+!   The formulation of RB for gases is equation (12) of
+!   Walcek et al. [1986].  The parameterization for deposition of
+!   aerosols does not include an RB term so RB for aerosols is set
+!   to zero.
+!   Modify phi(x) according to the non-local mixing scheme by Holtslag
+!   and Boville [1993] ( Lin, 07/18/08 )
+!   For unstable conditions,
+!          phi(x) = a/sqrt(1-bx)  where a=1.0, b=15.0
+!
+!   For stable conditions,
+!          phi(x) = a + bx
+!              where a=1.0, b=5.0 for 0 <= x <= 1, and
+!                    a=5.0, b=1.0 for x > 1.0
+!*********************************************************************
+
+            CKUSTR = VON_KARMAN * USTAR(I,J)
+
+            REYNO = USTAR(I,J)*ZO(I,J)/XNU
+
+            IF ( OBK(I,J) .EQ. 0.0e+0_f8 )
+     c           WRITE(6,211) OBK(I,J),I,J,LDT
+ 211        FORMAT(1X,'OBK(I,J)=',E11.2,1X,' I,J = ',2I4,1X,
+     c           'LDT=',I3/)
+            CORR1 = CZ/OBK(I,J)
+
+            ! Define Z0OBK
+            Z0OBK = ZO(I,J)/OBK(I,J)
+!==============================================================================
+! This diagnostic requires some fixes. Comment out for now (mps,3/2/18)
+!            ! Set CASTNET height at 10m (krt, 11/2017)
+#if defined( MODEL_GEOS )
+            Z0OBK2M  = MAX(Z0OBK,  2e+0_fp/OBK(I,J) )
+            Z0OBK10M = MAX(Z0OBK, 10e+0_fp/OBK(I,J) )
+#else
+!            Z0OBKKT = 10e+0_fp/OBK(I,J)
+#endif
+!==============================================================================
+
+            LRGERA(I,J) = .FALSE.
+            ! Add option for non-local PBL (Lin, 03/31/09)
+            IF (.NOT. Input_Opt%LNLPBL) THEN
+               IF (CORR1 .GT. 0.e+0_f8) THEN
+                  IF (CORR1 .GT.  1.5e+0_f8) LRGERA(I,J) = .TRUE.
+               ELSEIF(CORR1 .LE. 0.e+0_f8) THEN
+                  IF (CORR1 .LE. -2.5e+0_f8) CORR1 = -2.5e+0_f8
+                  CORR2 = LOG(-CORR1)
+               ENDIF
+            ENDIF
+!*                                 
+            IF (CKUSTR.EQ.0.0e+0_f8) THEN
+
+               WRITE(6,212) I,J,CKUSTR,VON_KARMAN,USTAR(I,J)
+
+ 212           FORMAT(1X,'I,J= ',2I4,1X,'CKUSTR=',E10.1,1X,
+     x              'VON_KARMAN= ',E12.4,1X,'USTAR(I,J)= ',
+
+     x              E12.4)
+               CLOSE(98)
+               STOP             ! debug
+            ENDIF
+!
+!
+!...aerodynamically rough or smooth surface
+! "In the classic study by Nikuradse (1933) the transition from smooth
+!  to rough was examined in pipe flow. He introduced a roughness Reynolds
+!  number Rr = U* Z0 / Nu and found the flow to be smooth for Rr < 0.13
+!  and rough for Rr > 2.5 with a transition regime in between."
+!  (E.B. Kraus and J.A. Businger, Atmosphere-Ocean Interaction, second
+!  edition, P.144-145, 1994). Similar statements can be found in the books:
+!  Evaporation into the atmosphere, by Wilfried Brutsaert, P.59,89, 1982;
+!  or Seinfeld & Pandis, P.858, 1998. Here we assume a sudden transition
+!  point Rr = 1 from smooth to rough, following L. Merlivat (1978, The
+!  dependence of bulk evaporation coefficients on air-water interfacial
+!  conditions as determined by the isotopic method, J. Geophys. Res.,
+!  Oceans & Atmos., 83, C6, 2977-2980). Also refer to Brutsaert's book,
+!  P.125. We used to use the criterion "REYNO > 10" for aerodynamically
+!  rough surface and now change to "REYNO > 1". (hyl, 10/15/99)
+!
+!  11/17/05: D. J. Jacob says to change the criterion for aerodynamically
+!  rough surface to REYNO > 0.1 (eck, djj, bmy, 11/17/05)
+            IF ( REYNO < 0.1e+0_f8 ) GOTO 220
+
+            ! Add option for non-local PBL (Lin, 03/31/09)
+            IF (.NOT. Input_Opt%LNLPBL) THEN
+
+!...aerodynamically rough surface.
+!*
+               IF (CORR1.LE.0.0e+0_f8 .AND. Z0OBK .LT. -1.e+0_f8)THEN
+!*... unstable condition; set RA to zero. (first implemented in V. 3.2)
+                  RA    = 0.e+0_f8
+#if defined( MODEL_GEOS )
+                  !RAKT  = 0.e+0_f8
+                  RA2M  = 0.e+0_f8
+                  RA10M = 0.e+0_f8
+#endif
+
+!*... error trap: prevent CORR1 or Z0OBK from being zero or close to
+!*... zero (ckeller, 3/15/16)
+               ELSEIF ( ABS(CORR1)<=SMALL .OR. ABS(Z0OBK)<=SMALL ) THEN
+                  RA = 0.e+0_f8
+#if defined( MODEL_GEOS )
+                  !RAKT  = 0.e+0_f8
+                  RA2M  = 0.e+0_f8
+                  RA10M = 0.e+0_f8
+#endif
+
+               ELSEIF (CORR1.LE.0.0e+0_f8 .AND. Z0OBK .GE. -1.e+0_f8)
+     &          THEN
+!*... unstable conditions; compute Ra as described above.
+                  DUMMY1 = (1.e+0_f8 - 9e+0_f8*CORR1)**0.5e+0_f8
+                  DUMMY2 = (1.e+0_f8 - 9e+0_f8*Z0OBK)**0.5e+0_f8
+                  DUMMY3 = ABS((DUMMY1 - 1.e+0_f8)/(DUMMY1 + 1.e+0_f8))
+                  DUMMY4 = ABS((DUMMY2 - 1.e+0_f8)/(DUMMY2 + 1.e+0_f8))
+                  RA = 0.74e+0_f8* (1.e+0_f8/CKUSTR) *
+     &                 LOG(DUMMY3/DUMMY4)
+#if defined( MODEL_GEOS )
+!*... correct ozone to 10m for diagnostic (krt, 11/2017)
+                  !DUMMY2KT=(1.e+0_f8 - 9e+0_f8*Z0OBKKT)**0.5e+0_f8
+                  !DUMMY4KT=ABS((DUMMY2KT-1.e+0_f8)/(DUMMY2KT+1.e+0_f8))
+                  !RAKT = 0.74e+0_f8* (1.e+0_f8/CKUSTR) *
+     &            !     LOG(DUMMY3/DUMMY4KT)
+                  ! 2M
+                  DUMMY1 = (1.e+0_f8 - 9e+0_f8*Z0OBK2M)**0.5e+0_f8
+                  DUMMY3 = ABS((DUMMY1 - 1.e+0_f8)/(DUMMY1 + 1.e+0_f8))
+                  RA2M   = 0.74e+0_f8* (1.e+0_f8/CKUSTR) *
+     &                     LOG(DUMMY3/DUMMY4)
+                  DUMMY1 = (1.e+0_f8 - 9e+0_f8*Z0OBK10M)**0.5e+0_f8
+                  DUMMY3 = ABS((DUMMY1 - 1.e+0_f8)/(DUMMY1 + 1.e+0_f8))
+                  RA10M  = 0.74e+0_f8* (1.e+0_f8/CKUSTR) *
+     &                     LOG(DUMMY3/DUMMY4)
+#endif
+
+               ELSEIF((CORR1.GT.0.0e+0_f8).AND.(.NOT.LRGERA(I,J)))
+     &          THEN
+!*...moderately stable conditions (z/zMO <1); compute Ra as described above
+                  RA = (1e+0_f8/CKUSTR) *
+     &            (.74e+0_f8*LOG(CORR1/Z0OBK) + 4.7e+0_f8*(CORR1-Z0OBK))
+#if defined( MODEL_GEOS )
+     &            !(.74_f8*LOG(CORR1/Z0OBKKT)+4.7_f8*(CORR1-Z0OBKKT))
+                  RA2M = (1e+0_f8/CKUSTR) *
+     &            (0.74_f8*LOG(Z0OBK2M/Z0OBK)+4.7_f8*(Z0OBK2M-Z0OBK))
+                  RA10M = (1e+0_f8/CKUSTR) *
+     &            (0.74_f8*LOG(Z0OBK10M/Z0OBK)+4.7_f8*(Z0OBK10M-Z0OBK))
+#endif
+
+               ELSEIF(LRGERA(I,J)) THEN
+!*... very stable conditions
+                  RA    = 1.e+04_f8
+#if defined( MODEL_GEOS )
+                  !RAKT = 1.e+04_f8
+                  RA2M  = 1.e+04_f8
+                  RA10M = 1.e+04_f8
+#endif
+               ENDIF
+!* check that RA is positive; if RA is negative (as occasionally
+!* happened in version 3.1) send a warning message.
+
+            ELSE
+
+               IF (CORR1.LT.0.0e+0_f8) THEN
+!*... unstable conditions; compute Ra as described above.
+                  !coef_a=1.e+0_f8
+                  !coef_b=15.e+0_f8
+                  DUMMY1 = (1.D0 - 15.e+0_f8*CORR1)**0.5e+0_f8
+                  DUMMY2 = (1.D0 - 15.e+0_f8*Z0OBK)**0.5e+0_f8
+                  DUMMY3 = ABS((DUMMY1 - 1.e+0_f8)/(DUMMY1 + 1.e+0_f8))
+                  DUMMY4 = ABS((DUMMY2 - 1.e+0_f8)/(DUMMY2 + 1.e+0_f8))
+                  RA = 1.e+0_f8 * (1.e+0_f8/CKUSTR) * LOG(DUMMY3/DUMMY4)
+!==============================================================================
+! This diagnostic requires some fixes. Comment out for now (mps,3/2/18)
+!!*... correct ozone to 10m for diagnostic (krt, 11/2017)
+!                  DUMMY2KT = (1.D0 - 15.e+0_f8*Z0OBKKT)**0.5e+0_f8
+!                  DUMMY4KT = ABS((DUMMY2KT - 1.e+0_f8)/
+!     &                 (DUMMY2KT + 1.e+0_f8))
+!                  RAKT = 1.e+0_f8 * (1.e+0_f8/CKUSTR) *
+!     &                 LOG(DUMMY3/DUMMY4KT)
+!==============================================================================
+#if defined( MODEL_GEOS )
+                  ! 2M
+                  DUMMY1 = (1.D0 - 15.e+0_f8*Z0OBK2M)**0.5e+0_f8
+                  DUMMY3 = ABS((DUMMY1 - 1.e+0_f8)/(DUMMY1 + 1.e+0_f8))
+                  RA2M = 1.e+0_f8 * (1.e+0_f8/CKUSTR)*LOG(DUMMY3/DUMMY4)
+                  ! 10M
+                  DUMMY1 = (1.D0 - 15.e+0_f8*Z0OBK10M)**0.5e+0_f8
+                  DUMMY3 = ABS((DUMMY1 - 1.e+0_f8)/(DUMMY1 + 1.e+0_f8))
+                  RA10M= 1.e+0_f8 * (1.e+0_f8/CKUSTR)*LOG(DUMMY3/DUMMY4)
+#endif
+
+               ELSEIF((CORR1.GE.0.0e+0_f8).AND.(CORR1.LE.1.0e+0_f8))
+     &          THEN
+                  !coef_a=1.e+0_f8
+                  !coef_b=5.e+0_f8
+                  RA = (1D0/CKUSTR) *
+     &          (1.e+0_f8*LOG(CORR1/Z0OBK) + 5.e+0_f8*(CORR1-Z0OBK))
+!==============================================================================
+! This diagnostic requires some fixes. Comment out for now (mps,3/2/18)
+!                  RAKT = (1D0/CKUSTR) *
+!     &          (1.e+0_f8*LOG(CORR1/Z0OBKKT) + 5.e+0_f8*(CORR1-Z0OBKKT))
+!==============================================================================
+#if defined( MODEL_GEOS )
+                  RA2M = (1D0/CKUSTR) *
+     &          (1.e+0_f8*LOG(Z0OBK2M/Z0OBK)+5.e+0_f8*(Z0OBK2M-Z0OBK))
+                  RA10M = (1D0/CKUSTR) *
+     &          (1.e+0_f8*LOG(Z0OBK10M/Z0OBK)+5.e+0_f8*(Z0OBK10M-Z0OBK))
+#endif
+
+               ELSE ! CORR1 .GT. 1.0D0
+                  !coef_a=5e+0_f8
+                  !coef_b=1.e+0_f8
+                  RA = (1D0/CKUSTR) *
+     &          (5.e+0_f8*LOG(CORR1/Z0OBK) + 1.e+0_f8*(CORR1-Z0OBK))
+!==============================================================================
+! This diagnostic requires some fixes. Comment out for now (mps,3/2/18)
+!                  RAKT = (1D0/CKUSTR) *
+!     &          (5.e+0_f8*LOG(CORR1/Z0OBKKT) +1.e+0_f8*(CORR1-Z0OBKKT))
+!==============================================================================
+#if defined( MODEL_GEOS )
+                  RA2M = (1D0/CKUSTR) *
+     &          (5.e+0_f8*LOG(Z0OBK2M/Z0OBK)+1.e+0_f8*(Z0OBK2M-Z0OBK))
+                  RA10M = (1D0/CKUSTR) *
+     &          (5.e+0_f8*LOG(Z0OBK10M/z0OBK)+1.e+0_f8*(Z0OBK10M-Z0OBK))
+#endif
+
+               ENDIF
+
+            ENDIF
+
+            RA   = MIN(RA,1.e+4_f8)
+!==============================================================================
+! This diagnostic requires some fixes. Comment out for now (mps,3/2/18)
+!            RAKT = MIN(RAKT,1.e+4_f8)
+!==============================================================================
+#if defined( MODEL_GEOS )
+            RA2M   = MIN(RA2M,  1.e+4_f8)
+            RA10M  = MIN(RA10M, 1.e+4_f8)
+#endif
+
+            ! If RA is < 0, set RA = 0 (bmy, 11/12/99)
+            IF (RA .LT. 0.e+0_f8) THEN
+               WRITE (6,1001) I,J,RA,CZ,ZO(I,J),OBK(I,J)
+               RA = 0.0e+0_f8
+            ENDIF
+
+#if defined( MODEL_GEOS )
+            ! Adjust 2M Ra if needed
+            IF ( RA2M  < 0.e+0_f8 ) RA2M  = 0.e+0_f8
+            IF ( RA10M < 0.e+0_f8 ) RA10M = 0.e+0_f8
+#endif
+
+!==============================================================================
+!#if defined ( BPCH_DIAG )
+! This diagnostic requires some fixes. Comment out for now (mps,3/2/18)
+!            IF (RAKT .LT. 0.e+0_f8) THEN
+!               WRITE (6,1001) I,J,RAKT,CZ,ZO(I,J),OBK(I,J)
+!               RAKT = 0.0e+0_f8
+!            ENDIF
+!            ! Store Ra for diagnostic
+!            AD_RA(I,J) = RAKT
+!            ! Store z/L to determine if M/O theory applies
+!            AD_ZL(I,J) = CZ1(I,J)/OBK(I,J)
+!#endif
+!==============================================================================
+
+ 1001       FORMAT('WARNING: RA < 0 IN SUBROUTINE DEPVEL',
+     &             2I4,4(1X,E12.5))
+
+
 !    Get surface resistances - loop over land types LDT
 !***************************************************************************
 !* The land types within each grid square are defined using the Olson
-!* land-type database.  Each of the Olson land types is assigned a 
+!* land-type database.  Each of the Olson land types is assigned a
 !* corresponding "deposition land type" with characteristic values of surface
 !* resistance components.  There are 74 Olson land-types but only 11 deposition
 !* land-types (i.e., many of the Olson land types share the same deposition
-!* characteristics).  Surface resistance components for the "deposition land 
+!* characteristics).  Surface resistance components for the "deposition land
 !* types" are from Wesely [1989] except for tropical forests [Jacob and Wofsy,
-!* 1990] and for tundra [Jacob et al., 1992].  All surface resistance 
+!* 1990] and for tundra [Jacob et al., 1992].  All surface resistance
 !* components are normalized to a leaf area index of unity.
 !*
 !* Olson land types, deposition land types, and surface resistance components
 !* are read from file 'drydep.table'; check that file for further details.
 !****************************************************************************
 
-         ! Loop over the # of Olson land types in this grid box (I,J)
-         DO 170 LDT = 1, IREG(I,J)
-
-            ! If the land type is not represented in grid 
-            ! box  (I,J), then skip to the next land type
-            IF ( IUSE(I,J,LDT) == 0 ) GOTO 170
-
-            ! Olson land type index + 1
-            IOLSON = ILAND(I,J,LDT)+1
-
             ! Dry deposition land type index
-            II     = IDEP(IOLSON)
+            II = IDEP(IOLSON)
 !
 !** If the surface to be snow or ice;
 !** set II to 1 instead.
 !
             IF(LSNOW(I,J)) II=1
 
-!* Read the internal resistance RI (minimum stomatal resistance for water 
-!* vapor,per unit area of leaf) from the IRI array; a '9999' value means no 
+!* Read the internal resistance RI (minimum stomatal resistance for water
+!* vapor,per unit area of leaf) from the IRI array; a '9999' value means no
 !* deposition to stomata so we impose a very large value for RI.
 
             RI(LDT) = DBLE(IRI(II))
@@ -1370,30 +1732,30 @@
             ENDIF
 !** The following are the remaining resistances for the Wesely
 !** resistance-in-series model for a surface canopy
-!** (see Atmos. Environ. paper, Fig.1).  
+!** (see Atmos. Environ. paper, Fig.1).
             RAC(LDT)  = MAX(DBLE(IRAC(II)), 1.e+0_f8)
             IF (RAC(LDT)  .GE. 9999.e+0_f8) RAC(LDT)  = 1.e+12_f8
             RGSS(LDT) = MAX(DBLE(IRGSS(II)) + RT ,1.e+0_f8)
             IF (RGSS(LDT) .GE. 9999.e+0_f8) RGSS(LDT) = 1.e12_f8
-            RGSO(LDT) = MAX(DBLE(IRGSO(II)) + RT ,1.e+0_f8) 
+            RGSO(LDT) = MAX(DBLE(IRGSO(II)) + RT ,1.e+0_f8)
             IF (RGSO(LDT) .GE. 9999.e+0_f8) RGSO(LDT) = 1.e+12_f8
-            RCLS(LDT) = DBLE(IRCLS(II)) + RT           
+            RCLS(LDT) = DBLE(IRCLS(II)) + RT
             IF (RCLS(LDT) .GE. 9999.e+0_f8) RCLS(LDT) = 1.e+12_f8
-            RCLO(LDT) = DBLE(IRCLO(II)) + RT          
+            RCLO(LDT) = DBLE(IRCLO(II)) + RT
             IF (RCLO(LDT) .GE. 9999.e+0_f8) RCLO(LDT) = 1.e+12_f8
 !***************************************************************************
-!*                                 
-!*    Adjust stomatal resistances for insolation and temperature:  
+!*
+!*    Adjust stomatal resistances for insolation and temperature:
 !*
 !*     Temperature adjustment is from Wesely [1989], equation (3).
-!*       
+!*
 !*     Light adjustment by the function BIOFIT is described by Wang [1996].
 !*     It combines
-!*       - Local dependence of stomal resistance on the intensity I of light 
-!*         impinging the leaf; this is expressed as a mutliplicative 
+!*       - Local dependence of stomal resistance on the intensity I of light
+!*         impinging the leaf; this is expressed as a mutliplicative
 !*         factor I/(I+b) to the stomatal resistance where b = 50 W m-2
 !*         (equation (7) of Baldocchi et al. [1987])
-!*       - radiative transfer of direct and diffuse radiation in the 
+!*       - radiative transfer of direct and diffuse radiation in the
 !*         canopy using equations (12)-(16) from Guenther et al. [1995]
 !*       - separate accounting of sunlit and shaded leaves using
 !*         equation (12) of Guenther et al. [1995]
@@ -1409,29 +1771,46 @@
 !***************************************************************************
 
             RAD0 = RADIAT(I,J)
-            RIX = RI(LDT)
-            IF (RIX .GE. 9999.e+0_f8) GO TO 150
-            GFACT = 100.0e+0_f8
-            IF (TEMPC .GT. 0.e+0_f8 .AND. TEMPC .LT. 40.e+0_f8)
-     *           GFACT = 400.e+0_f8/TEMPC/(40.0e+0_f8-TEMPC)
-            GFACI = 100.e+0_f8
-            IF ( RAD0 > 0.e+0_f8 .and. XLAI(I,J,LDT) > 0.e+0_f8 ) THEN
-               ! Now make sure all inputs to BIOFIT are flexible precision
-               ! so that the code will compile properly (bmy, 12/18/14)
-               XLAI_FP   = XLAI(I,J,LDT)
-               SUNCOS_FP = SUNCOS(I,J)
-               CFRAC_FP  = CFRAC(I,J)
-               GFACI     = 1.e+0_f8 / BIOFIT( DRYCOEFF,  XLAI_FP, 
-     &                                        SUNCOS_FP, CFRAC_FP, NN )
+
+            !-----------------------------------------------------------------
+            ! In order to include ecophysiology module as an option, the
+            ! orders of calculation of surface resistance and aerodynamic
+            ! resistance are interchanged. (Joey Lam, 2/26/2019)
+            !-----------------------------------------------------------------
+
+            IF ( LECOPHY ) THEN
+               ! Call from ecophysiology module to get RIX (should exclude PFT = 0)
+               CALL DO_ECOPHY ( am_I_Root, Input_Opt,  State_Met,
+     &                          State_Chm, State_Diag, RC,
+     &                          I, J,      LDT,        RS         )
+               RIX = RS
+            ELSE
+               RIX = RI(LDT)
+               IF (RIX .GE. 9999.e+0_f8) GO TO 150
+               GFACT = 100.0e+0_f8
+               IF (TEMPC .GT. 0.e+0_f8 .AND. TEMPC .LT. 40.e+0_f8)
+     *            GFACT = 400.e+0_f8/TEMPC/(40.0e+0_f8-TEMPC)
+               GFACI = 100.e+0_f8
+               IF ( RAD0 > 0.e+0_f8
+     &              .and. XLAI(I,J,LDT) > 0.e+0_f8 ) THEN
+                  ! Now make sure all inputs to BIOFIT are flexible precision
+                  ! so that the code will compile properly (bmy, 12/18/14)
+                  XLAI_FP   = XLAI(I,J,LDT)
+                  SUNCOS_FP = SUNCOS(I,J)
+                  CFRAC_FP  = CFRAC(I,J)
+                  GFACI     = 1.e+0_f8 / BIOFIT( DRYCOEFF,  XLAI_FP,
+     &                                           SUNCOS_FP, CFRAC_FP,
+     &                                           NN )
+               ENDIF
+
+               RIX = RIX*GFACT*GFACI
+ 150           CONTINUE
             ENDIF
-            
-            RIX = RIX*GFACT*GFACI
- 150        CONTINUE
-!*                                 
-!*    Compute aerodynamic resistance to lower elements in lower part           
-!*    of the canopy or structure, assuming level terrain - 
+!*
+!*    Compute aerodynamic resistance to lower elements in lower part
+!*    of the canopy or structure, assuming level terrain -
 !*    equation (5) of Wesely [1989].
-!*                                 
+!*
             RDC = 100.e+0_f8*(1.0e+0_f8+1000.0e+0_f8/(RAD0+10.e+0_f8))
 !*
 !*    Loop over species; species-dependent corrections to resistances
@@ -1467,9 +1846,9 @@
 !* was introduced by J.Y. Liang on 7/9/95.
 !*
 
-               RGSX = 1.e+0_f8/(HSTAR(K)/1.0e+05_f8/RGSS(LDT) + 
+               RGSX = 1.e+0_f8/(HSTAR(K)/1.0e+05_f8/RGSS(LDT) +
      1              F0(K)/RGSO(LDT))
-               RCLX = 1.e+0_f8/(HSTAR(K)/1.0e+05_f8/RCLS(LDT) + 
+               RCLX = 1.e+0_f8/(HSTAR(K)/1.0e+05_f8/RCLS(LDT) +
      1              F0(K)/RCLO(LDT))
 !*
 !** Get the bulk surface resistance of the canopy, RSURFC, from the network
@@ -1539,19 +1918,19 @@
      &                                          II,   
      &                                          PRESSU(I,J)*1e-3_f8, 
      &                                          TEMPK, 
-     &                                          USTAR(I,J), 
+     &                                          USTAR(I,J),
      &                                          RHB(I,J),
-     &                                          W10(I,J), 
+     &                                          W10(I,J),
      &                                          Input_Opt )
 
                ELSE IF ( SpcInfo%DD_DustDryDep ) THEN
 
                   !=====================================================
-                  ! Use size-resolved dry deposition calculations for 
+                  ! Use size-resolved dry deposition calculations for
                   ! dust aerosols only.  Do not account for hygroscopic
                   ! growth of the dust aerosol particles.
-                  !=====================================================  
-#if defined( TOMAS ) 
+                  !=====================================================
+#if defined( TOMAS )
 
                   !-------------------------------
                   !%%% TOMAS SIMULATIONS %%%
@@ -1559,7 +1938,7 @@
 
                   ! Get current aerosol diameter and density
                   ! NOTE: In TOMAS the aerosol diameter and density
-                  ! evolves with time.  We have to save these in the 
+                  ! evolves with time.  We have to save these in the
                   ! DIAM and DEN variables so that we can hold these
                   ! PRIVATE for the parallel loop.
                   BIN  = NTRAIND(K) - id_NK1 + 1
@@ -1572,27 +1951,27 @@
                   !-------------------------------
 
                   ! Particle diameter, convert [m] -> [um]
-                  DIAM  = A_RADI(K) * 2.e+0_f8 
+                  DIAM  = A_RADI(K) * 2.e+0_f8
 
                   ! Particle density [kg/m3]
-                  DEN   = A_DEN(K)             
+                  DEN   = A_DEN(K)
 
 #endif
 
                   ! [Zhang et al., 2001]
-                  RSURFC(K,LDT) = DUST_SFCRSII( K, 
+                  RSURFC(K,LDT) = DUST_SFCRSII( K,
      &                                          II,
      &                                          PRESSU(I,J)*1e-3_f8,
      &                                          TEMPK,
      &                                          USTAR(I,J),
-     &                                          DIAM,  
+     &                                          DIAM,
      &                                          DEN )
 
-               ELSE 
+               ELSE
 
                   !=====================================================
                   ! Replace original code to statement 160 here: only
-                  ! do this for non-size-resolved species where 
+                  ! do this for non-size-resolved species where
                   ! AIROSOL(K)=T. (rjp, tdf, bec, bmy, 4/20/04)
                   !=====================================================
 !                  ! use Zhang et al for all aerosols (hotp 10/26/07)
@@ -1600,20 +1979,20 @@
 !                  IF (OBK(I,J) .LT. 0.0D0) THEN
 !                     VDS = VDS*(1.D0+(-300.D0/OBK(I,J))**0.6667D0)
 !                  ENDIF
-!C***                               
+!C***
 !                  IF ( OBK(I,J) .EQ. 0.0D0 )
 !     c                 WRITE(6,156) OBK(I,J),I,J,LDT
 ! 156              FORMAT(1X,'OBK(I,J)=',E11.2,1X,' I,J =',2I4,
-!     c                   1X,'LDT=',I3/) 
+!     c                   1X,'LDT=',I3/)
 !                  CZH  = ZH(I,J)/OBK(I,J)
 !                  IF (CZH.LT.-30.0D0) VDS = 0.0009D0*USTAR(I,J)*
 !     x                                 (-CZH)**0.6667D0
 
                   RSURFC(K, LDT) =
-     &                ADUST_SFCRSII(K, II, PRESSU(I,J)*1e-3_f8, 
+     &                ADUST_SFCRSII(K, II, PRESSU(I,J)*1e-3_f8,
      &                  TEMPK, USTAR(I,J))
-                  
-!*                                 
+
+!*
 !*    Set VDS to be less than VDSMAX (entry in input file divided by 1.D4)
 !*    VDSMAX is taken from Table 2 of Walcek et al. [1986].
 !*    Invert to get corresponding R
@@ -1625,357 +2004,8 @@
                SpcInfo => NULL()
 
  160        CONTINUE
-!*
- 170     CONTINUE
-!*
-!*    Set max and min values for bulk surface resistances         
-!*                                 
-         DO 190 K = 1,NUMDEP 
-            IF (.NOT.LDEP(K)) GOTO 190
-            DO 180 LDT = 1, IREG(I,J)
-               IF ( IUSE(I,J,LDT) == 0 ) GOTO 180
-               RSURFC(K,LDT)= MAX(1.e+0_f8, MIN(RSURFC(K,LDT), 
-     &                        9999.e+0_f8))
- 180        CONTINUE
- 190     CONTINUE
-!*                                 
-!*    Loop through the different landuse types present in the grid square     
-!*           
-         DO 500 LDT = 1, IREG(I,J)
-            IF ( IUSE(I,J,LDT) == 0 ) GOTO 500
-            IOLSON = ILAND(I,J,LDT) + 1
 
-!***** Get aerodynamic resistances Ra and Rb. ***********************
-!   The aerodynamic resistance Ra is integrated from altitude z0+d up to the
-!   altitude z1 at which the dry deposition velocity is to be referenced.
-!   The integration corrects for stability using Monin-Obukhov similarity 
-!   formulas from Businger et al. [1971] which apply over the range 
-!   -2.5 < z/zMO < 1.5 (see their Figure 2).
-!   Under very unstable conditions when z1 > -2.5 zMO, we assume that there is
-!   no resistance to transfer in the convective column between zMO and z1.
-!   Under very stable conditions when z1 > 1.5 zMO, we assume that vertical
-!   transfer in the column between zMO and z1 is strongly suppressed so
-!   that the deposition velocity at altitude z1 is very low.  Under these
-!   conditions we just specify a very large Ra=1.E4 s m-1 (LRGERA = T).
-!**
-!   The Reynolds number REYNO diagnoses whether a surface is
-!   aerodynamically rough (REYNO > 1) or smooth.  
-!
-!   NOTE: The criterion "REYNO > 1" was originally "REYNO > 10".
-!         See below for an explanation of why it was changed (hyl, 10/15/99)
-!
-!   Surface is rough in all cases except over water with low wind speeds.  
-!   In the smooth case, vertical transport IN THE SUBLAYER near the surface 
-!   is limited by molecular diffusion and is therefore very slow; we assign 
-!   a large value we assign a large value of Ra + Rb to account for this 
-!   effect.  [In Versions 3.2 and earlier we used the formulation for Ra + Rb 
-!   given in Equation (12) of Walcek et al [1986] to calculate the aerodynamic 
-!   resistance over smooth surfaces.  However, that expression fails when 
-!   u* is very small, as it yields negative values of Ra + Rb].  
-!   (djj, hyl, bmy, 5/8/00)
-!**
-!   In the aerodynamically rough case, the expression for Ra is as
-!   given in equation (5) of Jacob et al. [1992]:
-!
-!          Ra = (1/ku*)*int(from z0 to z1) (phi(x)/z)dz
-!
-!    where x = (z-D)/zMO, z is the height above ground, and D is the
-!    displacement height which is typically 70-80% of the canopy height
-!    [Brutsaert, 1982].  We change the vertical coordinate so that z=0 at
-!    the displacement height; that's OK since for all practical applications
-!    z1 >> D.  In this manner we don't need to assume any specific value for
-!    the displacement height.  Applying the variable transformation 
-!    z -> x = z/zMO, the equation above becomes
-!
-!          Ra = (1/ku*)*int(from x0 to x1) (phi(x)/x)dx   with x=z/zMO
-!
-!    Here phi is a stability correction function originally formulated by
-!    Businger et al. [1971] and given in eqns 5a and 5b of Jacob et al. [1992].
-!    For unstable conditions,
-!
-!          phi(x) = a/sqrt(1-bx)  where a=0.74, b = 9
-!
-!    The analytical solution to the integral is 
-!    [Dwight, 1957, integral 192.11]:
-!
-!          int(dx/(x*sqrt(1-bx))) = log(abs((sqrt(1-bx)-1)/(sqrt(1-bx)+1)))
-!
-!    which yields the expression for Ra used in the code for unstable 
-!    conditions.  For stable conditions,
-!
-!          phi(x) = a + bx        where a=0.74, b = 4.7
-!
-!    and the analytical solution to the integral is
-!
-!          int((a/x)+b)dx = a*ln(x) + bx
-!
-!    which yields the expression of Ra used in the code for stable conditions.
-!**
-!   The formulation of RB for gases is equation (12) of 
-!   Walcek et al. [1986].  The parameterization for deposition of
-!   aerosols does not include an RB term so RB for aerosols is set
-!   to zero.
-!   Modify phi(x) according to the non-local mixing scheme by Holtslag 
-!   and Boville [1993] ( Lin, 07/18/08 )
-!   For unstable conditions,
-!          phi(x) = a/sqrt(1-bx)  where a=1.0, b=15.0
-!
-!   For stable conditions,
-!          phi(x) = a + bx
-!              where a=1.0, b=5.0 for 0 <= x <= 1, and
-!                    a=5.0, b=1.0 for x > 1.0 
-!*********************************************************************
 
-            CKUSTR = VON_KARMAN * USTAR(I,J)
-
-            REYNO = USTAR(I,J)*ZO(I,J)/XNU  
-
-            IF ( OBK(I,J) .EQ. 0.0e+0_f8 )
-     c           WRITE(6,211) OBK(I,J),I,J,LDT                
- 211        FORMAT(1X,'OBK(I,J)=',E11.2,1X,' I,J = ',2I4,1X,
-     c           'LDT=',I3/) 
-            CORR1 = CZ/OBK(I,J)
-
-            ! Define Z0OBK
-            Z0OBK = ZO(I,J)/OBK(I,J) 
-!==============================================================================
-! This diagnostic requires some fixes. Comment out for now (mps,3/2/18)
-!            ! Set CASTNET height at 10m (krt, 11/2017)
-#if defined( MODEL_GEOS )
-            Z0OBK2M  = MAX(Z0OBK,  2e+0_fp/OBK(I,J) )
-            Z0OBK10M = MAX(Z0OBK, 10e+0_fp/OBK(I,J) )
-#else
-!            Z0OBKKT = 10e+0_fp/OBK(I,J)
-#endif
-!==============================================================================
-
-            LRGERA(I,J) = .FALSE.
-            ! Add option for non-local PBL (Lin, 03/31/09) 
-            IF (.NOT. Input_Opt%LNLPBL) THEN
-               IF (CORR1 .GT. 0.e+0_f8) THEN
-                  IF (CORR1 .GT.  1.5e+0_f8) LRGERA(I,J) = .TRUE.
-               ELSEIF(CORR1 .LE. 0.e+0_f8) THEN
-                  IF (CORR1 .LE. -2.5e+0_f8) CORR1 = -2.5e+0_f8
-                  CORR2 = LOG(-CORR1)
-               ENDIF
-            ENDIF
-!*                                 
-            IF (CKUSTR.EQ.0.0e+0_f8) THEN
-
-               WRITE(6,212) I,J,CKUSTR,VON_KARMAN,USTAR(I,J)
-
- 212           FORMAT(1X,'I,J= ',2I4,1X,'CKUSTR=',E10.1,1X,
-     x              'VON_KARMAN= ',E12.4,1X,'USTAR(I,J)= ',
-
-     x              E12.4)
-               CLOSE(98)
-               STOP             ! debug
-            ENDIF
-!
-!
-!...aerodynamically rough or smooth surface
-! "In the classic study by Nikuradse (1933) the transition from smooth
-!  to rough was examined in pipe flow. He introduced a roughness Reynolds
-!  number Rr = U* Z0 / Nu and found the flow to be smooth for Rr < 0.13
-!  and rough for Rr > 2.5 with a transition regime in between."
-!  (E.B. Kraus and J.A. Businger, Atmosphere-Ocean Interaction, second
-!  edition, P.144-145, 1994). Similar statements can be found in the books:
-!  Evaporation into the atmosphere, by Wilfried Brutsaert, P.59,89, 1982;
-!  or Seinfeld & Pandis, P.858, 1998. Here we assume a sudden transition
-!  point Rr = 1 from smooth to rough, following L. Merlivat (1978, The
-!  dependence of bulk evaporation coefficients on air-water interfacial
-!  conditions as determined by the isotopic method, J. Geophys. Res.,
-!  Oceans & Atmos., 83, C6, 2977-2980). Also refer to Brutsaert's book,
-!  P.125. We used to use the criterion "REYNO > 10" for aerodynamically
-!  rough surface and now change to "REYNO > 1". (hyl, 10/15/99)
-!  
-!  11/17/05: D. J. Jacob says to change the criterion for aerodynamically
-!  rough surface to REYNO > 0.1 (eck, djj, bmy, 11/17/05)
-            IF ( REYNO < 0.1e+0_f8 ) GOTO 220
-
-            ! Add option for non-local PBL (Lin, 03/31/09) 
-            IF (.NOT. Input_Opt%LNLPBL) THEN
-
-!...aerodynamically rough surface.
-!*                                 
-               IF (CORR1.LE.0.0e+0_f8 .AND. Z0OBK .LT. -1.e+0_f8)THEN
-!*... unstable condition; set RA to zero. (first implemented in V. 3.2)
-                  RA    = 0.e+0_f8
-#if defined( MODEL_GEOS )
-                  !RAKT  = 0.e+0_f8
-                  RA2M  = 0.e+0_f8
-                  RA10M = 0.e+0_f8
-#endif
-
-!*... error trap: prevent CORR1 or Z0OBK from being zero or close to
-!*... zero (ckeller, 3/15/16)
-               ELSEIF ( ABS(CORR1)<=SMALL .OR. ABS(Z0OBK)<=SMALL ) THEN
-                  RA = 0.e+0_f8
-#if defined( MODEL_GEOS )
-                  !RAKT  = 0.e+0_f8
-                  RA2M  = 0.e+0_f8
-                  RA10M = 0.e+0_f8
-#endif
-
-               ELSEIF (CORR1.LE.0.0e+0_f8 .AND. Z0OBK .GE. -1.e+0_f8) 
-     &          THEN
-!*... unstable conditions; compute Ra as described above.
-                  DUMMY1 = (1.e+0_f8 - 9e+0_f8*CORR1)**0.5e+0_f8
-                  DUMMY2 = (1.e+0_f8 - 9e+0_f8*Z0OBK)**0.5e+0_f8
-                  DUMMY3 = ABS((DUMMY1 - 1.e+0_f8)/(DUMMY1 + 1.e+0_f8))
-                  DUMMY4 = ABS((DUMMY2 - 1.e+0_f8)/(DUMMY2 + 1.e+0_f8))
-                  RA = 0.74e+0_f8* (1.e+0_f8/CKUSTR) * 
-     &                 LOG(DUMMY3/DUMMY4)
-#if defined( MODEL_GEOS )
-!*... correct ozone to 10m for diagnostic (krt, 11/2017)
-                  !DUMMY2KT=(1.e+0_f8 - 9e+0_f8*Z0OBKKT)**0.5e+0_f8
-                  !DUMMY4KT=ABS((DUMMY2KT-1.e+0_f8)/(DUMMY2KT+1.e+0_f8))
-                  !RAKT = 0.74e+0_f8* (1.e+0_f8/CKUSTR) *
-     &            !     LOG(DUMMY3/DUMMY4KT)
-                  ! 2M
-                  DUMMY1 = (1.e+0_f8 - 9e+0_f8*Z0OBK2M)**0.5e+0_f8
-                  DUMMY3 = ABS((DUMMY1 - 1.e+0_f8)/(DUMMY1 + 1.e+0_f8))
-                  RA2M   = 0.74e+0_f8* (1.e+0_f8/CKUSTR) *
-     &                     LOG(DUMMY3/DUMMY4)
-                  DUMMY1 = (1.e+0_f8 - 9e+0_f8*Z0OBK10M)**0.5e+0_f8
-                  DUMMY3 = ABS((DUMMY1 - 1.e+0_f8)/(DUMMY1 + 1.e+0_f8))
-                  RA10M  = 0.74e+0_f8* (1.e+0_f8/CKUSTR) *
-     &                     LOG(DUMMY3/DUMMY4)
-#endif                       
-          
-               ELSEIF((CORR1.GT.0.0e+0_f8).AND.(.NOT.LRGERA(I,J)))
-     &          THEN
-!*...moderately stable conditions (z/zMO <1); compute Ra as described above
-                  RA = (1e+0_f8/CKUSTR) * 
-     &            (.74e+0_f8*LOG(CORR1/Z0OBK) + 4.7e+0_f8*(CORR1-Z0OBK))
-#if defined( MODEL_GEOS )
-     &            !(.74_f8*LOG(CORR1/Z0OBKKT)+4.7_f8*(CORR1-Z0OBKKT))
-                  RA2M = (1e+0_f8/CKUSTR) *
-     &            (0.74_f8*LOG(Z0OBK2M/Z0OBK)+4.7_f8*(Z0OBK2M-Z0OBK))
-                  RA10M = (1e+0_f8/CKUSTR) *
-     &            (0.74_f8*LOG(Z0OBK10M/Z0OBK)+4.7_f8*(Z0OBK10M-Z0OBK))
-#endif
-
-               ELSEIF(LRGERA(I,J)) THEN
-!*... very stable conditions
-                  RA    = 1.e+04_f8
-#if defined( MODEL_GEOS )
-                  !RAKT = 1.e+04_f8
-                  RA2M  = 1.e+04_f8
-                  RA10M = 1.e+04_f8
-#endif
-               ENDIF
-!* check that RA is positive; if RA is negative (as occasionally
-!* happened in version 3.1) send a warning message.
-
-            ELSE
-
-               IF (CORR1.LT.0.0e+0_f8) THEN
-!*... unstable conditions; compute Ra as described above.
-                  !coef_a=1.e+0_f8
-                  !coef_b=15.e+0_f8
-                  DUMMY1 = (1.D0 - 15.e+0_f8*CORR1)**0.5e+0_f8
-                  DUMMY2 = (1.D0 - 15.e+0_f8*Z0OBK)**0.5e+0_f8
-                  DUMMY3 = ABS((DUMMY1 - 1.e+0_f8)/(DUMMY1 + 1.e+0_f8))
-                  DUMMY4 = ABS((DUMMY2 - 1.e+0_f8)/(DUMMY2 + 1.e+0_f8))
-                  RA = 1.e+0_f8 * (1.e+0_f8/CKUSTR) * LOG(DUMMY3/DUMMY4)
-!==============================================================================
-! This diagnostic requires some fixes. Comment out for now (mps,3/2/18)
-!!*... correct ozone to 10m for diagnostic (krt, 11/2017)
-!                  DUMMY2KT = (1.D0 - 15.e+0_f8*Z0OBKKT)**0.5e+0_f8
-!                  DUMMY4KT = ABS((DUMMY2KT - 1.e+0_f8)/
-!     &                 (DUMMY2KT + 1.e+0_f8))
-!                  RAKT = 1.e+0_f8 * (1.e+0_f8/CKUSTR) *
-!     &                 LOG(DUMMY3/DUMMY4KT)
-!==============================================================================
-#if defined( MODEL_GEOS )
-                  ! 2M
-                  DUMMY1 = (1.D0 - 15.e+0_f8*Z0OBK2M)**0.5e+0_f8
-                  DUMMY3 = ABS((DUMMY1 - 1.e+0_f8)/(DUMMY1 + 1.e+0_f8))
-                  RA2M = 1.e+0_f8 * (1.e+0_f8/CKUSTR)*LOG(DUMMY3/DUMMY4)
-                  ! 10M
-                  DUMMY1 = (1.D0 - 15.e+0_f8*Z0OBK10M)**0.5e+0_f8
-                  DUMMY3 = ABS((DUMMY1 - 1.e+0_f8)/(DUMMY1 + 1.e+0_f8))
-                  RA10M= 1.e+0_f8 * (1.e+0_f8/CKUSTR)*LOG(DUMMY3/DUMMY4)
-#endif
-
-               ELSEIF((CORR1.GE.0.0e+0_f8).AND.(CORR1.LE.1.0e+0_f8)) 
-     &          THEN
-                  !coef_a=1.e+0_f8
-                  !coef_b=5.e+0_f8
-                  RA = (1D0/CKUSTR) *
-     &          (1.e+0_f8*LOG(CORR1/Z0OBK) + 5.e+0_f8*(CORR1-Z0OBK))
-!==============================================================================
-! This diagnostic requires some fixes. Comment out for now (mps,3/2/18)
-!                  RAKT = (1D0/CKUSTR) *
-!     &          (1.e+0_f8*LOG(CORR1/Z0OBKKT) + 5.e+0_f8*(CORR1-Z0OBKKT))
-!==============================================================================
-#if defined( MODEL_GEOS )
-                  RA2M = (1D0/CKUSTR) *
-     &          (1.e+0_f8*LOG(Z0OBK2M/Z0OBK)+5.e+0_f8*(Z0OBK2M-Z0OBK))
-                  RA10M = (1D0/CKUSTR) *
-     &          (1.e+0_f8*LOG(Z0OBK10M/Z0OBK)+5.e+0_f8*(Z0OBK10M-Z0OBK))
-#endif
-
-               ELSE ! CORR1 .GT. 1.0D0
-                  !coef_a=5e+0_f8
-                  !coef_b=1.e+0_f8
-                  RA = (1D0/CKUSTR) *
-     &          (5.e+0_f8*LOG(CORR1/Z0OBK) + 1.e+0_f8*(CORR1-Z0OBK))
-!==============================================================================
-! This diagnostic requires some fixes. Comment out for now (mps,3/2/18)
-!                  RAKT = (1D0/CKUSTR) *
-!     &          (5.e+0_f8*LOG(CORR1/Z0OBKKT) +1.e+0_f8*(CORR1-Z0OBKKT))
-!==============================================================================
-#if defined( MODEL_GEOS )
-                  RA2M = (1D0/CKUSTR) *
-     &          (5.e+0_f8*LOG(Z0OBK2M/Z0OBK)+1.e+0_f8*(Z0OBK2M-Z0OBK))
-                  RA10M = (1D0/CKUSTR) *
-     &          (5.e+0_f8*LOG(Z0OBK10M/z0OBK)+1.e+0_f8*(Z0OBK10M-Z0OBK))
-#endif
-
-               ENDIF
-
-            ENDIF
-
-            RA   = MIN(RA,1.e+4_f8)
-!==============================================================================
-! This diagnostic requires some fixes. Comment out for now (mps,3/2/18)
-!            RAKT = MIN(RAKT,1.e+4_f8)
-!==============================================================================
-#if defined( MODEL_GEOS )
-            RA2M   = MIN(RA2M,  1.e+4_f8)
-            RA10M  = MIN(RA10M, 1.e+4_f8)
-#endif
-
-            ! If RA is < 0, set RA = 0 (bmy, 11/12/99)
-            IF (RA .LT. 0.e+0_f8) THEN
-               WRITE (6,1001) I,J,RA,CZ,ZO(I,J),OBK(I,J)  
-               RA = 0.0e+0_f8
-            ENDIF
-
-#if defined( MODEL_GEOS )
-            ! Adjust 2M Ra if needed
-            IF ( RA2M  < 0.e+0_f8 ) RA2M  = 0.e+0_f8
-            IF ( RA10M < 0.e+0_f8 ) RA10M = 0.e+0_f8
-#endif
-
-!==============================================================================
-!#if defined ( BPCH_DIAG )
-! This diagnostic requires some fixes. Comment out for now (mps,3/2/18)
-!            IF (RAKT .LT. 0.e+0_f8) THEN
-!               WRITE (6,1001) I,J,RAKT,CZ,ZO(I,J),OBK(I,J)  
-!               RAKT = 0.0e+0_f8
-!            ENDIF
-!            ! Store Ra for diagnostic
-!            AD_RA(I,J) = RAKT
-!            ! Store z/L to determine if M/O theory applies
-!            AD_ZL(I,J) = CZ1(I,J)/OBK(I,J)
-!#endif
-!==============================================================================
-            
- 1001       FORMAT('WARNING: RA < 0 IN SUBROUTINE DEPVEL',
-     &             2I4,4(1X,E12.5))
 !* Get total resistance for deposition - loop over species.
             DO 215 K = 1,NUMDEP 
                IF (.NOT.LDEP(K)) GOTO 215
