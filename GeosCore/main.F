@@ -77,7 +77,7 @@
       !-----------------------------------------------------------------
       USE DEPO_MERCURY_MOD      ! Deposition for offline Hg simulation
       USE DRYDEP_MOD            ! For dry deposition
-      USE ECOPHY_MOD            ! For ecophysiology 
+      USE ECOPHY_MOD            ! For ecophysiology
       USE WETSCAV_MOD           ! For wet deposition (rainout & washout)
 
       !-----------------------------------------------------------------

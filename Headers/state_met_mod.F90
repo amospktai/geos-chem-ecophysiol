@@ -229,9 +229,9 @@ MODULE State_Met_Mod
      REAL(fp), POINTER :: LandTypeFrac  (:,:,:) ! Olson frac per type (I,J,type)
      REAL(fp), POINTER :: XLAI_NATIVE   (:,:,:) ! avg LAI per type (I,J,type)
      REAL(fp), POINTER :: XCHLR_NATIVE  (:,:,:) ! avg CHLR per type (I,J,type)
-     REAL(fp), POINTER :: THETA_WILT    (:,:  ) ! Soil moisture at wilting 
+     REAL(fp), POINTER :: THETA_WILT    (:,:  ) ! Soil moisture at wilting
                                                 ! point (I,J)
-     REAL(fp), POINTER :: THETA_CRIT    (:,:  ) ! Soil moisture at critical 
+     REAL(fp), POINTER :: THETA_CRIT    (:,:  ) ! Soil moisture at critical
                                                 ! point (I,J)
      REAL(fp), POINTER :: THETA_SATU    (:,:  ) ! Soil moisture at saturation
                                                 ! point (I,J)

@@ -6,16 +6,16 @@
 ! !MODULE: ecophy_mod.F90
 !
 ! !DESCRIPTION: Module ECOPHY\_MOD contains variables and routines for the
-!  GEOS-Chem ecophysiology scheme. It modifies the bulk canopy stomatal 
+!  GEOS-Chem ecophysiology scheme. It modifies the bulk canopy stomatal
 !  resistance RIX in the dry deposition scheme.
 !\\
 !\\
-! !INTERFACE: 
+! !INTERFACE:
 !
       MODULE ECOPHY_MOD
-! 
+!
 ! !USES:
-! 
+!
       USE CMN_SIZE_MOD                          ! Size parameters
       USE ERROR_MOD                             ! Error handling routines
       USE PhysConstants                         ! Physical constants
@@ -73,7 +73,7 @@
       REAL,     PARAMETER   :: FLUXO3_CRIT   (NUMPFT) = (/ 1.6,  1.6,  5.0,  5.0,  1.6  /)
       REAL,     PARAMETER   :: THRESHOLD              = 1.0e-3
       ! Constants
-      ! REAL,     PARAMETER   :: RSTARG = 8.31446        ! Switch to call physconstant.F later (in Headers) 
+      ! REAL,     PARAMETER   :: RSTARG = 8.31446        ! Switch to call physconstant.F later (in Headers)
       REAL,     PARAMETER   :: CO2_O2_RATIO = 1.6
 !
 ! PRIVATE TYPES:
@@ -89,11 +89,11 @@
       ! LO3_DAMAGE    : Logical switch for ozone damage scheme            []
       ! NUMPFT        : Total number of PFTs                              []
       !========================================================================
-      REAL,     ALLOCATABLE :: THETA_SATU    ( :,: )    
+      REAL,     ALLOCATABLE :: THETA_SATU    ( :,: )
       REAL                  :: SATU
-      REAL,     ALLOCATABLE :: THETA_CRIT    ( :,: )    
+      REAL,     ALLOCATABLE :: THETA_CRIT    ( :,: )
       REAL                  :: CRIT
-      REAL,     ALLOCATABLE :: THETA_WILT    ( :,: )   
+      REAL,     ALLOCATABLE :: THETA_WILT    ( :,: )
       REAL                  :: WILT
       INTEGER,  ALLOCATABLE :: IPFT          ( :   )
       LOGICAL               :: LECOPHY
@@ -112,16 +112,16 @@
 !
 ! !IROUTINE: do_ecophy
 !
-! !DESCRIPTION: Subroutine DO\_ECOPHY is the interface between dry 
+! !DESCRIPTION: Subroutine DO\_ECOPHY is the interface between dry
 !  deposition module and the ecophysiology module. It computes the
-!  bulk canopy stomatal resistance r_s according to meterological inputs, 
+!  bulk canopy stomatal resistance r_s according to meterological inputs,
 !  plant functional types, and soil types.
 !\\
 !\\
 ! !INTERFACE:
-!      
+!
       SUBROUTINE DO_ECOPHY ( am_I_Root, Input_Opt,  State_Met, &
-                             State_Chm, State_Diag, RC,        & 
+                             State_Chm, State_Diag, RC,        &
                              I, J,      LDT, RS                )
 !
 ! !USES:
@@ -140,8 +140,8 @@
       INTEGER,        INTENT(IN)    :: J           ! latitude index
 !       INTEGER,        INTENT(IN)    :: PFT         ! PFT index
       INTEGER,        INTENT(IN)    :: LDT         ! Land type index
-      TYPE(OptInput), INTENT(INOUT) :: Input_Opt   ! Input Options object
-      TYPE(MetState), INTENT(INOUT) :: State_Met   ! Meteorology State object
+      TYPE(OptInput), INTENT(IN)    :: Input_Opt   ! Input Options object
+      TYPE(MetState), INTENT(IN)    :: State_Met   ! Meteorology State object
 !
 ! !INPUT/OUTPUT PARAMETERS:
 !
@@ -165,28 +165,28 @@
       !  Note: Read subroutine DO_PHOTOSYNTHESIS for descriptions.
       REAL       :: TEMPK
       REAL       :: SPHU
-      REAL       :: RA            
-      REAL       :: PAR_ABSORBED  
-      REAL       :: PRESSURE      
-      REAL       :: CO2           
-      REAL       :: O2            
-      REAL       :: O3            
+      REAL       :: RA
+      REAL       :: PAR_ABSORBED
+      REAL       :: PRESSURE
+      REAL       :: CO2
+      REAL       :: O2
+      REAL       :: O3
       LOGICAL    :: LO3_DAMAGE
       REAL       :: SOIL_WETNESS
       INTEGER    :: PFT
       REAL       :: G_CAN_OUT
       REAL       :: G_LEAF_OUT
       REAL       :: CO2_IN
-      REAL       :: A_CAN_OUT    
-      REAL       :: A_NET_OUT     
-      REAL       :: RESP_CAN_OUT  
-      REAL       :: RESP_OUT      
-      REAL       :: FLUXO3_CAN    
-      REAL       :: FLUXO3        
-      REAL       :: FACTOR_O3     
-      REAL       :: BETA       
+      REAL       :: A_CAN_OUT
+      REAL       :: A_NET_OUT
+      REAL       :: RESP_CAN_OUT
+      REAL       :: RESP_OUT
+      REAL       :: FLUXO3_CAN
+      REAL       :: FLUXO3
+      REAL       :: FACTOR_O3
+      REAL       :: BETA
       ! Arrays
-      REAL       :: LAI( : )
+      REAL       :: LAI
       ! Pointers
       ! REAL(fp), POINTER :: G_CANOPY       ( :,:,: )
       ! REAL(fp), POINTER :: A_CANOPY       ( :,:,: )
@@ -194,7 +194,7 @@
       ! REAL(fp), POINTER :: A_NET_CANOPY   ( :,:,: )
       ! REAL(fp), POINTER :: FLXO3_CANOPY   ( :,:,: )
       ! REAL(fp), POINTER :: BETA_O3        ( :,:,: )
-      ! REAL(fp), POINTER :: BETA_SM        ( :,:,: )   
+      ! REAL(fp), POINTER :: BETA_SM        ( :,:,: )
 
       ! For ESMF, need to assign these from Input_Opt (copied from drydep_mod)
       LOGICAL       :: LPRT
@@ -202,7 +202,7 @@
       !=================================================================
       ! DO_ECOPHY begins here!
       !=================================================================
-      ! Assume success 
+      ! Assume success
       RC = GC_SUCCESS
 
       ! Initialize
@@ -211,29 +211,29 @@
       ' -> at Do_ECOPHY (in module GeosCore/ecophysiology.F90)'
 
       ! Point to columns of derived-type object fields
-      ! G_CANOPY     => State_Chm%G_CAN     
-      ! A_CANOPY     => State_Chm%A_CAN     
-      ! R_CANOPY     => State_Chm%RESP     
-      ! A_NET_CANOPY => State_Chm%A_NET 
-      ! FLXO3_CANOPY => State_Chm%FLXO3 
-      ! BETA_O3      => State_Chm%BETA_O3      
+      ! G_CANOPY     => State_Chm%G_CAN
+      ! A_CANOPY     => State_Chm%A_CAN
+      ! R_CANOPY     => State_Chm%RESP
+      ! A_NET_CANOPY => State_Chm%A_NET
+      ! FLXO3_CANOPY => State_Chm%FLXO3
+      ! BETA_O3      => State_Chm%BETA_O3
       ! BETA_SM      => State_Chm%BETA_SM
 
       ! get inputs for the module
-      CALL GET_ECOPHY_INPUTS( State_Met,    State_Chm,           &
+      CALL GET_ECOPHY_INPUTS( State_Met,    State_Chm, I, J, LDT,&
                               TEMPK,        SPHU,                &
                               PAR_ABSORBED, PRESSURE,  CO2,      &
                               O2,           LAI,       O3,       &
                               LO3_DAMAGE,   SOIL_WETNESS         &
                               ! WILT, CRIT,   SATU                 &
-                              )  
+                              )
 
       ! Trap potential errors
       IF ( RC /= GC_SUCCESS ) THEN
          ErrMsg = 'Error encountered in call to "GET_ECOPHY_INPUTS!'
          CALL GC_Error( ErrMsg, RC, ThisLoc )
          RETURN
-      ENDIF 
+      ENDIF
 
       ! Get plant functional type index
       PFT = IPFT(LDT)
@@ -241,7 +241,7 @@
       ! simulate plant processes
       CALL DO_PHOTOSYNTHESIS( TEMPK,        SPHU,       RA,           &
                               PAR_ABSORBED, PRESSURE,   CO2,          &
-                              O2,           LAI(PFT),   O3,           &
+                              O2,           LAI,        O3,           &
                               LO3_DAMAGE,   SOIL_WETNESS,             &
                               G_CAN_OUT,    A_CAN_OUT,  RESP_CAN_OUT, &
                               G_LEAF_OUT,   CO2_IN,     A_NET_OUT,    &
@@ -289,12 +289,12 @@
 !
 ! !IROUTINE: do_photosynthesis
 !
-! !DESCRIPTION: Subroutine DO\_PHOTOSYNTHESIS is the main driver of this 
-!  module. 
+! !DESCRIPTION: Subroutine DO\_PHOTOSYNTHESIS is the main driver of this
+!  module.
 !\\
 !\\
 ! !INTERFACE:
-!      
+!
       SUBROUTINE DO_PHOTOSYNTHESIS( TEMPK,        SPHU,       RA,           &
                                     PAR_ABSORBED, PRESSURE,   CO2,          &
                                     O2,           LAI,        O3,           &
@@ -325,18 +325,18 @@
       ! SOIL_WETNESS  : Fraction of moisture in soil pores                []
       ! PFT           : Index for PFT                                     []
       !---------------------------------------------------------------------------------------
-      REAL,     INTENT(IN)  :: TEMPK         
-      REAL,     INTENT(IN)  :: SPHU          
-      REAL,     INTENT(IN)  :: RA            
-      REAL,     INTENT(IN)  :: PAR_ABSORBED  
-      REAL,     INTENT(IN)  :: PRESSURE      
-      REAL,     INTENT(IN)  :: CO2           
-      REAL,     INTENT(IN)  :: O2            
-      REAL,     INTENT(IN)  :: O3            
-      REAL,     INTENT(IN)  :: LAI           
-      LOGICAL,  INTENT(IN)  :: LO3_DAMAGE    
-      REAL,     INTENT(IN)  :: SOIL_WETNESS  
-      INTEGER,  INTENT(IN)  :: PFT           
+      REAL,     INTENT(IN)  :: TEMPK
+      REAL,     INTENT(IN)  :: SPHU
+      REAL,     INTENT(IN)  :: RA
+      REAL,     INTENT(IN)  :: PAR_ABSORBED
+      REAL,     INTENT(IN)  :: PRESSURE
+      REAL,     INTENT(IN)  :: CO2
+      REAL,     INTENT(IN)  :: O2
+      REAL,     INTENT(IN)  :: O3
+      REAL,     INTENT(IN)  :: LAI
+      LOGICAL,  INTENT(IN)  :: LO3_DAMAGE
+      REAL,     INTENT(IN)  :: SOIL_WETNESS
+      INTEGER,  INTENT(IN)  :: PFT
 !
 !OUTPUT PARAMETERS:
 !
@@ -353,17 +353,17 @@
       ! FACTOR_O3     : Ozone damage factor                               []
       ! BETA          : Soil moisture stress factor                       []
       !---------------------------------------------------------------------------------------
-      REAL,     INTENT(OUT) :: G_CAN_OUT     
-      REAL,     INTENT(OUT) :: G_LEAF_OUT    
-      REAL,     INTENT(OUT) :: CO2_IN        
-      REAL,     INTENT(OUT) :: A_CAN_OUT    
-      REAL,     INTENT(OUT) :: A_NET_OUT     
-      REAL,     INTENT(OUT) :: RESP_CAN_OUT  
-      REAL,     INTENT(OUT) :: RESP_OUT      
-      REAL,     INTENT(OUT) :: FLUXO3_CAN    
-      REAL,     INTENT(OUT) :: FLUXO3        
-      REAL,     INTENT(OUT) :: FACTOR_O3     
-      REAL,     INTENT(OUT) :: BETA          
+      REAL,     INTENT(OUT) :: G_CAN_OUT
+      REAL,     INTENT(OUT) :: G_LEAF_OUT
+      REAL,     INTENT(OUT) :: CO2_IN
+      REAL,     INTENT(OUT) :: A_CAN_OUT
+      REAL,     INTENT(OUT) :: A_NET_OUT
+      REAL,     INTENT(OUT) :: RESP_CAN_OUT
+      REAL,     INTENT(OUT) :: RESP_OUT
+      REAL,     INTENT(OUT) :: FLUXO3_CAN
+      REAL,     INTENT(OUT) :: FLUXO3
+      REAL,     INTENT(OUT) :: FACTOR_O3
+      REAL,     INTENT(OUT) :: BETA
 !
 !LOCAL VARIABLES:
 !
@@ -396,33 +396,33 @@
       ! ERR3          : Relative change for A_NET between iterations      []
       ! DELTA         : Maximum of the 3 relative changes                 []
       !---------------------------------------------------------------------------------------
-      REAL                  :: TEMPC         
-      REAL                  :: SPHU_SAT      
-      REAL                  :: DEFICIT_Q     
-      REAL                  :: APAR          
-      REAL                  :: CO2_AMBIENT   
-      REAL                  :: O3_CONC       
-      REAL                  :: BIGLEAFSCALE  
-      REAL                  :: G_CAN         
-      REAL                  :: G_LEAF        
-      REAL                  :: G_LEAF_PREV   
-      REAL                  :: CO2_IN_PREV   
-      REAL                  :: A_NET         
-      REAL                  :: RESP          
-      REAL                  :: A_NET_PREV    
-      REAL                  :: V_CMAX        
-      REAL                  :: CO2_GAMMA     
-      REAL                  :: RATE_LIGHT    
-      REAL                  :: RATE_PRODUCT  
-      REAL                  :: RATE_RUBISCO  
-      REAL                  :: A_GROSS       
-      REAL                  :: TAU           
-      REAL                  :: DENOM         
-      INTEGER               :: ITER          
-      REAL                  :: ERR1          
-      REAL                  :: ERR2          
-      REAL                  :: ERR3          
-      REAL                  :: DELTA         
+      REAL                  :: TEMPC
+      REAL                  :: SPHU_SAT
+      REAL                  :: DEFICIT_Q
+      REAL                  :: APAR
+      REAL                  :: CO2_AMBIENT
+      REAL                  :: O3_CONC
+      REAL                  :: BIGLEAFSCALE
+      REAL                  :: G_CAN
+      REAL                  :: G_LEAF
+      REAL                  :: G_LEAF_PREV
+      REAL                  :: CO2_IN_PREV
+      REAL                  :: A_NET
+      REAL                  :: RESP
+      REAL                  :: A_NET_PREV
+      REAL                  :: V_CMAX
+      REAL                  :: CO2_GAMMA
+      REAL                  :: RATE_LIGHT
+      REAL                  :: RATE_PRODUCT
+      REAL                  :: RATE_RUBISCO
+      REAL                  :: A_GROSS
+      REAL                  :: TAU
+      REAL                  :: DENOM
+      INTEGER               :: ITER
+      REAL                  :: ERR1
+      REAL                  :: ERR2
+      REAL                  :: ERR3
+      REAL                  :: DELTA
 
 
 
@@ -436,8 +436,8 @@
       ! Calculate CO2 compensation point
       TAU               = 2600.0 * FACTOR_Q10( 0.57, TEMPC )                    ! CO2/O2 Specificity Ratio
       CO2_GAMMA         = IS_C3_PLANT(PFT) / ( 2.0 * TAU ) &
-                        * PRESSURE * O2 
-      ! Calculate canopy scaling factor 
+                        * PRESSURE * O2
+      ! Calculate canopy scaling factor
       BIGLEAFSCALE      = ( 1 - EXP( -K_EXTINCT(PFT) * LAI ) ) / K_EXTINCT(PFT)
       ! Convert unit of absorbed PAR to mol photon m^-2 s^-1
       APAR              = 4.6e-6 * PAR_ABSORBED
@@ -445,16 +445,16 @@
       CO2_AMBIENT       = PRESSURE * CO2
       ! Calculate O3 molar concentration in canopy layer
       O3_CONC           = O3 * PRESSURE / RSTARG / TEMPK * 1e9
-    
+
       ! To modify net photosynthesis rate by soil moisture stress later
       ! Not needed to be inside the loop
       CALL MOIST_STRESS( SOIL_WETNESS, BETA )
-      
+
       ! Iterate to find a self-consistent set of photosynthesis,
-      ! stomatal conductance and leaf internal CO2 concentration 
+      ! stomatal conductance and leaf internal CO2 concentration
       ! Initial guess: G_LEAF = 0 and other initializations
-      ITER              = 1 
-      G_LEAF            = 0.0   
+      ITER              = 1
+      G_LEAF            = 0.0
       G_CAN             = 0.0
       CO2_IN_PREV       = 0.0
       A_NET_PREV        = 0.0
@@ -467,21 +467,21 @@
         ! Step 1: Closure condition by Jacobs (1994)
         SPHU_SAT          = 0.622 * E_SAT( TEMPC ) / PRESSURE
         G_CAN             = G_LEAF * BIGLEAFSCALE
-        DEFICIT_Q         = ( SPHU_SAT - SPHU ) / ( 1 + RA * G_CAN )     
+        DEFICIT_Q         = ( SPHU_SAT - SPHU ) / ( 1 + RA * G_CAN )
         CO2_IN            = CO2_GAMMA + f0(PFT)*( 1 - DEFICIT_Q / D_STAR(PFT) ) &
-                          * ( CO2_AMBIENT - CO2_GAMMA ) 
-        IF ( BETA == 0.0 .OR. DEFICIT_Q >= D_STAR(PFT) .OR. PAR_ABSORBED == 0.0 ) THEN 
+                          * ( CO2_AMBIENT - CO2_GAMMA )
+        IF ( BETA == 0.0 .OR. DEFICIT_Q >= D_STAR(PFT) .OR. PAR_ABSORBED == 0.0 ) THEN
           ! Close stomata if the above conditions are satisfied
-          A_NET           = - RESP * BETA 
+          A_NET           = - RESP * BETA
           G_LEAF          = G_LEAF_MIN(PFT)
           PRINT *, "Stomata is closed."
-        ELSE 
+        ELSE
           ! Step 2: Photosynthesis model
           CALL PHOTOSYNTHESIS_LIMITS( CO2_IN,       CO2_GAMMA,    &
                                       O2, APAR,     PRESSURE,     &
-                                      TEMPC,        V_CMAX,       & 
+                                      TEMPC,        V_CMAX,       &
                                       PFT,          RATE_LIGHT,   &
-                                      RATE_PRODUCT, RATE_RUBISCO  )                                
+                                      RATE_PRODUCT, RATE_RUBISCO  )
           CALL SOLVE_COLIMIT( RATE_LIGHT,   RATE_PRODUCT, &
                               RATE_RUBISCO, A_GROSS      )
           PRINT *, "Photosynthesis calculated."
@@ -489,34 +489,34 @@
           ! Step 3: Diffusive CO2 flux thru open stomata
           CALL LEAF_CONDUCTANCE( A_NET, CO2_AMBIENT, CO2_IN,  &
                                  TEMPK, G_LEAF                )
-          ! Close stomata if net photosynthesis <= 0 or 
+          ! Close stomata if net photosynthesis <= 0 or
           ! stomatal conductance is too small
           IF ( A_NET <= 0 .OR. G_LEAF <= G_LEAF_MIN(PFT) ) THEN
-            A_NET     = - RESP * BETA 
+            A_NET     = - RESP * BETA
             G_LEAF    = G_LEAF_MIN(PFT)
           END IF
           ! Apply ozone damage scheme by Sitch et al. (2007)
           IF ( LO3_DAMAGE ) THEN
-            CALL OZONE_DAMAGE ( O3_CONC,  RA,          &    
+            CALL OZONE_DAMAGE ( O3_CONC,  RA,          &
                                 G_LEAF,   PFT,         &
                                 FLUXO3,   FACTOR_O3    )
             PRINT *, "Ozone damage calculated."
             A_NET_OUT     = FACTOR_O3 * A_NET
-            RESP_OUT      = FACTOR_O3 * RESP    
+            RESP_OUT      = FACTOR_O3 * RESP
             G_LEAF_OUT    = FACTOR_O3 * G_LEAF
-              ! Close stomata if net photosynthesis <= 0 or 
+              ! Close stomata if net photosynthesis <= 0 or
               ! stomatal conductance is too small
               IF ( A_NET_OUT <= 0 .OR. G_LEAF_OUT <= G_LEAF_MIN(PFT) ) THEN
-                A_NET_OUT   = - RESP * BETA 
+                A_NET_OUT   = - RESP * BETA
                 G_LEAF_OUT  = G_LEAF_MIN(PFT)
               END IF
-          ELSE 
+          ELSE
             A_NET_OUT     = A_NET
             RESP_OUT      = RESP
             G_LEAF_OUT    = G_LEAF
           END IF  ! O3 damage
         END IF    ! Open or closed stomata
-        IF ( ITER >= 2 ) THEN 
+        IF ( ITER >= 2 ) THEN
         ! calculate error from step 2 onwards
           ERR1  = REL_ERR( G_LEAF, G_LEAF_PREV )
           ERR2  = REL_ERR( CO2_IN, CO2_IN_PREV )
@@ -525,47 +525,47 @@
         END IF
         CO2_IN_PREV  = CO2_IN
         A_NET_PREV   = A_NET
-        G_LEAF_PREV  = G_LEAF        
+        G_LEAF_PREV  = G_LEAF
         PRINT *, "iteration = ", ITER
         PRINT *, "Delta = ", DELTA
         ITER = ITER + 1
       END DO  ! Do while loop
-      
+
       ! Canopy scaling
       A_CAN_OUT     = BIGLEAFSCALE * A_NET_OUT
       G_CAN_OUT     = BIGLEAFSCALE * G_LEAF_OUT
       RESP_CAN_OUT  = BIGLEAFSCALE * RESP_OUT
-      FLUXO3_CAN    = BIGLEAFSCALE * FLUXO3 
-      
+      FLUXO3_CAN    = BIGLEAFSCALE * FLUXO3
+
       ! Deal with diagnoses
 
       ! Print for debugs
-#if defined (DEBUG) 
+#if defined (DEBUG)
         PRINT *, "TEMPC = ", TEMPC
-        PRINT *, "SPHU_SAT = ", SPHU_SAT     
-        PRINT *, "DEFICIT_Q = ", DEFICIT_Q    
-        PRINT *, "G_LEAF_PREV = ", G_LEAF_PREV   
-        PRINT *, "CO2_IN_PREV = ",  CO2_IN_PREV   
-        PRINT *, "A_NET_PREV = ", A_NET_PREV    
-        PRINT *, "V_CMAX = ", V_CMAX        
-        PRINT *, "CO2_GAMMA = ", CO2_GAMMA     
-        PRINT *, "RATE_LIGHT = ", RATE_LIGHT    
-        PRINT *, "RATE_PRODUCT = ", RATE_PRODUCT  
-        PRINT *, "RATE_RUBISCO = ", RATE_RUBISCO  
-        PRINT *, "A_GROSS = ", A_GROSS       
-        PRINT *, "TAU = ", TAU           
-        PRINT *, "DENOM = ", DENOM         
-        PRINT *, "ITER = ", ITER          
-        PRINT *, "ERR1 = ", ERR1          
-        PRINT *, "ERR2 = ", ERR2          
-        PRINT *, "ERR3 = ", ERR3          
-        PRINT *, "DELTA = ", DELTA 
+        PRINT *, "SPHU_SAT = ", SPHU_SAT
+        PRINT *, "DEFICIT_Q = ", DEFICIT_Q
+        PRINT *, "G_LEAF_PREV = ", G_LEAF_PREV
+        PRINT *, "CO2_IN_PREV = ",  CO2_IN_PREV
+        PRINT *, "A_NET_PREV = ", A_NET_PREV
+        PRINT *, "V_CMAX = ", V_CMAX
+        PRINT *, "CO2_GAMMA = ", CO2_GAMMA
+        PRINT *, "RATE_LIGHT = ", RATE_LIGHT
+        PRINT *, "RATE_PRODUCT = ", RATE_PRODUCT
+        PRINT *, "RATE_RUBISCO = ", RATE_RUBISCO
+        PRINT *, "A_GROSS = ", A_GROSS
+        PRINT *, "TAU = ", TAU
+        PRINT *, "DENOM = ", DENOM
+        PRINT *, "ITER = ", ITER
+        PRINT *, "ERR1 = ", ERR1
+        PRINT *, "ERR2 = ", ERR2
+        PRINT *, "ERR3 = ", ERR3
+        PRINT *, "DELTA = ", DELTA
 #endif
       END SUBROUTINE DO_PHOTOSYNTHESIS
-      
+
       SUBROUTINE PHOTOSYNTHESIS_LIMITS( CO2_IN,       CO2_GAMMA,    &
                                         O2, APAR,     PRESSURE,     &
-                                        TEMPC,        V_CMAX,       & 
+                                        TEMPC,        V_CMAX,       &
                                         PFT,          RATE_LIGHT,   &
                                         RATE_PRODUCT, RATE_RUBISCO  )
 ! Determine potential leaf-level photosynthesis, according to C3 and C4
@@ -586,9 +586,9 @@
       REAL,     INTENT(IN)  :: CO2_IN
       REAL,     INTENT(IN)  :: CO2_GAMMA
       REAL,     INTENT(IN)  :: O2
-      REAL,     INTENT(IN)  :: APAR       
-      REAL,     INTENT(IN)  :: PRESSURE  
-      REAL,     INTENT(IN)  :: TEMPC    
+      REAL,     INTENT(IN)  :: APAR
+      REAL,     INTENT(IN)  :: PRESSURE
+      REAL,     INTENT(IN)  :: TEMPC
       REAL,     INTENT(IN)  :: V_CMAX
       INTEGER,  INTENT(IN)  :: PFT
 !
@@ -605,12 +605,12 @@
       ! Success or failure flag
 !      INTEGER,  INTENT(OUT) :: RC
 !
-! !LOCAL VARIABLES: 
-! 
+! !LOCAL VARIABLES:
+!
       ! Michaelis-Menten parameters for CO2 and O2 respectively
-      REAL                  :: K_C 
-      REAL                  :: K_O 
-      
+      REAL                  :: K_C
+      REAL                  :: K_O
+
       !=================================================================
       ! PHOTOSYNTHESIS_LIMITS begins here!
       !=================================================================
@@ -630,11 +630,11 @@
                             * ( CO2_IN -     CO2_GAMMA )       &
                             / ( CO2_IN + 2 * CO2_GAMMA )
         RATE_RUBISCO        = MAX( RATE_RUBISCO, 0.0 )
-        RATE_LIGHT          = MAX( RATE_LIGHT, 0.0 )         
+        RATE_LIGHT          = MAX( RATE_LIGHT, 0.0 )
         RATE_PRODUCT        = 0.5 * V_CMAX
       END IF
       END SUBROUTINE PHOTOSYNTHESIS_LIMITS
-      
+
       SUBROUTINE SOLVE_COLIMIT( RATE_LIGHT,   RATE_PRODUCT, &
                                 RATE_RUBISCO, A_GROSS       )
       !---------------------------------------------------------------------------------------
@@ -646,8 +646,8 @@
       REAL,     INTENT(IN)  :: RATE_LIGHT
       REAL,     INTENT(IN)  :: RATE_PRODUCT
       REAL,     INTENT(IN)  :: RATE_RUBISCO
-      REAL,     INTENT(OUT) :: A_GROSS 
-      
+      REAL,     INTENT(OUT) :: A_GROSS
+
       ! Parameters
       REAL,     PARAMETER   :: BETA1 = 0.83
       REAL,     PARAMETER   :: BETA2 = 0.93
@@ -660,21 +660,21 @@
       C = RATE_RUBISCO * RATE_LIGHT / BETA1
       ! Note that C > 0, SQRT( B^2 - 4*C ) < ABS(B)
       ! Take smaller root
-      TEMP = 0.5 * ( - B - SQRT( B * B - 4 * C ) ) 
-      
-      ! 2nd quadratic 
+      TEMP = 0.5 * ( - B - SQRT( B * B - 4 * C ) )
+
+      ! 2nd quadratic
       B = - ( TEMP + RATE_PRODUCT ) / BETA2
       C = TEMP * RATE_PRODUCT / BETA2
       ! Note that C > 0, SQRT( B^2 - 4*C ) < ABS(B)
       ! Take smaller root
-      A_GROSS  = 0.5 * ( - B - SQRT( B * B - 4 * C ) ) 
+      A_GROSS  = 0.5 * ( - B - SQRT( B * B - 4 * C ) )
       END SUBROUTINE SOLVE_COLIMIT
-      
+
       SUBROUTINE MOIST_STRESS( SOIL_WETNESS, BETA )
 ! Calculate the moisture stress factor BETA
 
       !---------------------------------------------------------------------------------------
-      ! SOIL_WETNESS    : Volumetric mean moisture concentration in root zone divided by porosity 
+      ! SOIL_WETNESS    : Volumetric mean moisture concentration in root zone divided by porosity
       ! SATU            : Volumetric soil moisture at saturation (= porosity)
       ! CRIT            : Volumetric soil moisture at critical point (above which
       !                   plants are no longer stressed by soil moisture)
@@ -682,24 +682,24 @@
       !                   photosynthesis is stopped by limited soil moisture)
       ! BETA            : Moisture stress factor
       !---------------------------------------------------------------------------------------
-      REAL,     INTENT(IN)  :: SOIL_WETNESS  
+      REAL,     INTENT(IN)  :: SOIL_WETNESS
       REAL,     INTENT(OUT) :: BETA
-      
-      BETA =  ( SOIL_WETNESS*SATU - WILT ) / ( CRIT - WILT ) 
+
+      BETA =  ( SOIL_WETNESS*SATU - WILT ) / ( CRIT - WILT )
       BETA = MIN( MAX( 0.0, BETA ), 1.0 )
       END SUBROUTINE MOIST_STRESS
-      
+
       SUBROUTINE LEAF_CONDUCTANCE( A_NET, CO2_AMBIENT, CO2_IN,  &
                                    TEMPK, G_LEAF                )
 ! Calculate the leaf conductance based on net photosynthesis and CO2 partial pressure deficit
       !---------------------------------------------------------------------------------------
       ! A_NET             : Net photosynthesis                      [mol CO2 m^-2 s^-1]
-      ! CO2_AMBIENT       : Ambient CO2 partial pressure            [Pa] 
+      ! CO2_AMBIENT       : Ambient CO2 partial pressure            [Pa]
       ! CO2_IN            : Leaf internal CO2 partial pressure      [Pa]
       ! TEMPK             : Leaf temperature                        [K]
       ! G_LEAF            : Leaf conductance for H2O                [m s^-1]
       ! RSTARG            : Universal Gas Constant                  [J K^-1 mol^-1]
-      ! CO2_O2_RATIO      : Ratio of leaf resistance for CO2 to H2O 
+      ! CO2_O2_RATIO      : Ratio of leaf resistance for CO2 to H2O
       !---------------------------------------------------------------------------------------
       REAL,     INTENT(IN)      :: A_NET
       REAL,     INTENT(IN)      :: CO2_AMBIENT
@@ -709,7 +709,7 @@
       G_LEAF = CO2_O2_RATIO * RSTARG * TEMPK  &
              * A_NET / ( CO2_AMBIENT - CO2_IN )
       END SUBROUTINE LEAF_CONDUCTANCE
-      
+
       SUBROUTINE OZONE_DAMAGE ( O3_CONC, RA,          &                          ! Should be Ra + Rb? Need to check
                                 G_LEAF,  PFT,         &
                                 FLUXO3,  FACTOR_O3    )
@@ -721,9 +721,9 @@
       ! PFT             : Index for PFT                                           []
       ! FLUXO3          : Leaf uptake of O3                                       [nmol m^-2 s^-1]
       ! FACTOR_O3       : Ozone damage factor                                     []
-      !---------------------------------------------------------------------------------------        
-      REAL,     INTENT(IN)    :: O3_CONC         
-      REAL,     INTENT(IN)    :: RA              
+      !---------------------------------------------------------------------------------------
+      REAL,     INTENT(IN)    :: O3_CONC
+      REAL,     INTENT(IN)    :: RA
       REAL,     INTENT(IN)    :: G_LEAF
       INTEGER,  INTENT(IN)    :: PFT
       REAL,     INTENT(OUT)   :: FLUXO3
@@ -735,22 +735,22 @@
       REAL :: TEMP2
       REAL :: F
       TEMP1       = 1 + PARAM_A(PFT) * FLUXO3_CRIT(PFT)
-      TEMP2       = 1.67 / G_LEAF        
+      TEMP2       = 1.67 / G_LEAF
       ! Calculate coefficients for quadratic equation F^2 + B*F + C = 0
       IF ( ABS(RA) < EPSILON(1.0) ) THEN
-!        RA        = 0.0  
+!        RA        = 0.0
         FACTOR_O3 = TEMP1 / ( 1 + PARAM_A(PFT) * O3_CONC / TEMP2 )
       ELSE
-        B         = TEMP2 / RA - TEMP1 + PARAM_A(PFT) * O3_CONC / RA 
+        B         = TEMP2 / RA - TEMP1 + PARAM_A(PFT) * O3_CONC / RA
         C         = - TEMP1 * TEMP2 / RA
         ! Note that C < 0, SQRT( B^2 - 4*C ) > ABS(B)
         ! Take positive root
-        F         = 0.5 * ( SQRT( B * B - 4 * C ) - B ) 
+        F         = 0.5 * ( SQRT( B * B - 4 * C ) - B )
         FACTOR_O3 = MIN( MAX( F, 0.0 ), 1.0 )
       END IF
       FLUXO3      = O3_CONC / ( RA + TEMP2 / FACTOR_O3 )      ! MAYBE NOT NEEDED?
       END SUBROUTINE OZONE_DAMAGE
-      
+
       FUNCTION FACTOR_Q10( Q10, TEMPC ) RESULT( FACTOR )
 ! Calculate the standard Q10 temperature dependence
       REAL, INTENT(IN)    :: Q10
@@ -758,15 +758,15 @@
       REAL                :: FACTOR
       FACTOR = Q10**( 0.1 * ( TEMPC - 25 ) )
       END FUNCTION FACTOR_Q10
-      
+
       FUNCTION REL_ERR( ITEM, ITEM_PREV ) RESULT( ERROR )
 ! Calculate the relative error of a quantity between two iterations
       REAL, INTENT(IN)    :: ITEM
       REAL, INTENT(IN)    :: ITEM_PREV
       REAL                :: ERROR
-      ERROR = ( ITEM - ITEM_PREV ) / ITEM_PREV 
-      END FUNCTION REL_ERR      
-      
+      ERROR = ( ITEM - ITEM_PREV ) / ITEM_PREV
+      END FUNCTION REL_ERR
+
       FUNCTION E_SAT( TEMPC ) RESULT ( Esat )
 ! Calculate the saturation vapour pressure using the empirical formula by Lowe and Ficke (1974)
       REAL, INTENT(IN)  :: TEMPC
@@ -782,7 +782,7 @@
       Esat = 100.0 * ( a0 + TEMPC * ( a1 + TEMPC * ( a2 + TEMPC   &
                    * ( a3 + TEMPC * ( a4 + TEMPC * ( a5 + TEMPC * a6 ) ) ) ) ) )
       END FUNCTION E_SAT
-      
+
 
 !------------------------------------------------------------------------------
 !                  GEOS-Chem Global Chemical Transport Model                  !
@@ -791,13 +791,13 @@
 !
 ! !IROUTINE: get_ecophy_inputs
 !
-! !DESCRIPTION: Subroutine GET\_ECOPHY_INPUTS get inputs 
+! !DESCRIPTION: Subroutine GET\_ECOPHY_INPUTS get inputs
 !  from Met and Chem State objects and Input Options.
 !\\
 !\\
 ! !INTERFACE:
 !
-      SUBROUTINE GET_ECOPHY_INPUTS( State_Met,    State_Chm, I, J,     &
+      SUBROUTINE GET_ECOPHY_INPUTS( State_Met,    State_Chm, I, J, LDT,&
                                     TEMPK,        SPHU,                &
                                     PAR_ABSORBED, PRESSURE,  CO2,      &
                                     O2,           LAI,       O3,       &
@@ -821,6 +821,7 @@
       Type(ChmState), INTENT(IN)  :: State_Chm
       INTEGER,        INTENT(IN)  :: I
       INTEGER,        INTENT(IN)  :: J
+      INTEGER,        INTENT(IN)  :: LDT
 !
 ! !OUTPUT PARAMETERS:
 !
@@ -841,11 +842,11 @@
       REAL,     INTENT(OUT) :: PAR_ABSORBED
       REAL,     INTENT(OUT) :: PRESSURE
       REAL,     INTENT(OUT) :: CO2
-      REAL,     INTENT(OUT) :: O2            
-      REAL,     INTENT(OUT) :: O3            
-      REAL,     INTENT(OUT) :: LAI ( : )       
-      LOGICAL,  INTENT(OUT) :: LO3_DAMAGE    
-      REAL,     INTENT(OUT) :: SOIL_WETNESS  
+      REAL,     INTENT(OUT) :: O2
+      REAL,     INTENT(OUT) :: O3
+      REAL,     INTENT(OUT) :: LAI
+      LOGICAL,  INTENT(OUT) :: LO3_DAMAGE
+      REAL,     INTENT(OUT) :: SOIL_WETNESS
 !
 ! !LOCAL VARIABLES:
 !
@@ -863,10 +864,10 @@
       ! DO I = 1, IIPAR
       ! Surface temperature [K]
       TEMPK         = State_Met%TS( I,J )
-      ! Specific humidity [kg/kg]  
+      ! Specific humidity [kg/kg]
       SPHU          = State_Met%SPHU( I,J,1 ) / 1000
-      ! Photosynthetically active radiation absorbed [W m^-2] 
-      PARDR         = State_Met%PARDR( I,J ) 
+      ! Photosynthetically active radiation absorbed [W m^-2]
+      PARDR         = State_Met%PARDR( I,J )
       PARDF         = State_Met%PARDF( I,J )
       PAR           = PARDR + PARDF
       ! Pressure [Pa]
@@ -881,16 +882,16 @@
       O3            = State_Chm%Species( I,J,1,id_O3  ) * AIRMW &
                     / State_Chm%SpcData( id_O3  )%Info%MW_g
       ! LAI [m^2 m^-2]
-      LAI           = State_Met%XLAI( I,J,: )
+      LAI           = State_Met%XLAI( I,J,LDT )
       ! Root zone soil wetness
       SOIL_WETNESS  = State_Met%GWETROOT( I,J )
-      ! Soil moisture at saturation 
+      ! Soil moisture at saturation
       SATU          = THETA_SATU( I,J )
-      ! Soil moisture at critical point 
+      ! Soil moisture at critical point
       CRIT          = THETA_CRIT( I,J )
-      ! Soil moisture at wilting point 
+      ! Soil moisture at wilting point
       WILT          = THETA_WILT( I,J )
-      ! NOTE: Leave possibility to call soil matric potentials instead 
+      ! NOTE: Leave possibility to call soil matric potentials instead
       !       of soil moistures
        ! END DO
        ! END DO
@@ -904,10 +905,10 @@
 ! !MODULE: hadgem2_soilmap_mod.F90
 !
 ! !DESCRIPTION: Module HADGEM2\_SOILMAP\_MOD reads the HadGEM2 soil map and
-!  computes the THETA_WILT and THETA_CRIT State\_Met arrays. 
+!  computes the THETA_WILT and THETA_CRIT State\_Met arrays.
 !\\
 !\\
-! ! !INTERFACE: 
+! ! !INTERFACE:
 ! !
 ! MODULE HadGEM2_SoilMap_Mod
 ! !
@@ -928,16 +929,16 @@
 !   PUBLIC  :: Init_Soilmap
 !   PUBLIC  :: Compute_Soilmap
 !   PUBLIC  :: Cleanup_SoilMap
-! !                                                                                              
+! !
 ! !  The variables are defined as follows:
-! !      State_Met%THETA_WILT(I,J)    : Volumetric soil moisture content at wilting point 
+! !      State_Met%THETA_WILT(I,J)    : Volumetric soil moisture content at wilting point
 ! !      State_Met%THETA_CRIT(I,J)    : Volumetric soil moisture content at critical point
 ! !      State_Met%THETA_SATU(I,J)    : Volumetric soil moisture content at saturation
-! !                                                  
-! !  NOTES: 
+! !
+! !  NOTES:
 ! !  (1) These parameters are used by ecophysiology modules
 ! !
-! ! !REVISION HISTORY: 
+! ! !REVISION HISTORY:
 ! !  09 Feb 2019 - J. Lam - Initial version
 ! !EOP
 ! !------------------------------------------------------------------------------
@@ -954,9 +955,9 @@
 !   ! Arrays
 !   REAL*4,  ALLOCATABLE :: lon       (:  )  ! Lon centers, HadGEM2 grid [degrees]
 !   REAL*4,  ALLOCATABLE :: lat       (  :)  ! Lat centers, HadGEM2 grid [degrees]
-!   INTEGER, ALLOCATABLE :: THETA_WILT(:,:)  ! Soil moisture at wilting point 
-!   INTEGER, ALLOCATABLE :: THETA_CRIT(:,:)  ! Soil moisture at critical point 
-!   INTEGER, ALLOCATABLE :: THETA_SATU(:,:)  ! Soil moisture at saturation point   
+!   INTEGER, ALLOCATABLE :: THETA_WILT(:,:)  ! Soil moisture at wilting point
+!   INTEGER, ALLOCATABLE :: THETA_CRIT(:,:)  ! Soil moisture at critical point
+!   INTEGER, ALLOCATABLE :: THETA_SATU(:,:)  ! Soil moisture at saturation point
 
 ! CONTAINS
 !EOC
@@ -967,7 +968,7 @@
 !
 ! !IROUTINE: init_soilmap
 !
-! !DESCRIPTION: Subroutine INIT\_SOILMAP reads HadGEM2 soil map 
+! !DESCRIPTION: Subroutine INIT\_SOILMAP reads HadGEM2 soil map
 ! information from disk (in netCDF format).
 !\\
 !\\
@@ -984,9 +985,9 @@
     USE m_netcdf_io_read
     USE m_netcdf_io_readattr
     USE m_netcdf_io_close
-    
+
     IMPLICIT NONE
-    
+
 #   include "netcdf.inc"
 !
 ! !INPUT PARAMETERS:
@@ -1002,7 +1003,7 @@
 !  Assumes that you have:
 !  (1) A netCDF library (either v3 or v4) installed on your system
 !  (2) The NcdfUtilities package (from Bob Yantosca) source code
-!  
+!
 ! !REVISION HISTORY:
 !  09 Feb 2019 - J. Lam - Initial version
 !EOP
@@ -1014,41 +1015,41 @@
       !======================================================================
       ! Variable declarations
       !======================================================================
-       
+
       ! Scalars
       INTEGER            :: I, J               ! Loop indices
       INTEGER            :: fId                ! netCDF file ID
       INTEGER            :: as                 ! Allocation status
-      INTEGER            :: I_OLSON            ! # of lons (0.5 x 0.5)
-      INTEGER            :: J_OLSON            ! # of lats (0.5 x 0.5)
+      INTEGER            :: I_SOIL             ! # of lons (0.5 x 0.5)
+      INTEGER            :: J_SOIL             ! # of lats (0.5 x 0.5)
       REAL               :: D_LON              ! Delta longitude, HadGEM2 grid [degrees]
       REAL               :: D_LAT              ! Delta latitude,  HadGEM2 grid [degrees]
 
-       
+
       ! Character strings
       CHARACTER(LEN=255) :: nc_dir             ! netCDF directory name
       CHARACTER(LEN=255) :: nc_file            ! netCDF file name
       CHARACTER(LEN=255) :: nc_path            ! netCDF path name
-      CHARACTER(LEN=255) :: v_name             ! netCDF variable name 
+      CHARACTER(LEN=255) :: v_name             ! netCDF variable name
       CHARACTER(LEN=255) :: a_name             ! netCDF attribute name
       CHARACTER(LEN=255) :: a_val              ! netCDF attribute value
       CHARACTER(LEN=255) :: Msg, ErrMsg, ThisLoc
-       
+
       ! Arrays for netCDF start and count values
-      INTEGER            :: st1d(1), ct1d(1)   ! For 1D arrays    
-      INTEGER            :: st2d(2), ct2d(2)   ! For 2D arrays 
+      INTEGER            :: st1d(1), ct1d(1)   ! For 1D arrays
+      INTEGER            :: st2d(2), ct2d(2)   ! For 2D arrays
       REAL,  ALLOCATABLE :: lon  (:    )  ! Lon centers, Olson grid [degrees]
       REAL,  ALLOCATABLE :: lat  (  :  )  ! Lat centers, Olson grid [degrees]
-      
+
       !=================================================================
       ! Init_Soilmap begins here!
       !=================================================================
-        
+
       ! Initialize
       RC        = GC_SUCCESS
       ErrMsg    = ''
       ThisLoc   = ' -> at Init_Soilmap (in module GeosCore/soilmap_mod.F90)'
-      
+
       !======================================================================
       ! Initialize variables
       !======================================================================
@@ -1067,27 +1068,27 @@
       ! Allocate arrays
       ALLOCATE( lon( I_SOIL ), STAT=RC )
       CALL GC_CheckVar( 'soilmap_mod:lon', 0, RC)
-      IF ( RC /= GC_SUCCESS ) RETURN 
+      IF ( RC /= GC_SUCCESS ) RETURN
       lon( : ) = 0e+0_f8
 
       ALLOCATE( lat( J_SOIL ), STAT=RC )
       CALL GC_CheckVar( 'soilmap_mod:lat', 0, RC)
-      IF ( RC /= GC_SUCCESS ) RETURN 
-      lat( :,: ) = 0e+0_f8
+      IF ( RC /= GC_SUCCESS ) RETURN
+      lat( : ) = 0e+0_f8
 
       ALLOCATE( THETA_WILT( I_SOIL, J_SOIL ), STAT=RC )
       CALL GC_CheckVar( 'soilmap_mod:THETA_WILT', 0, RC)
-      IF ( RC /= GC_SUCCESS ) RETURN 
+      IF ( RC /= GC_SUCCESS ) RETURN
       THETA_WILT( :,: ) = 0e+0_f8
-      
+
       ALLOCATE( THETA_CRIT( I_SOIL, J_SOIL ), STAT=RC )
       CALL GC_CheckVar( 'soilmap_mod:THETA_CRIT', 0, RC)
-      IF ( RC /= GC_SUCCESS ) RETURN 
+      IF ( RC /= GC_SUCCESS ) RETURN
       THETA_CRIT( :,: ) = 0e+0_f8
 
       ALLOCATE( THETA_SATU( I_SOIL, J_SOIL ), STAT=RC )
       CALL GC_CheckVar( 'soilmap_mod:THETA_SATU', 0, RC)
-      IF ( RC /= GC_SUCCESS ) RETURN 
+      IF ( RC /= GC_SUCCESS ) RETURN
       THETA_SATU( :,: ) = 0e+0_f8
 
     !======================================================================
@@ -1100,7 +1101,7 @@
 
     ! Open file for read
     CALL Ncop_Rd( fId, TRIM(nc_path) )
-     
+
     ! Echo info to stdout
     IF ( am_I_Root ) THEN
        WRITE( 6, 100 ) REPEAT( '%', 79 )
@@ -1111,43 +1112,43 @@
     ! !----------------------------------------
     ! ! VARIABLE: lon
     ! !----------------------------------------
-     
+
     ! ! Variable name
     ! v_name = "longitude"
-    
+
     ! ! Read lon from file
     ! st1d   = (/ 1      /)
     ! ct1d   = (/ I_SOIL /)
     ! CALL NcRd( lon, fId, TRIM(v_name), st1d, ct1d )
- 
+
     ! ! Read the lon:units attribute
     ! a_name = "units"
     ! CALL NcGet_Var_Attributes( fId,TRIM(v_name),TRIM(a_name),a_val )
-    
+
     ! ! Echo info to stdout
     ! IF ( am_I_Root ) THEN
-    !    WRITE( 6, 130 ) TRIM(v_name), TRIM(a_val)     
+    !    WRITE( 6, 130 ) TRIM(v_name), TRIM(a_val)
     ! ENDIF
 
     ! !----------------------------------------
     ! ! VARIABLE: lat
     ! !----------------------------------------
-    
+
     ! ! Variable name
     ! v_name = "latitude"
-    
+
     ! ! Read lat from file
     ! st1d   = (/ 1      /)
     ! ct1d   = (/ J_SOIL /)
     ! CALL NcRd( lat, fId, TRIM(v_name), st1d, ct1d )
-     
+
     ! ! Read the lat:units attribute
     ! a_name = "units"
     ! CALL NcGet_Var_Attributes( fId,TRIM(v_name),TRIM(a_name),a_val )
-    
+
     ! ! Echo info to stdout
     ! IF ( am_I_Root ) THEN
-    !    WRITE( 6, 130 ) TRIM(v_name), TRIM(a_val) 
+    !    WRITE( 6, 130 ) TRIM(v_name), TRIM(a_val)
     ! ENDIF
 
     !----------------------------------------
@@ -1165,10 +1166,10 @@
     ! Read the THETA_WILT:units attribute
     a_name = "units"
     CALL NcGet_Var_Attributes( fId,TRIM(v_name),TRIM(a_name),a_val )
-    
+
     ! Echo info to stdout
     IF ( am_I_Root ) THEN
-       WRITE( 6, 130 ) TRIM(v_name), TRIM(a_val) 
+       WRITE( 6, 130 ) TRIM(v_name), TRIM(a_val)
     ENDIF
 
     !----------------------------------------
@@ -1186,10 +1187,10 @@
     ! Read the THETA_CRIT:units attribute
     a_name = "units"
     CALL NcGet_Var_Attributes( fId,TRIM(v_name),TRIM(a_name),a_val )
-    
+
     ! Echo info to stdout
     IF ( am_I_Root ) THEN
-       WRITE( 6, 130 ) TRIM(v_name), TRIM(a_val) 
+       WRITE( 6, 130 ) TRIM(v_name), TRIM(a_val)
     ENDIF
 
     !----------------------------------------
@@ -1207,19 +1208,19 @@
     ! Read the THETA_SATU:units attribute
     a_name = "units"
     CALL NcGet_Var_Attributes( fId,TRIM(v_name),TRIM(a_name),a_val )
-    
+
     ! Echo info to stdout
     IF ( am_I_Root ) THEN
-       WRITE( 6, 130 ) TRIM(v_name), TRIM(a_val) 
+       WRITE( 6, 130 ) TRIM(v_name), TRIM(a_val)
     ENDIF
-    
+
     !=================================================================
     ! Cleanup and quit
     !=================================================================
-    
+
     ! Close netCDF file
     CALL NcCl( fId )
-    
+
     ! Echo info to stdout
     IF ( am_I_Root ) THEN
        WRITE( 6, 140 )
@@ -1242,7 +1243,7 @@
 ! !IROUTINE: init_ecophy
 !
 ! !DESCRIPTION: Subroutine INIT\_ECOPHY initializes certain variables for the
-!  GEOS-CHEM ecophysiology subroutines. 
+!  GEOS-CHEM ecophysiology subroutines.
 !\\
 !\\
 ! !INTERFACE:
@@ -1290,7 +1291,7 @@
       !=================================================================
       ! INIT_ECOPHY begins here!
       !=================================================================
-      
+
       ! Initialize
       RC        = GC_SUCCESS
       LECOPHY   = Input_Opt%LECOPHY
@@ -1298,29 +1299,29 @@
       NUMPFT    = 5
       ErrMsg    = ''
       ThisLoc   = ' -> at Init_Ecophy (in module GeosCore/ecophysiology.F90)'
-      
+
       !===================================================================
       ! Arrays that hold inputs for the main driver do_ecophy
       ! Only allocate these if ecophysiology is activated
       !===================================================================
       ALLOCATE( THETA_SATU( IIPAR, JJPAR ), STAT=RC )
       CALL GC_CheckVar( 'ecophy_mod:THETA_SATU', 0, RC )
-      IF ( RC /= GC_SUCCESS ) RETURN 
+      IF ( RC /= GC_SUCCESS ) RETURN
       THETA_SATU( :,: ) = 0e+0_f8
 
       ALLOCATE( THETA_CRIT( IIPAR, JJPAR ), STAT=RC )
       CALL GC_CheckVar( 'ecophy_mod:THETA_CRIT', 0, RC )
-      IF ( RC /= GC_SUCCESS ) RETURN 
+      IF ( RC /= GC_SUCCESS ) RETURN
       THETA_CRIT( :,: ) = 0e+0_f8
 
       ALLOCATE( THETA_WILT( IIPAR, JJPAR ), STAT=RC )
       CALL GC_CheckVar( 'ecophy_mod:THETA_WILT', 0, RC )
-      IF ( RC /= GC_SUCCESS ) RETURN 
+      IF ( RC /= GC_SUCCESS ) RETURN
       THETA_WILT( :,: ) = 0e+0_f8
 
       ALLOCATE( IPFT( NUMPFT ), STAT=RC )
       CALL GC_CheckVar( 'ecophy_mod:IPFT', 0, RC )
-      IF ( RC /= GC_SUCCESS ) RETURN 
+      IF ( RC /= GC_SUCCESS ) RETURN
       IPFT( : ) = 0
 
       ! Get soil map
@@ -1361,6 +1362,3 @@
       END SUBROUTINE CLEANUP_ECOPHY
 !EOC
       END MODULE ECOPHY_MOD
-
-
-      

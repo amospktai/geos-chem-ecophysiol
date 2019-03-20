@@ -872,14 +872,14 @@
       USE State_Chm_Mod,      ONLY : ChmState
       USE State_Met_Mod,      ONLY : MetState
       USE State_Diag_Mod,     ONLY : DgnState
-      USE Ecophy_Mod,         ONLY : DO_ECOPHY
+      USE Ecophy_Mod,         ONLY : Do_Ecophy
 !
 ! !INPUT PARAMETERS:
 !
       LOGICAL,        INTENT(IN) :: am_I_Root      ! Are we on the root CPU?
       TYPE(OptInput), INTENT(IN) :: Input_Opt      ! Input Options object
       TYPE(MetState), INTENT(IN) :: State_Met      ! Meteorology state object
-      TYPE(DgnState), INTENT(IN) :: State_Diag     ! Diagnostics state object
+      TYPE(DgnState), INTENT(INOUT) :: State_Diag     ! Diagnostics state object
 
       REAL(f8), INTENT(IN) :: RADIAT (IIPAR,JJPAR) ! Solar radiation [W/m2]
       REAL(f8), INTENT(IN) :: TEMP   (IIPAR,JJPAR) ! Temperature [K]
@@ -1107,6 +1107,7 @@
       INTEGER IOLSON,II,IW
       INTEGER K,LDT
       REAL(f8)  RCLX,RIXX    !,BIOFIT
+      REAL      RS
 
 #if   defined( TOMAS )
       ! For TOMAS aerosol (win, 7/15/09)
@@ -1194,7 +1195,7 @@
       IS_POPS = Input_Opt%ITS_A_POPS_SIM  ! clf, 1/3/2011
 
       ! Turn on ecophysiology module? (Joey Lam, 2/26/2019)
-      LECOPHY = Input_Opt%LECOPHY        
+      LECOPHY = Input_Opt%LECOPHY
 
       ! Size of drycoeff (ckeller, 05/19/14)
       NN = SIZE(DRYCOEFF)
