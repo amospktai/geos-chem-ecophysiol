@@ -3431,6 +3431,14 @@
       ENDIF
       READ( SUBSTRS(1:N), * ) Input_Opt%LDRYD
 
+      ! Turn on ecophysiology?
+      CALL SPLIT_ONE_LINE( SUBSTRS, N, 1, 'LECOPHY', RC )
+      IF ( RC /= GC_SUCCESS ) THEN
+         CALL GC_Error( ErrMsg, RC, ThisLoc )
+         RETURN
+      ENDIF
+      READ( SUBSTRS(1:N), * ) Input_Opt%LECOPHY
+
       ! Turn on wetdep?
       CALL SPLIT_ONE_LINE( SUBSTRS, N, 1, 'LWETD', RC )
       IF ( RC /= GC_SUCCESS ) THEN
