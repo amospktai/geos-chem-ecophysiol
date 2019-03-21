@@ -95,7 +95,6 @@
       REAL                  :: CRIT
       REAL,     ALLOCATABLE :: THETA_WILT    ( :,: )
       REAL                  :: WILT
-      INTEGER,  ALLOCATABLE :: IPFT          ( :   )
       LOGICAL               :: LECOPHY
       LOGICAL               :: LO3_DAMAGE
       ! INTEGER               :: NUMPFT
@@ -122,7 +121,7 @@
 !
       SUBROUTINE DO_ECOPHY ( am_I_Root, Input_Opt,  State_Met, &
                              State_Chm, State_Diag, RC,        &
-                             I, J,      LDT, RS                )
+                             I, J,      LDT, PFT,   RS         )
 !
 ! !USES:
 !
@@ -138,8 +137,8 @@
       LOGICAL,        INTENT(IN)    :: am_I_Root   ! Is this the root CPU?!
       INTEGER,        INTENT(IN)    :: I           ! longitude index
       INTEGER,        INTENT(IN)    :: J           ! latitude index
-!       INTEGER,        INTENT(IN)    :: PFT         ! PFT index
-      INTEGER,        INTENT(IN)    :: LDT         ! Land type index
+      INTEGER,        INTENT(IN)    :: PFT         ! PFT index
+      INTEGER,        INTENT(IN)    :: LDT         ! Land type index (for archiving)
       TYPE(OptInput), INTENT(IN)    :: Input_Opt   ! Input Options object
       TYPE(MetState), INTENT(IN)    :: State_Met   ! Meteorology State object
 !
@@ -174,6 +173,7 @@
       LOGICAL    :: LO3_DAMAGE
       REAL       :: SOIL_WETNESS
       INTEGER    :: PFT
+      INTEGER    :: LDT
       REAL       :: G_CAN_OUT
       REAL       :: G_LEAF_OUT
       REAL       :: CO2_IN
@@ -220,7 +220,7 @@
       ! BETA_SM      => State_Chm%BETA_SM
 
       ! get inputs for the module
-      CALL GET_ECOPHY_INPUTS( State_Met,    State_Chm, I, J, LDT,&
+      CALL GET_ECOPHY_INPUTS( State_Met,    State_Chm, I, J,     &
                               TEMPK,        SPHU,                &
                               PAR_ABSORBED, PRESSURE,  CO2,      &
                               O2,           LAI,       O3,       &
@@ -234,9 +234,6 @@
          CALL GC_Error( ErrMsg, RC, ThisLoc )
          RETURN
       ENDIF
-
-      ! Get plant functional type index
-      PFT = IPFT(LDT)
 
       ! simulate plant processes
       CALL DO_PHOTOSYNTHESIS( TEMPK,        SPHU,       RA,           &
@@ -268,7 +265,7 @@
 
       !### Debug
       IF ( LPRT .and. am_I_Root ) THEN
-         CALL DEBUG_MSG( '### DO_DRYDEP: after dry dep' )
+         CALL DEBUG_MSG( '### DO_ECOPHY: after ecophysiology' )
       ENDIF
 
       ! Nullify pointers
@@ -797,7 +794,7 @@
 !\\
 ! !INTERFACE:
 !
-      SUBROUTINE GET_ECOPHY_INPUTS( State_Met,    State_Chm, I, J, LDT,&
+      SUBROUTINE GET_ECOPHY_INPUTS( State_Met,    State_Chm, I, J,     &
                                     TEMPK,        SPHU,                &
                                     PAR_ABSORBED, PRESSURE,  CO2,      &
                                     O2,           LAI,       O3,       &
@@ -821,7 +818,6 @@
       Type(ChmState), INTENT(IN)  :: State_Chm
       INTEGER,        INTENT(IN)  :: I
       INTEGER,        INTENT(IN)  :: J
-      INTEGER,        INTENT(IN)  :: LDT
 !
 ! !OUTPUT PARAMETERS:
 !
@@ -1319,14 +1315,8 @@
       IF ( RC /= GC_SUCCESS ) RETURN
       THETA_WILT( :,: ) = 0e+0_f8
 
-      ALLOCATE( IPFT( NUMPFT ), STAT=RC )
-      CALL GC_CheckVar( 'ecophy_mod:IPFT', 0, RC )
-      IF ( RC /= GC_SUCCESS ) RETURN
-      IPFT( : ) = 0
-
       ! Get soil map
       CALL Init_Soilmap( am_I_Root, Input_Opt, RC )
-      ! Get PFT mapping?
 
       END SUBROUTINE INIT_ECOPHY
 !EOC
@@ -1356,7 +1346,6 @@
       IF ( ALLOCATED ( THETA_SATU ) ) DEALLOCATE ( THETA_SATU )
       IF ( ALLOCATED ( THETA_CRIT ) ) DEALLOCATE ( THETA_CRIT )
       IF ( ALLOCATED ( THETA_WILT ) ) DEALLOCATE ( THETA_WILT )
-      IF ( ALLOCATED ( IPFT       ) ) DEALLOCATE ( IPFT       )
 
       ! Return to calling program
       END SUBROUTINE CLEANUP_ECOPHY

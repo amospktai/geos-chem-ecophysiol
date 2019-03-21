@@ -47,6 +47,8 @@
       PUBLIC :: NTRAIND
       PUBLIC :: IDEP,   IRGSS,  IRAC, IRCLS
       PUBLIC :: IRGSO,  IRLU,   IRI,  IRCLO, DRYCOEFF
+      ! For ecophysiology (Joey Lam, 21 Mar 2019)  
+      PUBLIC :: IPFT 
 !      PUBLIC :: NDVZIND ! MSL -> For MPI broadcasting in GCHP
 !
 ! !REMARKS:
@@ -1152,7 +1154,8 @@
 #endif
 
       ! Turn on ecophysiology module?
-      LOGICAL       :: LECOPHY
+      LOGICAL           :: LECOPHY
+      INTEGER           :: PFT
 
       ! For the species database
       INTEGER                :: SpcId
@@ -1778,11 +1781,12 @@ C  170     CONTINUE
             ! resistance are interchanged. (Joey Lam, 2/26/2019)
             !-----------------------------------------------------------------
 
-            IF ( LECOPHY ) THEN
-               ! Call from ecophysiology module to get RIX (should exclude PFT = 0)
+            IF ( LECOPHY .AND. IPFT(IOLSON) .NE. 0 ) THEN
+               PFT = IPFT(IOLSON)
+               ! Call from ecophysiology module to get RIX 
                DO_ECOPHY ( am_I_Root, Input_Opt,  State_Met, &
                            State_Chm, State_Diag, RC,        & 
-                           I, J,      LDT,        RS         )
+                           I, J,      LDT, PFT,   RS         )
                RIX = RS
             ELSE
                RIX = RI(LDT)
@@ -2241,7 +2245,7 @@ C  170     CONTINUE
      &                               IDRYDEP,   IRI,      IRLU,      
      &                               IRAC,      IRGSS,    IRGSO,     
      &                               IRCLS,     IRCLO,    IVSMAX,    
-     &                               RC )
+     &                               IPFT,      RC )
 !
 ! !USES:
 !
@@ -2269,6 +2273,7 @@ C  170     CONTINUE
       ! IOLSON   : Olson land type indices (+1) 
       ! IDEP     : Mapping: Olson ==> drydep ID
       ! IWATER   : Olson types that represent water
+      ! IPFT     : Mapping: Olson ==> PFT ID
       ! NWATER   : Number of Olson types that are water
       ! IZO      : Default Z0 (routgness height) for each Olson land type
       ! IDRYDEP  : Dry deposition land type indices
@@ -2284,7 +2289,8 @@ C  170     CONTINUE
       REAL(fp), INTENT(OUT) :: DRYCOEFF(NPOLY    ) 
       INTEGER,  INTENT(OUT) :: IOLSON  (NSURFTYPE)       
       INTEGER,  INTENT(OUT) :: IDEP    (NSURFTYPE)      
-      INTEGER,  INTENT(OUT) :: IWATER  (NSURFTYPE)    
+      INTEGER,  INTENT(OUT) :: IWATER  (NSURFTYPE)   
+      INTEGER,  INTENT(OUT) :: IPFT    (NSURFTYPE) 
       INTEGER,  INTENT(OUT) :: NWATER        
       INTEGER,  INTENT(OUT) :: IZO     (NSURFTYPE)       
       INTEGER,  INTENT(OUT) :: IDRYDEP (NDRYDTYPE)
@@ -2322,6 +2328,8 @@ C  170     CONTINUE
 !  13 Mar 2015 - R. Yantosca - Replace DATA_DIR_1x1 w/ CHEM_INPUTS_DIR
 !  13 Sep 2017 - M. Sulprizio- Remove Input_Opt%USE_OLSON_2001. Olson 2001 is
 !                              now the default.
+!  21 Mar 2019 - J. Lam      - Added IPFT for ecophysiology module. Could not
+!                              find where to deallocate.
 !EOP
 !------------------------------------------------------------------------------
 !BOC
@@ -2355,7 +2363,8 @@ C  170     CONTINUE
       RC = GC_SUCCESS
 
       ! Input file for Olson 2001
-      nc_file = 'Olson_2001_Drydep_Inputs.nc'
+      ! nc_file = 'Olson_2001_Drydep_Inputs.nc'
+      nc_file = 'Olson_2001_Drydep_Inputs_edited.nc' 
 
       ! Open file for reading (construct full data path)
       nc_dir  = TRIM( Input_Opt%CHEM_INPUTS_DIR ) // 
@@ -2672,6 +2681,27 @@ C  170     CONTINUE
       CALL NcRd( IVSMAX, fId, TRIM(v_name), st1d, ct1d )
 
       ! Read the IVSMAX:units attribute
+      a_name = "units"
+      CALL NcGet_Var_Attributes( fId,TRIM(v_name),TRIM(a_name),a_val )
+
+      ! Echo info to stdout
+      IF ( am_I_Root ) THEN
+         WRITE( 6, 130 ) TRIM(v_name), TRIM(a_val)
+      ENDIF
+
+      !----------------------------------------
+      ! VARIABLE: IPFT
+      !----------------------------------------
+
+      ! Variable name
+      v_name = "IPFT"
+
+      ! Read IDEP from file
+      st1d   = (/ 1         /)
+      ct1d   = (/ NSURFTYPE /)
+      CALL NcRd( IPFT, fId, TRIM(v_name), st1d, ct1d )
+
+      ! Read the IDEP:units attribute
       a_name = "units"
       CALL NcGet_Var_Attributes( fId,TRIM(v_name),TRIM(a_name),a_val )
 
@@ -4451,7 +4481,7 @@ C  170     CONTINUE
      &                         IDRYDEP,   IRI,      IRLU,     
      &                         IRAC,      IRGSS,    IRGSO, 
      &                         IRCLS,     IRCLO,    IVSMAX, 
-     &                         RC )
+     &                         IPFT,      RC )
 
        ! Trap potential errors
       IF ( RC /= GC_SUCCESS ) THEN
