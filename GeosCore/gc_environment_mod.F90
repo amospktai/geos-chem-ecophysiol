@@ -791,13 +791,13 @@ CONTAINS
        !       deposition is turned off.
        !--------------------------------------------------------------
        IF ( Input_Opt%LECOPHY ) THEN
-          ! Initialize soil parameters map first
-          CALL Init_SoilMap( am_I_Root, Input_Opt, RC )
-          IF ( RC /= GC_SUCCESS ) THEN
-             ErrMsg = 'Error encountered in "Init_SoilMap"!'
-             CALL GC_Error( ErrMsg, RC, ThisLoc )
-             RETURN
-          ENDIF
+          ! ! Initialize soil parameters map first
+          ! CALL Init_SoilMap( am_I_Root, Input_Opt, RC )
+          ! IF ( RC /= GC_SUCCESS ) THEN
+          !    ErrMsg = 'Error encountered in "Init_SoilMap"!'
+          !    CALL GC_Error( ErrMsg, RC, ThisLoc )
+          !    RETURN
+          ! ENDIF
 
           ! Initialize for ecophysiology module
           CALL Init_Ecophy( am_I_Root, Input_Opt, State_Chm, State_Diag, RC )
