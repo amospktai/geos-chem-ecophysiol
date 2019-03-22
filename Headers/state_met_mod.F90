@@ -1833,7 +1833,7 @@ CONTAINS
     ALLOCATE( State_Met%THETA_WILT( IM, JM ), STAT=RC )
     CALL GC_CheckVar( 'State_Met%THETA_WILT', 0, RC )
     IF ( RC /= GC_SUCCESS ) RETURN
-    State_Met%THETA_WILT = 0
+    State_Met%THETA_WILT = 0.0_fp
     CALL Register_MetField( am_I_Root, 'THETA_WILT', State_Met%THETA_WILT, &
                             State_Met, RC )
     IF ( RC /= GC_SUCCESS ) RETURN
@@ -1844,7 +1844,7 @@ CONTAINS
     ALLOCATE( State_Met%THETA_CRIT( IM, JM ), STAT=RC )
     CALL GC_CheckVar( 'State_Met%THETA_CRIT', 0, RC )
     IF ( RC /= GC_SUCCESS ) RETURN
-    State_Met%THETA_CRIT = 0
+    State_Met%THETA_CRIT = 0.0_fp
     CALL Register_MetField( am_I_Root, 'THETA_CRIT', State_Met%THETA_CRIT, &
                             State_Met, RC )
     IF ( RC /= GC_SUCCESS ) RETURN
@@ -1855,7 +1855,7 @@ CONTAINS
     ALLOCATE( State_Met%THETA_SATU( IM, JM ), STAT=RC )
     CALL GC_CheckVar( 'State_Met%THETA_SATU', 0, RC )
     IF ( RC /= GC_SUCCESS ) RETURN
-    State_Met%THETA_SATU = 0
+    State_Met%THETA_SATU = 0.0_fp
     CALL Register_MetField( am_I_Root, 'THETA_SATU', State_Met%THETA_SATU, &
                             State_Met, RC )
     IF ( RC /= GC_SUCCESS ) RETURN
@@ -3882,6 +3882,21 @@ CONTAINS
 !          IF ( isDesc  ) Desc  = 'Is each grid box in the planetary boundary layer?'
 !          IF ( isUnits ) Units = 'boolean'
 !          IF ( isRank  ) Rank  = 3
+
+       CASE ( 'THETA_WILT' )
+          IF ( isDesc  ) Desc  = 'Soil moisture conc. at wilting point'
+          IF ( isUnits ) Units = 'm3 m-3'
+          IF ( isRank  ) Rank  = 2
+
+       CASE ( 'THETA_CRIT' )
+          IF ( isDesc  ) Desc  = 'Soil moisture conc. at critical point'
+          IF ( isUnits ) Units = 'm3 m-3'
+          IF ( isRank  ) Rank  = 2
+
+       CASE ( 'THETA_SATU' )
+          IF ( isDesc  ) Desc  = 'Soil moisture conc. at saturation'
+          IF ( isUnits ) Units = 'm3 m-3'
+          IF ( isRank  ) Rank  = 2
 
        CASE DEFAULT
           Found = .False.
