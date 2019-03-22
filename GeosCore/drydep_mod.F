@@ -1789,6 +1789,7 @@ C  170     CONTINUE
      &                          State_Chm, State_Diag, RC,         
      &                          I, J,      LDT, PFT,   RS         )
                RIX = RS
+               IF (RIX .GE. 9999.e+0_f8) GO TO 150    ! Temporary fix to compile issue
             ELSE
                RIX = RI(LDT)
                IF (RIX .GE. 9999.e+0_f8) GO TO 150
