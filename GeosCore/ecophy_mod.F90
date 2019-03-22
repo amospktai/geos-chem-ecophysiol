@@ -172,8 +172,8 @@
       REAL       :: O3
       LOGICAL    :: LO3_DAMAGE
       REAL       :: SOIL_WETNESS
-      INTEGER    :: PFT
-      INTEGER    :: LDT
+!      INTEGER    :: PFT
+!      INTEGER    :: LDT
       REAL       :: G_CAN_OUT
       REAL       :: G_LEAF_OUT
       REAL       :: CO2_IN
@@ -220,7 +220,7 @@
       ! BETA_SM      => State_Chm%BETA_SM
 
       ! get inputs for the module
-      CALL GET_ECOPHY_INPUTS( State_Met,    State_Chm, I, J,     &
+      CALL GET_ECOPHY_INPUTS( State_Met,    State_Chm, I, J, LDT,&
                               TEMPK,        SPHU,                &
                               PAR_ABSORBED, PRESSURE,  CO2,      &
                               O2,           LAI,       O3,       &
@@ -794,7 +794,7 @@
 !\\
 ! !INTERFACE:
 !
-      SUBROUTINE GET_ECOPHY_INPUTS( State_Met,    State_Chm, I, J,     &
+      SUBROUTINE GET_ECOPHY_INPUTS( State_Met,    State_Chm, I, J, LDT,&
                                     TEMPK,        SPHU,                &
                                     PAR_ABSORBED, PRESSURE,  CO2,      &
                                     O2,           LAI,       O3,       &
@@ -813,11 +813,13 @@
       ! State_Chm     : Chemistry State Object
       ! I             : Current lon index
       ! J             : Current lat index
+      ! LDT           : Land type index
       !---------------------------------------------------------------------------------------
       Type(MetState), INTENT(IN)  :: State_Met
       Type(ChmState), INTENT(IN)  :: State_Chm
       INTEGER,        INTENT(IN)  :: I
       INTEGER,        INTENT(IN)  :: J
+      INTEGER,        INTENT(IN)  :: LDT
 !
 ! !OUTPUT PARAMETERS:
 !
