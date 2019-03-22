@@ -1785,9 +1785,9 @@ C  170     CONTINUE
             IF ( LECOPHY .AND. IPFT(IOLSON) .NE. 0 ) THEN
                PFT = IPFT(IOLSON)
                ! Call from ecophysiology module to get RIX 
-               DO_ECOPHY ( am_I_Root, Input_Opt,  State_Met, 
-     &                     State_Chm, State_Diag, RC,         
-     &                     I, J,      LDT, PFT,   RS         )
+               CALL DO_ECOPHY ( am_I_Root, Input_Opt,  State_Met, 
+     &                          State_Chm, State_Diag, RC,         
+     &                          I, J,      LDT, PFT,   RS         )
                RIX = RS
             ELSE
                RIX = RI(LDT)
