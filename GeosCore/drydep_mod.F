@@ -262,6 +262,7 @@
       INTEGER                        :: IDEP    (NSURFTYPE )
       INTEGER                        :: IZO     (NSURFTYPE )
       INTEGER                        :: IWATER  (NSURFTYPE )
+      INTEGER                        :: IPFT    (NSURFTYPE )
 
       ! Arrays that hold information for each of the 11 drydep land types
       INTEGER                        :: IDRYDEP (NDRYDTYPE)
@@ -1784,9 +1785,9 @@ C  170     CONTINUE
             IF ( LECOPHY .AND. IPFT(IOLSON) .NE. 0 ) THEN
                PFT = IPFT(IOLSON)
                ! Call from ecophysiology module to get RIX 
-               DO_ECOPHY ( am_I_Root, Input_Opt,  State_Met, &
-                           State_Chm, State_Diag, RC,        & 
-                           I, J,      LDT, PFT,   RS         )
+               DO_ECOPHY ( am_I_Root, Input_Opt,  State_Met, 
+     &                     State_Chm, State_Diag, RC,         
+     &                     I, J,      LDT, PFT,   RS         )
                RIX = RS
             ELSE
                RIX = RI(LDT)
