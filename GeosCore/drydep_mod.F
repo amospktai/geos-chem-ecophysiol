@@ -1810,7 +1810,7 @@ C  170     CONTINUE
                ENDIF
                
                RIX = RIX*GFACT*GFACI
-    150        CONTINUE
+ 150           CONTINUE
             ENDIF
 !*                                 
 !*    Compute aerodynamic resistance to lower elements in lower part           
