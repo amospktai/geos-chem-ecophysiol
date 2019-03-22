@@ -168,7 +168,8 @@
       INTEGER            :: IU_GEOS
       INTEGER, PARAMETER :: FIRSTCOL = 26
       INTEGER            :: CT1      = 0
-      CHARACTER(LEN=255) :: FILENAME = 'input.geos'
+!      CHARACTER(LEN=255) :: FILENAME = 'input.geos'
+      CHARACTER(LEN=255) :: FILENAME = 'new_input.geos'
 
       CONTAINS
 !EOC
@@ -3470,6 +3471,9 @@
       IF ( Input_Opt%ITS_A_C2H6_SIM    ) Input_Opt%LWETD = .FALSE.
       IF ( Input_Opt%ITS_A_CH4_SIM     ) Input_Opt%LWETD = .FALSE.
 
+      ! Turn off ecophysiology for simulations that don't need it
+      IF ( Input_Opt%LDRYD           ) Input_Opt%LECOPHY = .FALSE.
+
       ! Set the PBL drydep flag. This determines if dry deposition is 
       ! applied (and drydep frequencies are calculated) over the entire 
       ! PBL or the first model layer only. For now, set this value 
@@ -3493,6 +3497,8 @@
      &                        Input_Opt%PBL_DRYDEP
          WRITE( 6, 100     ) 'Turn on wet deposition?     : ', 
      &                        Input_Opt%LWETD
+         WRITE( 6, 100     ) 'Turn on ecophysiology?     : ', 
+     &                        Input_Opt%LECOPHY
       ENDIF
 
       ! FORMAT statements
