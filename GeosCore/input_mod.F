@@ -3472,7 +3472,7 @@
       IF ( Input_Opt%ITS_A_CH4_SIM     ) Input_Opt%LWETD = .FALSE.
 
       ! Turn off ecophysiology for simulations that don't need it
-      IF ( Input_Opt%LDRYD           ) Input_Opt%LECOPHY = .FALSE.
+      IF ( .NOT. Input_Opt%LDRYD     ) Input_Opt%LECOPHY = .FALSE.
 
       ! Set the PBL drydep flag. This determines if dry deposition is 
       ! applied (and drydep frequencies are calculated) over the entire 
