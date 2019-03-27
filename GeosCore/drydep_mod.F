@@ -1342,17 +1342,6 @@ C             IOLSON = ILAND(I,J,LDT)+1
 
 C !*
 C  170     CONTINUE
-!*
-!*    Set max and min values for bulk surface resistances         
-!*                                 
-         DO 190 K = 1,NUMDEP 
-            IF (.NOT.LDEP(K)) GOTO 190
-            DO 180 LDT = 1, IREG(I,J)
-               IF ( IUSE(I,J,LDT) == 0 ) GOTO 180
-               RSURFC(K,LDT)= MAX(1.e+0_f8, MIN(RSURFC(K,LDT), 
-     &                        9999.e+0_f8))
- 180        CONTINUE
- 190     CONTINUE
 !*                                 
 !*    Loop through the different landuse types present in the grid square     
 !*           
@@ -2010,6 +1999,17 @@ C  170     CONTINUE
 
  160        CONTINUE
 
+!*
+!*    Set max and min values for bulk surface resistances         
+!*                                 
+         DO 190 K = 1,NUMDEP 
+            IF (.NOT.LDEP(K)) GOTO 190
+            DO 180 LDT = 1, IREG(I,J)
+               IF ( IUSE(I,J,LDT) == 0 ) GOTO 180
+               RSURFC(K,LDT)= MAX(1.e+0_f8, MIN(RSURFC(K,LDT), 
+     &                        9999.e+0_f8))
+ 180        CONTINUE
+ 190     CONTINUE
 
 !* Get total resistance for deposition - loop over species.
             DO 215 K = 1,NUMDEP 
