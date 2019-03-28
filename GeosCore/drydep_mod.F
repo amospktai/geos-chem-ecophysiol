@@ -1110,7 +1110,7 @@
       INTEGER IOLSON,II,IW
       INTEGER K,LDT
       REAL(f8)  RCLX,RIXX    !,BIOFIT
-      REAL      RS
+      REAL(fp)  RS
 
 #if   defined( TOMAS )
       ! For TOMAS aerosol (win, 7/15/09)
@@ -1776,7 +1776,7 @@ C  170     CONTINUE
                ! Call from ecophysiology module to get RIX 
                CALL DO_ECOPHY ( am_I_Root, Input_Opt,  State_Met, 
      &                          State_Chm, State_Diag, RC,         
-     &                          I, J,      LDT, PFT,   RS         )
+     &                          I, J,      LDT, PFT,   RA, RS     )
                RIX = RS
             ELSE
                RIX = RI(LDT)

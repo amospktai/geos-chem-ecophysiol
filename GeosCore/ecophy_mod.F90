@@ -18,7 +18,7 @@
 !
       USE CMN_SIZE_MOD                          ! Size parameters
       USE ERROR_MOD                             ! Error handling routines
-      USE PhysConstants                         ! Physical constants
+      USE PhysConstants, ONLY: RSTARG           ! Physical constants
       USE PRECISION_MOD                         ! For GEOS-Chem Precision (fp)
       IMPLICIT NONE
       PRIVATE
@@ -59,22 +59,22 @@
       !---------------------------------------------------------------------------------------
       INTEGER,  PARAMETER   :: NUMPFT                 = 5 ! Switch to call CMN_SIZE_MOD.F later
       INTEGER,  PARAMETER   :: IS_C3_PLANT   (NUMPFT) = (/ 1,1,1,0,1 /)
-      REAL,     PARAMETER   :: ALPHA         (NUMPFT) = (/ 0.08, 0.08, 0.12, 0.06, 0.08 /)
-      REAL,     PARAMETER   :: V_CMAX25      (NUMPFT) = (/ 0.046, 0.033, 0.073, 0.060, 0.060 /) * &
+      REAL(fp), PARAMETER   :: ALPHA         (NUMPFT) = (/ 0.08, 0.08, 0.12, 0.06, 0.08 /)
+      REAL(fp), PARAMETER   :: V_CMAX25      (NUMPFT) = (/ 0.046, 0.033, 0.073, 0.060, 0.060 /) * &
                                                         (/ 0.0008, 0.0008, 0.0008, 0.0004, 0.0008 /)
-      REAL,     PARAMETER   :: T_UPP         (NUMPFT) = (/ 36.0, 26.0, 36.0, 45.0, 36.0 /)
-      REAL,     PARAMETER   :: T_LOW         (NUMPFT) = (/ 0.0, -10.0, 0.0,  13.0, 0.0  /)
-      REAL,     PARAMETER   :: F_DARKRESP    (NUMPFT) = (/ .015, .015, .015, .025, .015 /)
-      REAL,     PARAMETER   :: D_STAR        (NUMPFT) = (/ 0.09, 0.06, 0.1,  .075, 0.1  /)
-      REAL,     PARAMETER   :: f0            (NUMPFT) = (/ .875, .875, 0.9,  0.8,  0.9  /)
-      REAL,     PARAMETER   :: G_LEAF_MIN    (NUMPFT) = 1.0e-6
-      REAL,     PARAMETER   :: K_EXTINCT     (NUMPFT) = 0.5
-      REAL,     PARAMETER   :: PARAM_A       (NUMPFT) = (/ 0.04, 0.02, 0.25, 0.13, 0.03 /)
-      REAL,     PARAMETER   :: FLUXO3_CRIT   (NUMPFT) = (/ 1.6,  1.6,  5.0,  5.0,  1.6  /)
-      REAL,     PARAMETER   :: THRESHOLD              = 1.0e-3
+      REAL(fp), PARAMETER   :: T_UPP         (NUMPFT) = (/ 36.0, 26.0, 36.0, 45.0, 36.0 /)
+      REAL(fp), PARAMETER   :: T_LOW         (NUMPFT) = (/ 0.0, -10.0, 0.0,  13.0, 0.0  /)
+      REAL(fp), PARAMETER   :: F_DARKRESP    (NUMPFT) = (/ .015, .015, .015, .025, .015 /)
+      REAL(fp), PARAMETER   :: D_STAR        (NUMPFT) = (/ 0.09, 0.06, 0.1,  .075, 0.1  /)
+      REAL(fp), PARAMETER   :: f0            (NUMPFT) = (/ .875, .875, 0.9,  0.8,  0.9  /)
+      REAL(fp), PARAMETER   :: G_LEAF_MIN    (NUMPFT) = 1.0e-6
+      REAL(fp), PARAMETER   :: K_EXTINCT     (NUMPFT) = 0.5
+      REAL(fp), PARAMETER   :: PARAM_A       (NUMPFT) = (/ 0.04, 0.02, 0.25, 0.13, 0.03 /)
+      REAL(fp), PARAMETER   :: FLUXO3_CRIT   (NUMPFT) = (/ 1.6,  1.6,  5.0,  5.0,  1.6  /)
+      REAL(fp), PARAMETER   :: THRESHOLD              = 1.0e-3
       ! Constants
-      ! REAL,     PARAMETER   :: RSTARG = 8.31446        ! Switch to call physconstant.F later (in Headers)
-      REAL,     PARAMETER   :: CO2_O2_RATIO = 1.6
+      ! REAL(fp), PARAMETER   :: RSTARG = 8.31446        ! Switch to call physconstant.F later (in Headers)
+      REAL(fp), PARAMETER   :: CO2_O2_RATIO = 1.6
 !
 ! PRIVATE TYPES:
 !
@@ -89,12 +89,12 @@
       ! LO3_DAMAGE    : Logical switch for ozone damage scheme            []
       ! NUMPFT        : Total number of PFTs                              []
       !========================================================================
-      REAL,     ALLOCATABLE :: THETA_SATU    ( :,: )
-      REAL                  :: SATU
-      REAL,     ALLOCATABLE :: THETA_CRIT    ( :,: )
-      REAL                  :: CRIT
-      REAL,     ALLOCATABLE :: THETA_WILT    ( :,: )
-      REAL                  :: WILT
+      REAL(fp), ALLOCATABLE :: THETA_SATU    ( :,: )
+      REAL(fp)              :: SATU
+      REAL(fp), ALLOCATABLE :: THETA_CRIT    ( :,: )
+      REAL(fp)              :: CRIT
+      REAL(fp), ALLOCATABLE :: THETA_WILT    ( :,: )
+      REAL(fp)              :: WILT
       LOGICAL               :: LECOPHY
       LOGICAL               :: LO3_DAMAGE
       ! INTEGER               :: NUMPFT
@@ -141,6 +141,7 @@
       INTEGER,        INTENT(IN)    :: LDT         ! Land type index (for archiving)
       TYPE(OptInput), INTENT(IN)    :: Input_Opt   ! Input Options object
       TYPE(MetState), INTENT(IN)    :: State_Met   ! Meteorology State object
+      REAL(fp),       INTENT(IN)    :: RA          ! Aerodynamic resistance
 !
 ! !INPUT/OUTPUT PARAMETERS:
 !
@@ -150,7 +151,7 @@
 ! !OUTPUT PARAMETERS:
 !
       INTEGER,        INTENT(OUT)   :: RC          ! Success or failure
-      REAL,           INTENT(OUT)   :: RS          ! Bulk canopy stomatal resistance
+      REAL(fp),       INTENT(OUT)   :: RS          ! Bulk canopy stomatal resistance
 !
 !EOP
 !------------------------------------------------------------------------------
@@ -162,31 +163,31 @@
       CHARACTER(LEN=255) :: ErrMsg, ThisLoc
 
       !  Note: Read subroutine DO_PHOTOSYNTHESIS for descriptions.
-      REAL       :: TEMPK
-      REAL       :: SPHU
-      REAL       :: RA
-      REAL       :: PAR_ABSORBED
-      REAL       :: PRESSURE
-      REAL       :: CO2
-      REAL       :: O2
-      REAL       :: O3
+      REAL(fp)   :: TEMPK
+      REAL(fp)   :: SPHU
+      ! REAL(fp)   :: RA
+      REAL(fp)   :: PAR_ABSORBED
+      REAL(fp)   :: PRESSURE
+      REAL(fp)   :: CO2
+      REAL(fp)   :: O2
+      REAL(fp)   :: O3
       LOGICAL    :: LO3_DAMAGE
-      REAL       :: SOIL_WETNESS
+      REAL(fp)   :: SOIL_WETNESS
 !      INTEGER    :: PFT
 !      INTEGER    :: LDT
-      REAL       :: G_CAN_OUT
-      REAL       :: G_LEAF_OUT
-      REAL       :: CO2_IN
-      REAL       :: A_CAN_OUT
-      REAL       :: A_NET_OUT
-      REAL       :: RESP_CAN_OUT
-      REAL       :: RESP_OUT
-      REAL       :: FLUXO3_CAN
-      REAL       :: FLUXO3
-      REAL       :: FACTOR_O3
-      REAL       :: BETA
+      REAL(fp)   :: G_CAN_OUT
+      REAL(fp)   :: G_LEAF_OUT
+      REAL(fp)   :: CO2_IN
+      REAL(fp)   :: A_CAN_OUT
+      REAL(fp)   :: A_NET_OUT
+      REAL(fp)   :: RESP_CAN_OUT
+      REAL(fp)   :: RESP_OUT
+      REAL(fp)   :: FLUXO3_CAN
+      REAL(fp)   :: FLUXO3
+      REAL(fp)   :: FACTOR_O3
+      REAL(fp)   :: BETA
       ! Arrays
-      REAL       :: LAI
+      REAL(fp)   :: LAI
       ! Pointers
       ! REAL(fp), POINTER :: G_CANOPY       ( :,:,: )
       ! REAL(fp), POINTER :: A_CANOPY       ( :,:,: )
@@ -322,17 +323,17 @@
       ! SOIL_WETNESS  : Fraction of moisture in soil pores                []
       ! PFT           : Index for PFT                                     []
       !---------------------------------------------------------------------------------------
-      REAL,     INTENT(IN)  :: TEMPK
-      REAL,     INTENT(IN)  :: SPHU
-      REAL,     INTENT(IN)  :: RA
-      REAL,     INTENT(IN)  :: PAR_ABSORBED
-      REAL,     INTENT(IN)  :: PRESSURE
-      REAL,     INTENT(IN)  :: CO2
-      REAL,     INTENT(IN)  :: O2
-      REAL,     INTENT(IN)  :: O3
-      REAL,     INTENT(IN)  :: LAI
+      REAL(fp), INTENT(IN)  :: TEMPK
+      REAL(fp), INTENT(IN)  :: SPHU
+      REAL(fp), INTENT(IN)  :: RA
+      REAL(fp), INTENT(IN)  :: PAR_ABSORBED
+      REAL(fp), INTENT(IN)  :: PRESSURE
+      REAL(fp), INTENT(IN)  :: CO2
+      REAL(fp), INTENT(IN)  :: O2
+      REAL(fp), INTENT(IN)  :: O3
+      REAL(fp), INTENT(IN)  :: LAI
       LOGICAL,  INTENT(IN)  :: LO3_DAMAGE
-      REAL,     INTENT(IN)  :: SOIL_WETNESS
+      REAL(fp), INTENT(IN)  :: SOIL_WETNESS
       INTEGER,  INTENT(IN)  :: PFT
 !
 !OUTPUT PARAMETERS:
@@ -350,17 +351,17 @@
       ! FACTOR_O3     : Ozone damage factor                               []
       ! BETA          : Soil moisture stress factor                       []
       !---------------------------------------------------------------------------------------
-      REAL,     INTENT(OUT) :: G_CAN_OUT
-      REAL,     INTENT(OUT) :: G_LEAF_OUT
-      REAL,     INTENT(OUT) :: CO2_IN
-      REAL,     INTENT(OUT) :: A_CAN_OUT
-      REAL,     INTENT(OUT) :: A_NET_OUT
-      REAL,     INTENT(OUT) :: RESP_CAN_OUT
-      REAL,     INTENT(OUT) :: RESP_OUT
-      REAL,     INTENT(OUT) :: FLUXO3_CAN
-      REAL,     INTENT(OUT) :: FLUXO3
-      REAL,     INTENT(OUT) :: FACTOR_O3
-      REAL,     INTENT(OUT) :: BETA
+      REAL(fp), INTENT(OUT) :: G_CAN_OUT
+      REAL(fp), INTENT(OUT) :: G_LEAF_OUT
+      REAL(fp), INTENT(OUT) :: CO2_IN
+      REAL(fp), INTENT(OUT) :: A_CAN_OUT
+      REAL(fp), INTENT(OUT) :: A_NET_OUT
+      REAL(fp), INTENT(OUT) :: RESP_CAN_OUT
+      REAL(fp), INTENT(OUT) :: RESP_OUT
+      REAL(fp), INTENT(OUT) :: FLUXO3_CAN
+      REAL(fp), INTENT(OUT) :: FLUXO3
+      REAL(fp), INTENT(OUT) :: FACTOR_O3
+      REAL(fp), INTENT(OUT) :: BETA
 !
 !LOCAL VARIABLES:
 !
@@ -393,55 +394,52 @@
       ! ERR3          : Relative change for A_NET between iterations      []
       ! DELTA         : Maximum of the 3 relative changes                 []
       !---------------------------------------------------------------------------------------
-      REAL                  :: TEMPC
-      REAL                  :: SPHU_SAT
-      REAL                  :: DEFICIT_Q
-      REAL                  :: APAR
-      REAL                  :: CO2_AMBIENT
-      REAL                  :: O3_CONC
-      REAL                  :: BIGLEAFSCALE
-      REAL                  :: G_CAN
-      REAL                  :: G_LEAF
-      REAL                  :: G_LEAF_PREV
-      REAL                  :: CO2_IN_PREV
-      REAL                  :: A_NET
-      REAL                  :: RESP
-      REAL                  :: A_NET_PREV
-      REAL                  :: V_CMAX
-      REAL                  :: CO2_GAMMA
-      REAL                  :: RATE_LIGHT
-      REAL                  :: RATE_PRODUCT
-      REAL                  :: RATE_RUBISCO
-      REAL                  :: A_GROSS
-      REAL                  :: TAU
-      REAL                  :: DENOM
-      INTEGER               :: ITER
-      REAL                  :: ERR1
-      REAL                  :: ERR2
-      REAL                  :: ERR3
-      REAL                  :: DELTA
+      REAL(fp)    :: TEMPC
+      REAL(fp)    :: SPHU_SAT
+      REAL(fp)    :: DEFICIT_Q
+      REAL(fp)    :: APAR
+      REAL(fp)    :: CO2_AMBIENT
+      REAL(fp)    :: O3_CONC
+      REAL(fp)    :: BIGLEAFSCALE
+      REAL(fp)    :: G_CAN
+      REAL(fp)    :: G_LEAF
+      REAL(fp)    :: G_LEAF_PREV
+      REAL(fp)    :: CO2_IN_PREV
+      REAL(fp)    :: A_NET
+      REAL(fp)    :: RESP
+      REAL(fp)    :: A_NET_PREV
+      REAL(fp)    :: V_CMAX
+      REAL(fp)    :: CO2_GAMMA
+      REAL(fp)    :: RATE_LIGHT
+      REAL(fp)    :: RATE_PRODUCT
+      REAL(fp)    :: RATE_RUBISCO
+      REAL(fp)    :: A_GROSS
+      REAL(fp)    :: TAU
+      REAL(fp)    :: DENOM
+      INTEGER     :: ITER
+      REAL(fp)    :: ERR1
+      REAL(fp)    :: ERR2
+      REAL(fp)    :: ERR3
+      REAL(fp)    :: DELTA
 
-
-
-
-      TEMPC             = TEMPK - 273.15
+      TEMPC             = TEMPK - 273.15e+0_fp
       ! Calculate V_CMAX and respiration which depends on V_CMAX only
-      DENOM             = ( 1.0 + EXP( 0.3*( TEMPC - T_UPP(PFT) ) ) ) &
-                        * ( 1.0 + EXP( 0.3*( T_LOW(PFT) - TEMPC ) ) )
-      V_CMAX            = V_CMAX25(PFT) * FACTOR_Q10( 2.0, TEMPC ) / DENOM
+      DENOM             = ( 1.e+0_fp + EXP( 0.3e+0_fp*( TEMPC - T_UPP(PFT) ) ) ) &
+                        * ( 1.e+0_fp + EXP( 0.3e+0_fp*( T_LOW(PFT) - TEMPC ) ) )
+      V_CMAX            = V_CMAX25(PFT) * FACTOR_Q10( 2.e+0_fp, TEMPC ) / DENOM
       RESP              = F_DARKRESP(PFT) * V_CMAX
       ! Calculate CO2 compensation point
-      TAU               = 2600.0 * FACTOR_Q10( 0.57, TEMPC )                    ! CO2/O2 Specificity Ratio
-      CO2_GAMMA         = IS_C3_PLANT(PFT) / ( 2.0 * TAU ) &
+      TAU               = 2600.e+0_fp * FACTOR_Q10( 0.57e+0_fp, TEMPC )                    ! CO2/O2 Specificity Ratio
+      CO2_GAMMA         = IS_C3_PLANT(PFT) / ( 2.e+0_fp * TAU ) &
                         * PRESSURE * O2
       ! Calculate canopy scaling factor
-      BIGLEAFSCALE      = ( 1 - EXP( -K_EXTINCT(PFT) * LAI ) ) / K_EXTINCT(PFT)
+      BIGLEAFSCALE      = ( 1.e+0_fp - EXP( -K_EXTINCT(PFT) * LAI ) ) / K_EXTINCT(PFT)
       ! Convert unit of absorbed PAR to mol photon m^-2 s^-1
-      APAR              = 4.6e-6 * PAR_ABSORBED
+      APAR              = 4.6e-6_fp * PAR_ABSORBED
       ! Calculate CO2 partial pressure in ambient air
       CO2_AMBIENT       = PRESSURE * CO2
       ! Calculate O3 molar concentration in canopy layer
-      O3_CONC           = O3 * PRESSURE / RSTARG / TEMPK * 1e9
+      O3_CONC           = O3 * PRESSURE / RSTARG / TEMPK * 1.e+9_fp
 
       ! To modify net photosynthesis rate by soil moisture stress later
       ! Not needed to be inside the loop
@@ -451,23 +449,23 @@
       ! stomatal conductance and leaf internal CO2 concentration
       ! Initial guess: G_LEAF = 0 and other initializations
       ITER              = 1
-      G_LEAF            = 0.0
-      G_CAN             = 0.0
-      CO2_IN_PREV       = 0.0
-      A_NET_PREV        = 0.0
-      G_LEAF_PREV       = 0.0
-      ERR1              = 1.0
-      ERR2              = 1.0
-      ERR3              = 1.0
-      DELTA             = 1.0
+      G_LEAF            = 0.e+0_fp
+      G_CAN             = 0.e+0_fp
+      CO2_IN_PREV       = 0.e+0_fp
+      A_NET_PREV        = 0.e+0_fp
+      G_LEAF_PREV       = 0.e+0_fp
+      ERR1              = 1.e+0_fp
+      ERR2              = 1.e+0_fp
+      ERR3              = 1.e+0_fp
+      DELTA             = 1.e+0_fp
       DO WHILE ( DELTA >= THRESHOLD .AND. ITER <= 100 )
         ! Step 1: Closure condition by Jacobs (1994)
-        SPHU_SAT          = 0.622 * E_SAT( TEMPC ) / PRESSURE
+        SPHU_SAT          = 0.622e+0_fp * E_SAT( TEMPC ) / PRESSURE
         G_CAN             = G_LEAF * BIGLEAFSCALE
         DEFICIT_Q         = ( SPHU_SAT - SPHU ) / ( 1 + RA * G_CAN )
         CO2_IN            = CO2_GAMMA + f0(PFT)*( 1 - DEFICIT_Q / D_STAR(PFT) ) &
                           * ( CO2_AMBIENT - CO2_GAMMA )
-        IF ( BETA == 0.0 .OR. DEFICIT_Q >= D_STAR(PFT) .OR. PAR_ABSORBED == 0.0 ) THEN
+        IF ( BETA <= 0.e+0_fp .OR. DEFICIT_Q >= D_STAR(PFT) .OR. PAR_ABSORBED <= 0.e+0_fp ) THEN
           ! Close stomata if the above conditions are satisfied
           A_NET           = - RESP * BETA
           G_LEAF          = G_LEAF_MIN(PFT)
@@ -488,9 +486,10 @@
                                  TEMPK, G_LEAF                )
           ! Close stomata if net photosynthesis <= 0 or
           ! stomatal conductance is too small
-          IF ( A_NET <= 0 .OR. G_LEAF <= G_LEAF_MIN(PFT) ) THEN
+          IF ( A_NET <= 0.e+0_fp .OR. G_LEAF <= G_LEAF_MIN(PFT) ) THEN
             A_NET     = - RESP * BETA
             G_LEAF    = G_LEAF_MIN(PFT)
+            PRINT *, "Stomata is now closed."
           END IF
           ! Apply ozone damage scheme by Sitch et al. (2007)
           IF ( LO3_DAMAGE ) THEN
@@ -503,7 +502,7 @@
             G_LEAF_OUT    = FACTOR_O3 * G_LEAF
               ! Close stomata if net photosynthesis <= 0 or
               ! stomatal conductance is too small
-              IF ( A_NET_OUT <= 0 .OR. G_LEAF_OUT <= G_LEAF_MIN(PFT) ) THEN
+              IF ( A_NET_OUT <= 0.e+0_fp .OR. G_LEAF_OUT <= G_LEAF_MIN(PFT) ) THEN
                 A_NET_OUT   = - RESP * BETA
                 G_LEAF_OUT  = G_LEAF_MIN(PFT)
               END IF
@@ -580,13 +579,13 @@
       ! V_CMAX        : Maximum rate of carboxylation of Rubisco [mol CO2 m^-2 s^-1]
       ! PFT           : Index for PFT                                     []
       !---------------------------------------------------------------------------------------
-      REAL,     INTENT(IN)  :: CO2_IN
-      REAL,     INTENT(IN)  :: CO2_GAMMA
-      REAL,     INTENT(IN)  :: O2
-      REAL,     INTENT(IN)  :: APAR
-      REAL,     INTENT(IN)  :: PRESSURE
-      REAL,     INTENT(IN)  :: TEMPC
-      REAL,     INTENT(IN)  :: V_CMAX
+      REAL(fp), INTENT(IN)  :: CO2_IN
+      REAL(fp), INTENT(IN)  :: CO2_GAMMA
+      REAL(fp), INTENT(IN)  :: O2
+      REAL(fp), INTENT(IN)  :: APAR
+      REAL(fp), INTENT(IN)  :: PRESSURE
+      REAL(fp), INTENT(IN)  :: TEMPC
+      REAL(fp), INTENT(IN)  :: V_CMAX
       INTEGER,  INTENT(IN)  :: PFT
 !
 ! !OUTPUT PARAMETERS:
@@ -596,39 +595,39 @@
       ! RATE_PRODUCT       : Product-limited rate [mol CO2 m^-2 s^-1]
       ! RATE_RUBISCO       : Rubisco-limited rate [mol CO2 m^-2 s^-1]
       !---------------------------------------------------------------------------------------
-      REAL,     INTENT(OUT) :: RATE_LIGHT
-      REAL,     INTENT(OUT) :: RATE_PRODUCT
-      REAL,     INTENT(OUT) :: RATE_RUBISCO
+      REAL(fp), INTENT(OUT) :: RATE_LIGHT
+      REAL(fp), INTENT(OUT) :: RATE_PRODUCT
+      REAL(fp), INTENT(OUT) :: RATE_RUBISCO
       ! Success or failure flag
 !      INTEGER,  INTENT(OUT) :: RC
 !
 ! !LOCAL VARIABLES:
 !
       ! Michaelis-Menten parameters for CO2 and O2 respectively
-      REAL                  :: K_C
-      REAL                  :: K_O
+      REAL(fp)              :: K_C
+      REAL(fp)              :: K_O
 
       !=================================================================
       ! PHOTOSYNTHESIS_LIMITS begins here!
       !=================================================================
       ! Assume success
 !      RC                    = GC_SUCCESS
-      K_C                   = 30.0 * FACTOR_Q10( 2.1, TEMPC )
-      K_O                   = 30000.0 * FACTOR_Q10( 1.2, TEMPC )
+      K_C                   = 3.e+1_fp * FACTOR_Q10( 2.1e+0_fp, TEMPC )
+      K_O                   = 3.e+4_fp * FACTOR_Q10( 1.2e+0_fp, TEMPC )
       ! For C4 plants
       IF ( IS_C3_PLANT(PFT) == 0 ) THEN
         RATE_RUBISCO        = V_CMAX
         RATE_LIGHT          = ALPHA(PFT) * APAR
-        RATE_PRODUCT        = 20000.0 * V_CMAX * CO2_IN / PRESSURE
+        RATE_PRODUCT        = 2.e+4_fp * V_CMAX * CO2_IN / PRESSURE
       ELSE    ! For C3 plants
         RATE_RUBISCO        = V_CMAX * ( CO2_IN - CO2_GAMMA )  &
-                            / ( CO2_IN + K_C * ( 1 + PRESSURE * O2 / K_O ) )
-        RATE_LIGHT          = ALPHA(PFT) * APAR               &
-                            * ( CO2_IN -     CO2_GAMMA )       &
-                            / ( CO2_IN + 2 * CO2_GAMMA )
-        RATE_RUBISCO        = MAX( RATE_RUBISCO, 0.0 )
-        RATE_LIGHT          = MAX( RATE_LIGHT, 0.0 )
-        RATE_PRODUCT        = 0.5 * V_CMAX
+                            / ( CO2_IN + K_C * ( 1.e+0_fp + PRESSURE * O2 / K_O ) )
+        RATE_LIGHT          = ALPHA(PFT) * APAR           &
+                            * ( CO2_IN - CO2_GAMMA )      &
+                            / ( CO2_IN + CO2_GAMMA * 2.e+0_fp )
+        RATE_RUBISCO        = MAX( RATE_RUBISCO, 0.e+0_fp )
+        RATE_LIGHT          = MAX( RATE_LIGHT, 0.e+0_fp )
+        RATE_PRODUCT        = 0.5e+0_fp * V_CMAX
       END IF
       END SUBROUTINE PHOTOSYNTHESIS_LIMITS
 
@@ -640,31 +639,31 @@
       ! RATE_RUBISCO       : Rubisco-limited rate [mol CO2 m^-2 s^-1]
       ! A_GROSS            : Gross rate of photosynthesis [mol CO2 m^-2 s^-1]
       !---------------------------------------------------------------------------------------
-      REAL,     INTENT(IN)  :: RATE_LIGHT
-      REAL,     INTENT(IN)  :: RATE_PRODUCT
-      REAL,     INTENT(IN)  :: RATE_RUBISCO
-      REAL,     INTENT(OUT) :: A_GROSS
+      REAL(fp), INTENT(IN)  :: RATE_LIGHT
+      REAL(fp), INTENT(IN)  :: RATE_PRODUCT
+      REAL(fp), INTENT(IN)  :: RATE_RUBISCO
+      REAL(fp), INTENT(OUT) :: A_GROSS
 
       ! Parameters
-      REAL,     PARAMETER   :: BETA1 = 0.83
-      REAL,     PARAMETER   :: BETA2 = 0.93
+      REAL(fp), PARAMETER   :: BETA1 = 0.83e+0_fp
+      REAL(fp), PARAMETER   :: BETA2 = 0.93e+0_fp
       ! Local parameter
-      REAL                  :: TEMP
-      REAL                  :: B
-      REAL                  :: C
+      REAL(fp)              :: TEMP
+      REAL(fp)              :: B
+      REAL(fp)              :: C
       ! 1st quadratic
       B = -( RATE_RUBISCO + RATE_LIGHT ) / BETA1
       C = RATE_RUBISCO * RATE_LIGHT / BETA1
       ! Note that C > 0, SQRT( B^2 - 4*C ) < ABS(B)
       ! Take smaller root
-      TEMP = 0.5 * ( - B - SQRT( B * B - 4 * C ) )
+      TEMP = 0.5.e+0_fp * ( - B - SQRT( B * B - 4.e+0_fp * C ) )
 
       ! 2nd quadratic
       B = - ( TEMP + RATE_PRODUCT ) / BETA2
       C = TEMP * RATE_PRODUCT / BETA2
       ! Note that C > 0, SQRT( B^2 - 4*C ) < ABS(B)
       ! Take smaller root
-      A_GROSS  = 0.5 * ( - B - SQRT( B * B - 4 * C ) )
+      A_GROSS  = 0.5e+0_fp * ( - B - SQRT( B * B - 4.e+0_fp * C ) )
       END SUBROUTINE SOLVE_COLIMIT
 
       SUBROUTINE MOIST_STRESS( SOIL_WETNESS, BETA )
@@ -679,11 +678,11 @@
       !                   photosynthesis is stopped by limited soil moisture)
       ! BETA            : Moisture stress factor
       !---------------------------------------------------------------------------------------
-      REAL,     INTENT(IN)  :: SOIL_WETNESS
-      REAL,     INTENT(OUT) :: BETA
+      REAL(fp), INTENT(IN)  :: SOIL_WETNESS
+      REAL(fp), INTENT(OUT) :: BETA
 
       BETA =  ( SOIL_WETNESS*SATU - WILT ) / ( CRIT - WILT )
-      BETA = MIN( MAX( 0.0, BETA ), 1.0 )
+      BETA = MIN( MAX( 0.e+0_fp, BETA ), 1.e+0_fp )
       END SUBROUTINE MOIST_STRESS
 
       SUBROUTINE LEAF_CONDUCTANCE( A_NET, CO2_AMBIENT, CO2_IN,  &
@@ -698,11 +697,11 @@
       ! RSTARG            : Universal Gas Constant                  [J K^-1 mol^-1]
       ! CO2_O2_RATIO      : Ratio of leaf resistance for CO2 to H2O
       !---------------------------------------------------------------------------------------
-      REAL,     INTENT(IN)      :: A_NET
-      REAL,     INTENT(IN)      :: CO2_AMBIENT
-      REAL,     INTENT(IN)      :: CO2_IN
-      REAL,     INTENT(IN)      :: TEMPK
-      REAL,     INTENT(OUT)     :: G_LEAF
+      REAL(fp),     INTENT(IN)      :: A_NET
+      REAL(fp),     INTENT(IN)      :: CO2_AMBIENT
+      REAL(fp),     INTENT(IN)      :: CO2_IN
+      REAL(fp),     INTENT(IN)      :: TEMPK
+      REAL(fp),     INTENT(OUT)     :: G_LEAF
       G_LEAF = CO2_O2_RATIO * RSTARG * TEMPK  &
              * A_NET / ( CO2_AMBIENT - CO2_IN )
       END SUBROUTINE LEAF_CONDUCTANCE
@@ -719,65 +718,65 @@
       ! FLUXO3          : Leaf uptake of O3                                       [nmol m^-2 s^-1]
       ! FACTOR_O3       : Ozone damage factor                                     []
       !---------------------------------------------------------------------------------------
-      REAL,     INTENT(IN)    :: O3_CONC
-      REAL,     INTENT(IN)    :: RA
-      REAL,     INTENT(IN)    :: G_LEAF
+      REAL(fp), INTENT(IN)    :: O3_CONC
+      REAL(fp), INTENT(IN)    :: RA
+      REAL(fp), INTENT(IN)    :: G_LEAF
       INTEGER,  INTENT(IN)    :: PFT
-      REAL,     INTENT(OUT)   :: FLUXO3
-      REAL,     INTENT(OUT)   :: FACTOR_O3
+      REAL(fp), INTENT(OUT)   :: FLUXO3
+      REAL(fp), INTENT(OUT)   :: FACTOR_O3
       ! Local variables
-      REAL :: B       ! Second coefficient in quadratic equation
-      REAL :: C       ! Constant in quadratic equation
-      REAL :: TEMP1
-      REAL :: TEMP2
-      REAL :: F
-      TEMP1       = 1 + PARAM_A(PFT) * FLUXO3_CRIT(PFT)
-      TEMP2       = 1.67 / G_LEAF
+      REAL(fp) :: B       ! Second coefficient in quadratic equation
+      REAL(fp) :: C       ! Constant in quadratic equation
+      REAL(fp) :: TEMP1
+      REAL(fp) :: TEMP2
+      REAL(fp) :: F
+      TEMP1       = 1.e+0_fp + PARAM_A(PFT) * FLUXO3_CRIT(PFT)
+      TEMP2       = 1.67e+0_fp / G_LEAF
       ! Calculate coefficients for quadratic equation F^2 + B*F + C = 0
-      IF ( ABS(RA) < EPSILON(1.0) ) THEN
+      IF ( ABS(RA) < EPSILON(1.e+0_fp) ) THEN
 !        RA        = 0.0
-        FACTOR_O3 = TEMP1 / ( 1 + PARAM_A(PFT) * O3_CONC / TEMP2 )
+        FACTOR_O3 = TEMP1 / ( 1.e+0_fp + PARAM_A(PFT) * O3_CONC / TEMP2 )
       ELSE
         B         = TEMP2 / RA - TEMP1 + PARAM_A(PFT) * O3_CONC / RA
         C         = - TEMP1 * TEMP2 / RA
         ! Note that C < 0, SQRT( B^2 - 4*C ) > ABS(B)
         ! Take positive root
-        F         = 0.5 * ( SQRT( B * B - 4 * C ) - B )
-        FACTOR_O3 = MIN( MAX( F, 0.0 ), 1.0 )
+        F         = 0.5e+0_fp * ( SQRT( B * B - 4.e+0_fp * C ) - B )
+        FACTOR_O3 = MIN( MAX( F, 0.e+0_fp ), 1.e+0_fp )
       END IF
       FLUXO3      = O3_CONC / ( RA + TEMP2 / FACTOR_O3 )      ! MAYBE NOT NEEDED?
       END SUBROUTINE OZONE_DAMAGE
 
       FUNCTION FACTOR_Q10( Q10, TEMPC ) RESULT( FACTOR )
 ! Calculate the standard Q10 temperature dependence
-      REAL, INTENT(IN)    :: Q10
-      REAL, INTENT(IN)    :: TEMPC              ! Temperature [deg C]
-      REAL                :: FACTOR
-      FACTOR = Q10**( 0.1 * ( TEMPC - 25 ) )
+      REAL(fp), INTENT(IN)    :: Q10
+      REAL(fp), INTENT(IN)    :: TEMPC              ! Temperature [deg C]
+      REAL(fp)                :: FACTOR
+      FACTOR = Q10**( 0.1e+0_fp * ( TEMPC - 25.e+0_fp ) )
       END FUNCTION FACTOR_Q10
 
       FUNCTION REL_ERR( ITEM, ITEM_PREV ) RESULT( ERROR )
 ! Calculate the relative error of a quantity between two iterations
-      REAL, INTENT(IN)    :: ITEM
-      REAL, INTENT(IN)    :: ITEM_PREV
-      REAL                :: ERROR
+      REAL(fp), INTENT(IN)    :: ITEM
+      REAL(fp), INTENT(IN)    :: ITEM_PREV
+      REAL(fp)                :: ERROR
       ERROR = ( ITEM - ITEM_PREV ) / ITEM_PREV
       END FUNCTION REL_ERR
 
       FUNCTION E_SAT( TEMPC ) RESULT ( Esat )
 ! Calculate the saturation vapour pressure (Pa) using the empirical formula by Lowe and Ficke (1974)
-      REAL, INTENT(IN)  :: TEMPC
-      REAL              :: Esat
+      REAL(fp), INTENT(IN)  :: TEMPC
+      REAL(fp)              :: Esat
       ! Local parameters
-      REAL, PARAMETER   :: a0 = 6.107799961
-      REAL, PARAMETER   :: a1 = 4.436518521e-1
-      REAL, PARAMETER   :: a2 = 1.428945805e-2
-      REAL, PARAMETER   :: a3 = 2.650648471e-4
-      REAL, PARAMETER   :: a4 = 3.031240396e-6
-      REAL, PARAMETER   :: a5 = 2.034080948e-8
-      REAL, PARAMETER   :: a6 = 6.136820929e-11
-      Esat = 100.0 * ( a0 + TEMPC * ( a1 + TEMPC * ( a2 + TEMPC   &
-                   * ( a3 + TEMPC * ( a4 + TEMPC * ( a5 + TEMPC * a6 ) ) ) ) ) )
+      REAL(fp), PARAMETER   :: a0 = 6.107799961e+0_fp
+      REAL(fp), PARAMETER   :: a1 = 4.436518521e-1_fp
+      REAL(fp), PARAMETER   :: a2 = 1.428945805e-2_fp
+      REAL(fp), PARAMETER   :: a3 = 2.650648471e-4_fp
+      REAL(fp), PARAMETER   :: a4 = 3.031240396e-6_fp
+      REAL(fp), PARAMETER   :: a5 = 2.034080948e-8_fp
+      REAL(fp), PARAMETER   :: a6 = 6.136820929e-11_fp
+      Esat = 1.e+2_fp * ( a0 + TEMPC * ( a1 + TEMPC * ( a2 + TEMPC   &
+                      * ( a3 + TEMPC * ( a4 + TEMPC * ( a5 + TEMPC * a6 ) ) ) ) ) )
       END FUNCTION E_SAT
 
 
@@ -835,22 +834,22 @@
       ! LO3_DAMAGE    : Logical switch for ozone damage scheme            []
       ! SOIL_WETNESS  : Fraction of moisture in soil pores                []
       !---------------------------------------------------------------------------------------
-      REAL,     INTENT(OUT) :: TEMPK
-      REAL,     INTENT(OUT) :: SPHU
-      REAL,     INTENT(OUT) :: PAR_ABSORBED
-      REAL,     INTENT(OUT) :: PRESSURE
-      REAL,     INTENT(OUT) :: CO2
-      REAL,     INTENT(OUT) :: O2
-      REAL,     INTENT(OUT) :: O3
-      REAL,     INTENT(OUT) :: LAI
+      REAL(fp), INTENT(OUT) :: TEMPK
+      REAL(fp), INTENT(OUT) :: SPHU
+      REAL(fp), INTENT(OUT) :: PAR_ABSORBED
+      REAL(fp), INTENT(OUT) :: PRESSURE
+      REAL(fp), INTENT(OUT) :: CO2
+      REAL(fp), INTENT(OUT) :: O2
+      REAL(fp), INTENT(OUT) :: O3
+      REAL(fp), INTENT(OUT) :: LAI
       LOGICAL,  INTENT(OUT) :: LO3_DAMAGE
-      REAL,     INTENT(OUT) :: SOIL_WETNESS
+      REAL(fp), INTENT(OUT) :: SOIL_WETNESS
 !
 ! !LOCAL VARIABLES:
 !
-      REAL    :: PARDR, PARDF, PAR
+      REAL(fp) :: PARDR, PARDF, PAR
       ! INTEGER :: I, J
-      INTEGER :: id_CO2, id_O2, id_O3
+      INTEGER  :: id_CO2, id_O2, id_O3
 
       ! Find tracer indices with function the Ind_() function
       id_CO2    = IND_( 'CO2' )
@@ -863,13 +862,13 @@
       ! Surface temperature [K]
       TEMPK         = State_Met%TS( I,J )
       ! Specific humidity [kg/kg]
-      SPHU          = State_Met%SPHU( I,J,1 ) / 1000
+      SPHU          = State_Met%SPHU( I,J,1 ) * 1.e-3_fp
       ! Photosynthetically active radiation absorbed [W m^-2]
       PARDR         = State_Met%PARDR( I,J )
       PARDF         = State_Met%PARDF( I,J )
       PAR           = PARDR + PARDF
       ! Pressure [Pa]
-      PRESSURE      = State_Met%SLP( I,J ) * 100
+      PRESSURE      = State_Met%SLP( I,J ) * 1.e+2_fp
       ! CO2 mole fraction [mol/mol]
       CO2           = State_Chm%Species( I,J,1,id_CO2 ) * AIRMW &
                     / State_Chm%SpcData( id_CO2 )%Info%MW_g
@@ -951,8 +950,8 @@
 !   REAL(fp)             :: D_LAT         ! Delta latitude,  HadGEM2 grid [degrees]
 
 !   ! Arrays
-!   REAL*4,  ALLOCATABLE :: lon       (:  )  ! Lon centers, HadGEM2 grid [degrees]
-!   REAL*4,  ALLOCATABLE :: lat       (  :)  ! Lat centers, HadGEM2 grid [degrees]
+!   REAL(fp),ALLOCATABLE :: lon       (:  )  ! Lon centers, HadGEM2 grid [degrees]
+!   REAL(fp),ALLOCATABLE :: lat       (  :)  ! Lat centers, HadGEM2 grid [degrees]
 !   INTEGER, ALLOCATABLE :: THETA_WILT(:,:)  ! Soil moisture at wilting point
 !   INTEGER, ALLOCATABLE :: THETA_CRIT(:,:)  ! Soil moisture at critical point
 !   INTEGER, ALLOCATABLE :: THETA_SATU(:,:)  ! Soil moisture at saturation point
@@ -1015,29 +1014,29 @@
       !======================================================================
 
       ! Scalars
-      INTEGER            :: I, J               ! Loop indices
-      INTEGER            :: fId                ! netCDF file ID
-      INTEGER            :: as                 ! Allocation status
-      INTEGER            :: I_SOIL             ! # of lons (0.5 x 0.5)
-      INTEGER            :: J_SOIL             ! # of lats (0.5 x 0.5)
-      REAL               :: D_LON              ! Delta longitude, HadGEM2 grid [degrees]
-      REAL               :: D_LAT              ! Delta latitude,  HadGEM2 grid [degrees]
+      INTEGER              :: I, J                 ! Loop indices
+      INTEGER              :: fId                  ! netCDF file ID
+      INTEGER              :: as                   ! Allocation status
+      INTEGER              :: I_SOIL               ! # of lons (0.5 x 0.5)
+      INTEGER              :: J_SOIL               ! # of lats (0.5 x 0.5)
+      REAL(fp)             :: D_LON                ! Delta longitude, HadGEM2 grid [degrees]
+      REAL(fp)             :: D_LAT                ! Delta latitude,  HadGEM2 grid [degrees]
 
 
       ! Character strings
-      CHARACTER(LEN=255) :: nc_dir             ! netCDF directory name
-      CHARACTER(LEN=255) :: nc_file            ! netCDF file name
-      CHARACTER(LEN=255) :: nc_path            ! netCDF path name
-      CHARACTER(LEN=255) :: v_name             ! netCDF variable name
-      CHARACTER(LEN=255) :: a_name             ! netCDF attribute name
-      CHARACTER(LEN=255) :: a_val              ! netCDF attribute value
-      CHARACTER(LEN=255) :: Msg, ErrMsg, ThisLoc
+      CHARACTER(LEN=255)   :: nc_dir               ! netCDF directory name
+      CHARACTER(LEN=255)   :: nc_file              ! netCDF file name
+      CHARACTER(LEN=255)   :: nc_path              ! netCDF path name
+      CHARACTER(LEN=255)   :: v_name               ! netCDF variable name
+      CHARACTER(LEN=255)   :: a_name               ! netCDF attribute name
+      CHARACTER(LEN=255)   :: a_val                ! netCDF attribute value
+      CHARACTER(LEN=255)   :: Msg, ErrMsg, ThisLoc
 
       ! Arrays for netCDF start and count values
-      INTEGER            :: st1d(1), ct1d(1)   ! For 1D arrays
-      INTEGER            :: st2d(2), ct2d(2)   ! For 2D arrays
-      REAL,  ALLOCATABLE :: lon  (:    )  ! Lon centers, Olson grid [degrees]
-      REAL,  ALLOCATABLE :: lat  (  :  )  ! Lat centers, Olson grid [degrees]
+      INTEGER              :: st1d(1), ct1d(1)     ! For 1D arrays
+      INTEGER              :: st2d(2), ct2d(2)     ! For 2D arrays
+      REAL(fp), ALLOCATABLE:: lon  (:  )           ! Lon centers, Olson grid [degrees]
+      REAL(fp), ALLOCATABLE:: lat  (  :)           ! Lat centers, Olson grid [degrees]
 
       !=================================================================
       ! Init_Soilmap begins here!
@@ -1067,27 +1066,27 @@
       ALLOCATE( lon( I_SOIL ), STAT=RC )
       CALL GC_CheckVar( 'soilmap_mod:lon', 0, RC)
       IF ( RC /= GC_SUCCESS ) RETURN
-      lon( : ) = 0e+0_f8
+      lon( : ) = 0e+0_fp
 
       ALLOCATE( lat( J_SOIL ), STAT=RC )
       CALL GC_CheckVar( 'soilmap_mod:lat', 0, RC)
       IF ( RC /= GC_SUCCESS ) RETURN
-      lat( : ) = 0e+0_f8
+      lat( : ) = 0e+0_fp
 
       ALLOCATE( THETA_WILT( I_SOIL, J_SOIL ), STAT=RC )
       CALL GC_CheckVar( 'soilmap_mod:THETA_WILT', 0, RC)
       IF ( RC /= GC_SUCCESS ) RETURN
-      THETA_WILT( :,: ) = 0e+0_f8
+      THETA_WILT( :,: ) = 0e+0_fp
 
       ALLOCATE( THETA_CRIT( I_SOIL, J_SOIL ), STAT=RC )
       CALL GC_CheckVar( 'soilmap_mod:THETA_CRIT', 0, RC)
       IF ( RC /= GC_SUCCESS ) RETURN
-      THETA_CRIT( :,: ) = 0e+0_f8
+      THETA_CRIT( :,: ) = 0e+0_fp
 
       ALLOCATE( THETA_SATU( I_SOIL, J_SOIL ), STAT=RC )
       CALL GC_CheckVar( 'soilmap_mod:THETA_SATU', 0, RC)
       IF ( RC /= GC_SUCCESS ) RETURN
-      THETA_SATU( :,: ) = 0e+0_f8
+      THETA_SATU( :,: ) = 0e+0_fp
 
     !======================================================================
     ! Open and read data from the netCDF file
