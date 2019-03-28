@@ -765,7 +765,7 @@
       END FUNCTION REL_ERR
 
       FUNCTION E_SAT( TEMPC ) RESULT ( Esat )
-! Calculate the saturation vapour pressure using the empirical formula by Lowe and Ficke (1974)
+! Calculate the saturation vapour pressure (Pa) using the empirical formula by Lowe and Ficke (1974)
       REAL, INTENT(IN)  :: TEMPC
       REAL              :: Esat
       ! Local parameters
@@ -869,7 +869,7 @@
       PARDF         = State_Met%PARDF( I,J )
       PAR           = PARDR + PARDF
       ! Pressure [Pa]
-      PRESSURE      = State_Met%SLP( I,J )
+      PRESSURE      = State_Met%SLP( I,J ) * 100
       ! CO2 mole fraction [mol/mol]
       CO2           = State_Chm%Species( I,J,1,id_CO2 ) * AIRMW &
                     / State_Chm%SpcData( id_CO2 )%Info%MW_g
