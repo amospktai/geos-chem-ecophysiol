@@ -18,7 +18,7 @@
 !
       USE CMN_SIZE_MOD                          ! Size parameters
       USE ERROR_MOD                             ! Error handling routines
-      USE PhysConstants, ONLY: RSTARG           ! Physical constants
+      USE PhysConstants, ONLY: RSTARG, AIRMW    ! Physical constants
       USE PRECISION_MOD                         ! For GEOS-Chem Precision (fp)
       IMPLICIT NONE
       PRIVATE
@@ -121,7 +121,7 @@
 !
       SUBROUTINE DO_ECOPHY ( am_I_Root, Input_Opt,  State_Met, &
                              State_Chm, State_Diag, RC,        &
-                             I, J,      LDT, PFT,   RS         )
+                             I, J,      LDT, PFT,   RA, RS     )
 !
 ! !USES:
 !
@@ -665,7 +665,7 @@
       C = RATE_RUBISCO * RATE_LIGHT / BETA1
       ! Note that C > 0, SQRT( B^2 - 4*C ) < ABS(B)
       ! Take smaller root
-      TEMP = 0.5.e+0_fp * ( - B - SQRT( B * B - 4.e+0_fp * C ) )
+      TEMP = 0.5e+0_fp * ( - B - SQRT( B * B - 4.e+0_fp * C ) )
 
       ! 2nd quadratic
       B = - ( TEMP + RATE_PRODUCT ) / BETA2
