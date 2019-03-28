@@ -3497,7 +3497,7 @@
      &                        Input_Opt%PBL_DRYDEP
          WRITE( 6, 100     ) 'Turn on wet deposition?     : ', 
      &                        Input_Opt%LWETD
-         WRITE( 6, 100     ) 'Turn on ecophysiology?     : ', 
+         WRITE( 6, 100     ) 'Turn on ecophysiology?      : ', 
      &                        Input_Opt%LECOPHY
       ENDIF
 

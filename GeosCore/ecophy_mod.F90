@@ -1302,20 +1302,20 @@
       ! Arrays that hold inputs for the main driver do_ecophy
       ! Only allocate these if ecophysiology is activated
       !===================================================================
-      ALLOCATE( THETA_SATU( IIPAR, JJPAR ), STAT=RC )
-      CALL GC_CheckVar( 'ecophy_mod:THETA_SATU', 0, RC )
-      IF ( RC /= GC_SUCCESS ) RETURN
-      THETA_SATU( :,: ) = 0e+0_f8
+      ! ALLOCATE( THETA_SATU( IIPAR, JJPAR ), STAT=RC )
+      ! CALL GC_CheckVar( 'ecophy_mod:THETA_SATU', 0, RC )
+      ! IF ( RC /= GC_SUCCESS ) RETURN
+      ! THETA_SATU( :,: ) = 0e+0_f8
 
-      ALLOCATE( THETA_CRIT( IIPAR, JJPAR ), STAT=RC )
-      CALL GC_CheckVar( 'ecophy_mod:THETA_CRIT', 0, RC )
-      IF ( RC /= GC_SUCCESS ) RETURN
-      THETA_CRIT( :,: ) = 0e+0_f8
+      ! ALLOCATE( THETA_CRIT( IIPAR, JJPAR ), STAT=RC )
+      ! CALL GC_CheckVar( 'ecophy_mod:THETA_CRIT', 0, RC )
+      ! IF ( RC /= GC_SUCCESS ) RETURN
+      ! THETA_CRIT( :,: ) = 0e+0_f8
 
-      ALLOCATE( THETA_WILT( IIPAR, JJPAR ), STAT=RC )
-      CALL GC_CheckVar( 'ecophy_mod:THETA_WILT', 0, RC )
-      IF ( RC /= GC_SUCCESS ) RETURN
-      THETA_WILT( :,: ) = 0e+0_f8
+      ! ALLOCATE( THETA_WILT( IIPAR, JJPAR ), STAT=RC )
+      ! CALL GC_CheckVar( 'ecophy_mod:THETA_WILT', 0, RC )
+      ! IF ( RC /= GC_SUCCESS ) RETURN
+      ! THETA_WILT( :,: ) = 0e+0_f8
 
       ! Get soil map
       CALL Init_Soilmap( am_I_Root, Input_Opt, RC )

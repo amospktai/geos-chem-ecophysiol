@@ -2004,11 +2004,11 @@ C  170     CONTINUE
 !*                                 
          DO 190 K = 1,NUMDEP 
             IF (.NOT.LDEP(K)) GOTO 190
-            DO 180 LDT = 1, IREG(I,J)
-               IF ( IUSE(I,J,LDT) == 0 ) GOTO 180
+!             DO 180 LDT = 1, IREG(I,J)
+!                IF ( IUSE(I,J,LDT) == 0 ) GOTO 180
                RSURFC(K,LDT)= MAX(1.e+0_f8, MIN(RSURFC(K,LDT), 
      &                        9999.e+0_f8))
- 180        CONTINUE
+!  180        CONTINUE
  190     CONTINUE
 
 !* Get total resistance for deposition - loop over species.
