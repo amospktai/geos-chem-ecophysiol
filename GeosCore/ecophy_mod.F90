@@ -197,8 +197,9 @@
       ! REAL(fp), POINTER :: BETA_O3        ( :,:,: )
       ! REAL(fp), POINTER :: BETA_SM        ( :,:,: )
 
-      ! For ESMF, need to assign these from Input_Opt (copied from drydep_mod)
+      ! Print for debugging
       LOGICAL       :: LPRT
+      LOGICAL       :: prtDebug
 
       !=================================================================
       ! DO_ECOPHY begins here!
@@ -210,6 +211,8 @@
       ErrMsg  = ''
       ThisLoc = &
       ' -> at Do_ECOPHY (in module GeosCore/ecophysiology.F90)'
+
+      prtDebug = ( LPRT .and. am_I_Root )
 
       ! Point to columns of derived-type object fields
       ! G_CANOPY     => State_Chm%G_CAN
@@ -245,6 +248,7 @@
                               G_LEAF_OUT,   CO2_IN,     A_NET_OUT,    &
                               RESP_OUT,     FLUXO3_CAN, FLUXO3,       &
                               FACTOR_O3,    BETA,       PFT           &
+                              , prtDebug                              &
                               )
 
       ! Trap potential errors
@@ -265,7 +269,7 @@
       RS = 1.0 / G_CAN_OUT
 
       !### Debug
-      IF ( LPRT .and. am_I_Root ) THEN
+      IF ( prtDebug ) THEN
          CALL DEBUG_MSG( '### DO_ECOPHY: after ecophysiology' )
       ENDIF
 
@@ -301,6 +305,7 @@
                                     G_LEAF_OUT,   CO2_IN,     A_NET_OUT,    &
                                     RESP_OUT,     FLUXO3_CAN, FLUXO3,       &
                                     FACTOR_O3,    BETA,       PFT           &
+                                    , prtDebug                              &
                                     )
 ! Main driver of the photosynthesis-stomatal conductance model
 !
@@ -335,6 +340,7 @@
       LOGICAL,  INTENT(IN)  :: LO3_DAMAGE
       REAL(fp), INTENT(IN)  :: SOIL_WETNESS
       INTEGER,  INTENT(IN)  :: PFT
+      LOGICAL,  INTENT(IN)  :: prtDebug    ! temporary debugging control
 !
 !OUTPUT PARAMETERS:
 !
@@ -429,7 +435,7 @@
       V_CMAX         = V_CMAX25(PFT) * FACTOR_Q10( 2.e+0_fp, TEMPC ) / DENOM
       RESP           = F_DARKRESP(PFT) * V_CMAX
       ! Calculate CO2 compensation point
-      TAU            = 2600.e+0_fp * FACTOR_Q10( 0.57e+0_fp, TEMPC )    ! CO2/O2 Specificity Ratio
+      TAU            = 2.6e+3_fp * FACTOR_Q10( 0.57e+0_fp, TEMPC )    ! CO2/O2 Specificity Ratio
       CO2_GAMMA      = IS_C3_PLANT(PFT) / ( 2.e+0_fp * TAU ) &
                      * PRESSURE * O2
       ! Calculate canopy scaling factor
@@ -538,7 +544,7 @@
       ! Deal with diagnoses
 
       ! Print for debugs
-#if defined (DEBUG)
+      IF ( prtDebug ) THEN
         PRINT *, "TEMPC = ", TEMPC
         PRINT *, "SPHU_SAT = ", SPHU_SAT
         PRINT *, "DEFICIT_Q = ", DEFICIT_Q
@@ -559,7 +565,7 @@
         PRINT *, "ERR2 = ", ERR2
         PRINT *, "ERR3 = ", ERR3
         PRINT *, "DELTA = ", DELTA
-#endif
+      END IF
       END SUBROUTINE DO_PHOTOSYNTHESIS
 
       SUBROUTINE PHOTOSYNTHESIS_LIMITS( CO2_IN,       CO2_GAMMA,    &
