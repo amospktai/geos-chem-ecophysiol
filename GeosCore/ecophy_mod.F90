@@ -342,8 +342,8 @@
       ! G_CAN_OUT     : Canopy conductance for H2O (output)               [m s^-1]
       ! G_LEAF_OUT    : Leaf level stomatal conductance for H2O (output)  [m s^-1]
       ! CO2_IN        : Leaf internal partial pressure of CO2             [Pa]
-      ! A_CAN_OUT       : Canopy net photosynthetic rate (output)           [mol CO2 m^-2 s^-1]
-      ! A_NET_OUT       : Leaf level net photosynthetic rate (output)       [mol CO2 m^-2 s^-1]
+      ! A_CAN_OUT     : Canopy net photosynthetic rate (output)           [mol CO2 m^-2 s^-1]
+      ! A_NET_OUT     : Leaf level net photosynthetic rate (output)       [mol CO2 m^-2 s^-1]
       ! RESP_CAN_OUT  : Canopy dark respiration (output)                  [mol CO2 m^-2 s^-1]
       ! RESP_OUT      : Leaf level dark respiration (output)              [mol CO2 m^-2 s^-1]
       ! FLUXO3_CAN    : Canopy ozone uptake                               [nmol m^-2 s^-1]
@@ -422,24 +422,24 @@
       REAL(fp)    :: ERR3
       REAL(fp)    :: DELTA
 
-      TEMPC             = TEMPK - 273.15e+0_fp
+      TEMPC          = TEMPK - 273.15e+0_fp
       ! Calculate V_CMAX and respiration which depends on V_CMAX only
-      DENOM             = ( 1.e+0_fp + EXP( 0.3e+0_fp*( TEMPC - T_UPP(PFT) ) ) ) &
-                        * ( 1.e+0_fp + EXP( 0.3e+0_fp*( T_LOW(PFT) - TEMPC ) ) )
-      V_CMAX            = V_CMAX25(PFT) * FACTOR_Q10( 2.e+0_fp, TEMPC ) / DENOM
-      RESP              = F_DARKRESP(PFT) * V_CMAX
+      DENOM          = ( 1.e+0_fp + EXP( 0.3e+0_fp*( TEMPC - T_UPP(PFT) ) ) ) &
+                     * ( 1.e+0_fp + EXP( 0.3e+0_fp*( T_LOW(PFT) - TEMPC ) ) )
+      V_CMAX         = V_CMAX25(PFT) * FACTOR_Q10( 2.e+0_fp, TEMPC ) / DENOM
+      RESP           = F_DARKRESP(PFT) * V_CMAX
       ! Calculate CO2 compensation point
-      TAU               = 2600.e+0_fp * FACTOR_Q10( 0.57e+0_fp, TEMPC )                    ! CO2/O2 Specificity Ratio
-      CO2_GAMMA         = IS_C3_PLANT(PFT) / ( 2.e+0_fp * TAU ) &
-                        * PRESSURE * O2
+      TAU            = 2600.e+0_fp * FACTOR_Q10( 0.57e+0_fp, TEMPC )    ! CO2/O2 Specificity Ratio
+      CO2_GAMMA      = IS_C3_PLANT(PFT) / ( 2.e+0_fp * TAU ) &
+                     * PRESSURE * O2
       ! Calculate canopy scaling factor
-      BIGLEAFSCALE      = ( 1.e+0_fp - EXP( -K_EXTINCT(PFT) * LAI ) ) / K_EXTINCT(PFT)
+      BIGLEAFSCALE   = ( 1.e+0_fp - EXP( - K_EXTINCT(PFT) * LAI ) ) / K_EXTINCT(PFT)
       ! Convert unit of absorbed PAR to mol photon m^-2 s^-1
-      APAR              = 4.6e-6_fp * PAR_ABSORBED
+      APAR           = 4.6e-6_fp * PAR_ABSORBED
       ! Calculate CO2 partial pressure in ambient air
-      CO2_AMBIENT       = PRESSURE * CO2
+      CO2_AMBIENT    = PRESSURE * CO2
       ! Calculate O3 molar concentration in canopy layer
-      O3_CONC           = O3 * PRESSURE / RSTARG / TEMPK * 1.e+9_fp
+      O3_CONC        = O3 * PRESSURE / RSTARG / TEMPK * 1.e+9_fp
 
       ! To modify net photosynthesis rate by soil moisture stress later
       ! Not needed to be inside the loop
@@ -448,90 +448,92 @@
       ! Iterate to find a self-consistent set of photosynthesis,
       ! stomatal conductance and leaf internal CO2 concentration
       ! Initial guess: G_LEAF = 0 and other initializations
-      ITER              = 1
-      G_LEAF            = 0.e+0_fp
-      G_CAN             = 0.e+0_fp
-      CO2_IN_PREV       = 0.e+0_fp
-      A_NET_PREV        = 0.e+0_fp
-      G_LEAF_PREV       = 0.e+0_fp
-      ERR1              = 1.e+0_fp
-      ERR2              = 1.e+0_fp
-      ERR3              = 1.e+0_fp
-      DELTA             = 1.e+0_fp
+      ITER           = 1
+      G_LEAF         = 0.e+0_fp
+      G_CAN          = 0.e+0_fp
+      CO2_IN_PREV    = 0.e+0_fp
+      A_NET_PREV     = 0.e+0_fp
+      G_LEAF_PREV    = 0.e+0_fp
+      ERR1           = 1.e+0_fp
+      ERR2           = 1.e+0_fp
+      ERR3           = 1.e+0_fp
+      DELTA          = 1.e+0_fp
       DO WHILE ( DELTA >= THRESHOLD .AND. ITER <= 100 )
-        ! Step 1: Closure condition by Jacobs (1994)
-        SPHU_SAT          = 0.622e+0_fp * E_SAT( TEMPC ) / PRESSURE
-        G_CAN             = G_LEAF * BIGLEAFSCALE
-        DEFICIT_Q         = ( SPHU_SAT - SPHU ) / ( 1 + RA * G_CAN )
-        CO2_IN            = CO2_GAMMA + f0(PFT)*( 1 - DEFICIT_Q / D_STAR(PFT) ) &
-                          * ( CO2_AMBIENT - CO2_GAMMA )
-        IF ( BETA <= 0.e+0_fp .OR. DEFICIT_Q >= D_STAR(PFT) .OR. PAR_ABSORBED <= 0.e+0_fp ) THEN
-          ! Close stomata if the above conditions are satisfied
-          A_NET           = - RESP * BETA
-          G_LEAF          = G_LEAF_MIN(PFT)
-          PRINT *, "Stomata is closed."
-        ELSE
-          ! Step 2: Photosynthesis model
-          CALL PHOTOSYNTHESIS_LIMITS( CO2_IN,       CO2_GAMMA,    &
-                                      O2, APAR,     PRESSURE,     &
-                                      TEMPC,        V_CMAX,       &
-                                      PFT,          RATE_LIGHT,   &
-                                      RATE_PRODUCT, RATE_RUBISCO  )
-          CALL SOLVE_COLIMIT( RATE_LIGHT,   RATE_PRODUCT, &
-                              RATE_RUBISCO, A_GROSS      )
-          PRINT *, "Photosynthesis calculated."
-          A_NET    = ( A_GROSS - RESP ) * BETA
-          ! Step 3: Diffusive CO2 flux thru open stomata
-          CALL LEAF_CONDUCTANCE( A_NET, CO2_AMBIENT, CO2_IN,  &
-                                 TEMPK, G_LEAF                )
-          ! Close stomata if net photosynthesis <= 0 or
-          ! stomatal conductance is too small
-          IF ( A_NET <= 0.e+0_fp .OR. G_LEAF <= G_LEAF_MIN(PFT) ) THEN
-            A_NET     = - RESP * BETA
-            G_LEAF    = G_LEAF_MIN(PFT)
-            PRINT *, "Stomata is now closed."
-          END IF
-          ! Apply ozone damage scheme by Sitch et al. (2007)
-          IF ( LO3_DAMAGE ) THEN
-            CALL OZONE_DAMAGE ( O3_CONC,  RA,          &
-                                G_LEAF,   PFT,         &
-                                FLUXO3,   FACTOR_O3    )
-            PRINT *, "Ozone damage calculated."
-            A_NET_OUT     = FACTOR_O3 * A_NET
-            RESP_OUT      = FACTOR_O3 * RESP
-            G_LEAF_OUT    = FACTOR_O3 * G_LEAF
-              ! Close stomata if net photosynthesis <= 0 or
-              ! stomatal conductance is too small
-              IF ( A_NET_OUT <= 0.e+0_fp .OR. G_LEAF_OUT <= G_LEAF_MIN(PFT) ) THEN
-                A_NET_OUT   = - RESP * BETA
-                G_LEAF_OUT  = G_LEAF_MIN(PFT)
-              END IF
-          ELSE
-            A_NET_OUT     = A_NET
-            RESP_OUT      = RESP
-            G_LEAF_OUT    = G_LEAF
-          END IF  ! O3 damage
-        END IF    ! Open or closed stomata
-        IF ( ITER >= 2 ) THEN
-        ! calculate error from step 2 onwards
-          ERR1  = REL_ERR( G_LEAF, G_LEAF_PREV )
-          ERR2  = REL_ERR( CO2_IN, CO2_IN_PREV )
-          ERR3  = REL_ERR( A_NET,  A_NET_PREV  )
-          DELTA = ABS( MAX( ERR1, ERR2, ERR3 ) )
-        END IF
-        CO2_IN_PREV  = CO2_IN
-        A_NET_PREV   = A_NET
-        G_LEAF_PREV  = G_LEAF
-        PRINT *, "iteration = ", ITER
-        PRINT *, "Delta = ", DELTA
-        ITER = ITER + 1
+         ! Step 1: Closure condition by Jacobs (1994)
+         SPHU_SAT    = 0.622e+0_fp * E_SAT( TEMPC ) / PRESSURE
+         G_CAN       = G_LEAF * BIGLEAFSCALE
+         DEFICIT_Q   = ( SPHU_SAT - SPHU ) / ( 1 + RA * G_CAN )
+         CO2_IN      = CO2_GAMMA + f0(PFT)*( 1 - DEFICIT_Q / D_STAR(PFT) ) &
+                     * ( CO2_AMBIENT - CO2_GAMMA )
+         IF ( BETA <= 0.e+0_fp .OR. DEFICIT_Q >= D_STAR(PFT) & 
+                               .OR. PAR_ABSORBED <= 0.e+0_fp ) THEN
+            ! Close stomata if the above conditions are satisfied
+            A_NET    = - RESP * BETA
+            G_LEAF   = G_LEAF_MIN(PFT)
+            PRINT *, "Stomata is closed."
+         ELSE
+            ! Step 2: Photosynthesis model
+            CALL PHOTOSYNTHESIS_LIMITS( CO2_IN,       CO2_GAMMA,    &
+                                        O2, APAR,     PRESSURE,     &
+                                        TEMPC,        V_CMAX,       &
+                                        PFT,          RATE_LIGHT,   &
+                                        RATE_PRODUCT, RATE_RUBISCO  )
+            CALL SOLVE_COLIMIT( RATE_LIGHT,   RATE_PRODUCT, &
+                                RATE_RUBISCO, A_GROSS      )
+            PRINT *, "Photosynthesis calculated."
+            A_NET    = ( A_GROSS - RESP ) * BETA
+            ! Step 3: Diffusive CO2 flux thru open stomata
+            CALL LEAF_CONDUCTANCE( A_NET, CO2_AMBIENT, CO2_IN,  &
+                                   TEMPK, G_LEAF                )
+            ! Close stomata if net photosynthesis <= 0 or
+            ! stomatal conductance is too small
+            IF ( A_NET <= 0.e+0_fp .OR. G_LEAF <= G_LEAF_MIN(PFT) ) THEN
+               A_NET    = - RESP * BETA
+               G_LEAF   = G_LEAF_MIN(PFT)
+               PRINT *, "Stomata is now closed."
+            END IF
+            ! Apply ozone damage scheme by Sitch et al. (2007)
+            IF ( LO3_DAMAGE ) THEN
+               CALL OZONE_DAMAGE ( O3_CONC,  RA,          &
+                                   G_LEAF,   PFT,         &
+                                   FLUXO3,   FACTOR_O3    )
+               PRINT *, "Ozone damage calculated."
+               A_NET_OUT   = FACTOR_O3 * A_NET
+               RESP_OUT    = FACTOR_O3 * RESP
+               G_LEAF_OUT  = FACTOR_O3 * G_LEAF
+                  ! Close stomata if net photosynthesis <= 0 or
+                  ! stomatal conductance is too small
+                  IF ( A_NET_OUT <= 0.e+0_fp .OR. G_LEAF_OUT <= G_LEAF_MIN(PFT) ) THEN
+                     A_NET_OUT   = - RESP * BETA
+                     G_LEAF_OUT  = G_LEAF_MIN(PFT)
+                     PRINT *, "Stomata is now closed."
+                  END IF
+            ELSE
+               A_NET_OUT   = A_NET
+               RESP_OUT    = RESP
+               G_LEAF_OUT  = G_LEAF
+            END IF   ! O3 damage
+         END IF      ! Open or closed stomata
+         IF ( ITER >= 2 ) THEN
+         ! calculate error from step 2 onwards
+            ERR1  = REL_ERR( G_LEAF, G_LEAF_PREV )
+            ERR2  = REL_ERR( CO2_IN, CO2_IN_PREV )
+            ERR3  = REL_ERR( A_NET,  A_NET_PREV  )
+            DELTA = ABS( MAX( ERR1, ERR2, ERR3 ) )
+         END IF
+         CO2_IN_PREV  = CO2_IN
+         A_NET_PREV   = A_NET
+         G_LEAF_PREV  = G_LEAF
+         PRINT *, "iteration = ", ITER
+         PRINT *, "Delta = ", DELTA
+         ITER = ITER + 1
       END DO  ! Do while loop
 
       ! Canopy scaling
-      A_CAN_OUT     = BIGLEAFSCALE * A_NET_OUT
-      G_CAN_OUT     = BIGLEAFSCALE * G_LEAF_OUT
-      RESP_CAN_OUT  = BIGLEAFSCALE * RESP_OUT
-      FLUXO3_CAN    = BIGLEAFSCALE * FLUXO3
+      A_CAN_OUT      = BIGLEAFSCALE * A_NET_OUT
+      G_CAN_OUT      = BIGLEAFSCALE * G_LEAF_OUT
+      RESP_CAN_OUT   = BIGLEAFSCALE * RESP_OUT
+      FLUXO3_CAN     = BIGLEAFSCALE * FLUXO3
 
       ! Deal with diagnoses
 
@@ -611,23 +613,23 @@
       ! PHOTOSYNTHESIS_LIMITS begins here!
       !=================================================================
       ! Assume success
-!      RC                    = GC_SUCCESS
-      K_C                   = 3.e+1_fp * FACTOR_Q10( 2.1e+0_fp, TEMPC )
-      K_O                   = 3.e+4_fp * FACTOR_Q10( 1.2e+0_fp, TEMPC )
+      ! RC                = GC_SUCCESS
+      K_C               = 3.e+1_fp * FACTOR_Q10( 2.1e+0_fp, TEMPC )
+      K_O               = 3.e+4_fp * FACTOR_Q10( 1.2e+0_fp, TEMPC )
       ! For C4 plants
       IF ( IS_C3_PLANT(PFT) == 0 ) THEN
-        RATE_RUBISCO        = V_CMAX
-        RATE_LIGHT          = ALPHA(PFT) * APAR
-        RATE_PRODUCT        = 2.e+4_fp * V_CMAX * CO2_IN / PRESSURE
+         RATE_RUBISCO   = V_CMAX
+         RATE_LIGHT     = ALPHA(PFT) * APAR
+         RATE_PRODUCT   = 2.e+4_fp * V_CMAX * CO2_IN / PRESSURE
       ELSE    ! For C3 plants
-        RATE_RUBISCO        = V_CMAX * ( CO2_IN - CO2_GAMMA )  &
-                            / ( CO2_IN + K_C * ( 1.e+0_fp + PRESSURE * O2 / K_O ) )
-        RATE_LIGHT          = ALPHA(PFT) * APAR           &
-                            * ( CO2_IN - CO2_GAMMA )      &
-                            / ( CO2_IN + CO2_GAMMA * 2.e+0_fp )
-        RATE_RUBISCO        = MAX( RATE_RUBISCO, 0.e+0_fp )
-        RATE_LIGHT          = MAX( RATE_LIGHT, 0.e+0_fp )
-        RATE_PRODUCT        = 0.5e+0_fp * V_CMAX
+         RATE_RUBISCO   = V_CMAX * ( CO2_IN - CO2_GAMMA )  &
+                        / ( CO2_IN + K_C * ( 1.e+0_fp + PRESSURE * O2 / K_O ) )
+         RATE_LIGHT     = ALPHA(PFT) * APAR           &
+                        * ( CO2_IN - CO2_GAMMA )      &
+                        / ( CO2_IN + CO2_GAMMA * 2.e+0_fp )
+         RATE_RUBISCO   = MAX( RATE_RUBISCO, 0.e+0_fp )
+         RATE_LIGHT     = MAX( RATE_LIGHT, 0.e+0_fp )
+         RATE_PRODUCT   = 0.5e+0_fp * V_CMAX
       END IF
       END SUBROUTINE PHOTOSYNTHESIS_LIMITS
 
@@ -697,11 +699,11 @@
       ! RSTARG            : Universal Gas Constant                  [J K^-1 mol^-1]
       ! CO2_O2_RATIO      : Ratio of leaf resistance for CO2 to H2O
       !---------------------------------------------------------------------------------------
-      REAL(fp),     INTENT(IN)      :: A_NET
-      REAL(fp),     INTENT(IN)      :: CO2_AMBIENT
-      REAL(fp),     INTENT(IN)      :: CO2_IN
-      REAL(fp),     INTENT(IN)      :: TEMPK
-      REAL(fp),     INTENT(OUT)     :: G_LEAF
+      REAL(fp), INTENT(IN)    :: A_NET
+      REAL(fp), INTENT(IN)    :: CO2_AMBIENT
+      REAL(fp), INTENT(IN)    :: CO2_IN
+      REAL(fp), INTENT(IN)    :: TEMPK
+      REAL(fp), INTENT(OUT)   :: G_LEAF
       G_LEAF = CO2_O2_RATIO * RSTARG * TEMPK  &
              * A_NET / ( CO2_AMBIENT - CO2_IN )
       END SUBROUTINE LEAF_CONDUCTANCE
