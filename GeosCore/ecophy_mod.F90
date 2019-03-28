@@ -543,29 +543,29 @@
 
       ! Deal with diagnoses
 
-      ! Print for debugs
-      IF ( prtDebug ) THEN
-        PRINT *, "TEMPC = ", TEMPC
-        PRINT *, "SPHU_SAT = ", SPHU_SAT
-        PRINT *, "DEFICIT_Q = ", DEFICIT_Q
-        PRINT *, "APAR = ", APAR 
-        PRINT *, "G_LEAF_PREV = ", G_LEAF_PREV
-        PRINT *, "CO2_IN_PREV = ",  CO2_IN_PREV
-        PRINT *, "A_NET_PREV = ", A_NET_PREV
-        PRINT *, "V_CMAX = ", V_CMAX
-        PRINT *, "CO2_GAMMA = ", CO2_GAMMA
-        PRINT *, "RATE_LIGHT = ", RATE_LIGHT
-        PRINT *, "RATE_PRODUCT = ", RATE_PRODUCT
-        PRINT *, "RATE_RUBISCO = ", RATE_RUBISCO
-        PRINT *, "A_GROSS = ", A_GROSS
-        PRINT *, "TAU = ", TAU
-        PRINT *, "DENOM = ", DENOM
-        PRINT *, "ITER = ", ITER
-        PRINT *, "ERR1 = ", ERR1
-        PRINT *, "ERR2 = ", ERR2
-        PRINT *, "ERR3 = ", ERR3
-        PRINT *, "DELTA = ", DELTA
-      END IF
+      ! ! Print for debugs
+      ! IF ( prtDebug ) THEN
+      !   PRINT *, "TEMPC = ", TEMPC
+      !   PRINT *, "SPHU_SAT = ", SPHU_SAT
+      !   PRINT *, "DEFICIT_Q = ", DEFICIT_Q
+      !   PRINT *, "APAR = ", APAR 
+      !   PRINT *, "G_LEAF_PREV = ", G_LEAF_PREV
+      !   PRINT *, "CO2_IN_PREV = ",  CO2_IN_PREV
+      !   PRINT *, "A_NET_PREV = ", A_NET_PREV
+      !   PRINT *, "V_CMAX = ", V_CMAX
+      !   PRINT *, "CO2_GAMMA = ", CO2_GAMMA
+      !   PRINT *, "RATE_LIGHT = ", RATE_LIGHT
+      !   PRINT *, "RATE_PRODUCT = ", RATE_PRODUCT
+      !   PRINT *, "RATE_RUBISCO = ", RATE_RUBISCO
+      !   PRINT *, "A_GROSS = ", A_GROSS
+      !   PRINT *, "TAU = ", TAU
+      !   PRINT *, "DENOM = ", DENOM
+      !   PRINT *, "ITER = ", ITER
+      !   PRINT *, "ERR1 = ", ERR1
+      !   PRINT *, "ERR2 = ", ERR2
+      !   PRINT *, "ERR3 = ", ERR3
+      !   PRINT *, "DELTA = ", DELTA
+      ! END IF
       END SUBROUTINE DO_PHOTOSYNTHESIS
 
       SUBROUTINE PHOTOSYNTHESIS_LIMITS( CO2_IN,       CO2_GAMMA,    &
