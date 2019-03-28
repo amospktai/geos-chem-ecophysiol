@@ -268,10 +268,10 @@
       ! Output RS to dry deposition module
       RS = 1.0 / G_CAN_OUT
 
-      !### Debug
-      IF ( prtDebug ) THEN
-         CALL DEBUG_MSG( '### DO_ECOPHY: after ecophysiology' )
-      ENDIF
+      ! !### Debug
+      ! IF ( prtDebug ) THEN
+      !    CALL DEBUG_MSG( '### DO_ECOPHY: after ecophysiology' )
+      ! ENDIF
 
       ! Nullify pointers
 !       NULLIFY( G_CANOPY     )
@@ -476,7 +476,7 @@
             ! Close stomata if the above conditions are satisfied
             A_NET    = - RESP * BETA
             G_LEAF   = G_LEAF_MIN(PFT)
-            PRINT *, "Stomata is closed."
+            ! PRINT *, "Stomata is closed."
          ELSE
             ! Step 2: Photosynthesis model
             CALL PHOTOSYNTHESIS_LIMITS( CO2_IN,       CO2_GAMMA,    &
@@ -486,7 +486,7 @@
                                         RATE_PRODUCT, RATE_RUBISCO  )
             CALL SOLVE_COLIMIT( RATE_LIGHT,   RATE_PRODUCT, &
                                 RATE_RUBISCO, A_GROSS      )
-            PRINT *, "Photosynthesis calculated."
+            ! PRINT *, "Photosynthesis calculated."
             A_NET    = ( A_GROSS - RESP ) * BETA
             ! Step 3: Diffusive CO2 flux thru open stomata
             CALL LEAF_CONDUCTANCE( A_NET, CO2_AMBIENT, CO2_IN,  &
@@ -496,14 +496,14 @@
             IF ( A_NET <= 0.e+0_fp .OR. G_LEAF <= G_LEAF_MIN(PFT) ) THEN
                A_NET    = - RESP * BETA
                G_LEAF   = G_LEAF_MIN(PFT)
-               PRINT *, "Stomata is now closed."
+               ! PRINT *, "Stomata is now closed."
             END IF
             ! Apply ozone damage scheme by Sitch et al. (2007)
             IF ( LO3_DAMAGE ) THEN
                CALL OZONE_DAMAGE ( O3_CONC,  RA,          &
                                    G_LEAF,   PFT,         &
                                    FLUXO3,   FACTOR_O3    )
-               PRINT *, "Ozone damage calculated."
+               ! PRINT *, "Ozone damage calculated."
                A_NET_OUT   = FACTOR_O3 * A_NET
                RESP_OUT    = FACTOR_O3 * RESP
                G_LEAF_OUT  = FACTOR_O3 * G_LEAF
@@ -512,7 +512,7 @@
                   IF ( A_NET_OUT <= 0.e+0_fp .OR. G_LEAF_OUT <= G_LEAF_MIN(PFT) ) THEN
                      A_NET_OUT   = - RESP * BETA
                      G_LEAF_OUT  = G_LEAF_MIN(PFT)
-                     PRINT *, "Stomata is now closed."
+                     ! PRINT *, "Stomata is now closed."
                   END IF
             ELSE
                A_NET_OUT   = A_NET
@@ -530,8 +530,8 @@
          CO2_IN_PREV  = CO2_IN
          A_NET_PREV   = A_NET
          G_LEAF_PREV  = G_LEAF
-         PRINT *, "iteration = ", ITER
-         PRINT *, "Delta = ", DELTA
+         ! PRINT *, "iteration = ", ITER
+         ! PRINT *, "Delta = ", DELTA
          ITER = ITER + 1
       END DO  ! Do while loop
 
