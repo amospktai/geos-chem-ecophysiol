@@ -542,8 +542,7 @@
         PRINT *, "TEMPC = ", TEMPC
         PRINT *, "SPHU_SAT = ", SPHU_SAT
         PRINT *, "DEFICIT_Q = ", DEFICIT_Q
-        PRINT *, "CO2_AMBIENT = ", CO2_AMBIENT
-        PRINT *, "CO2_IN = ", CO2_IN
+        PRINT *, "APAR = ", APAR 
         PRINT *, "G_LEAF_PREV = ", G_LEAF_PREV
         PRINT *, "CO2_IN_PREV = ",  CO2_IN_PREV
         PRINT *, "A_NET_PREV = ", A_NET_PREV
