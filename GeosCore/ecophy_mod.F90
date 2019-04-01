@@ -171,10 +171,7 @@
       REAL(fp)   :: CO2
       REAL(fp)   :: O2
       REAL(fp)   :: O3
-      LOGICAL    :: LO3_DAMAGE
       REAL(fp)   :: SOIL_WETNESS
-!      INTEGER    :: PFT
-!      INTEGER    :: LDT
       REAL(fp)   :: G_CAN_OUT
       REAL(fp)   :: G_LEAF_OUT
       REAL(fp)   :: CO2_IN
@@ -186,7 +183,6 @@
       REAL(fp)   :: FLUXO3
       REAL(fp)   :: FACTOR_O3
       REAL(fp)   :: BETA
-      ! Arrays
       REAL(fp)   :: LAI
       ! Pointers
       ! REAL(fp), POINTER :: G_CANOPY       ( :,:,: )
@@ -196,10 +192,6 @@
       ! REAL(fp), POINTER :: FLXO3_CANOPY   ( :,:,: )
       ! REAL(fp), POINTER :: BETA_O3        ( :,:,: )
       ! REAL(fp), POINTER :: BETA_SM        ( :,:,: )
-
-      ! Print for debugging
-      LOGICAL       :: LPRT
-      LOGICAL       :: prtDebug
 
       !=================================================================
       ! DO_ECOPHY begins here!
@@ -211,8 +203,6 @@
       ErrMsg  = ''
       ThisLoc = &
       ' -> at Do_ECOPHY (in module GeosCore/ecophysiology.F90)'
-
-      prtDebug = ( LPRT .and. am_I_Root )
 
       ! Point to columns of derived-type object fields
       ! G_CANOPY     => State_Chm%G_CAN
@@ -228,7 +218,7 @@
                               TEMPK,        SPHU,                &
                               PAR_ABSORBED, PRESSURE,  CO2,      &
                               O2,           LAI,       O3,       &
-                              LO3_DAMAGE,   SOIL_WETNESS         &
+                              SOIL_WETNESS                       &
                               ! WILT, CRIT,   SATU                 &
                               )
 
@@ -243,12 +233,11 @@
       CALL DO_PHOTOSYNTHESIS( TEMPK,        SPHU,       RA,           &
                               PAR_ABSORBED, PRESSURE,   CO2,          &
                               O2,           LAI,        O3,           &
-                              LO3_DAMAGE,   SOIL_WETNESS,             &
+                              SOIL_WETNESS,                           &
                               G_CAN_OUT,    A_CAN_OUT,  RESP_CAN_OUT, &
                               G_LEAF_OUT,   CO2_IN,     A_NET_OUT,    &
                               RESP_OUT,     FLUXO3_CAN, FLUXO3,       &
                               FACTOR_O3,    BETA,       PFT           &
-                              , prtDebug                              &
                               )
 
       ! Trap potential errors
@@ -267,11 +256,6 @@
 
       ! Output RS to dry deposition module
       RS = 1.0 / G_CAN_OUT
-
-      ! !### Debug
-      ! IF ( prtDebug ) THEN
-      !    CALL DEBUG_MSG( '### DO_ECOPHY: after ecophysiology' )
-      ! ENDIF
 
       ! Nullify pointers
 !       NULLIFY( G_CANOPY     )
@@ -300,7 +284,7 @@
       SUBROUTINE DO_PHOTOSYNTHESIS( TEMPK,        SPHU,       RA,           &
                                     PAR_ABSORBED, PRESSURE,   CO2,          &
                                     O2,           LAI,        O3,           &
-                                    LO3_DAMAGE,   SOIL_WETNESS,             &
+                                    SOIL_WETNESS,                           &
                                     G_CAN_OUT,    A_CAN_OUT,  RESP_CAN_OUT, &
                                     G_LEAF_OUT,   CO2_IN,     A_NET_OUT,    &
                                     RESP_OUT,     FLUXO3_CAN, FLUXO3,       &
@@ -337,10 +321,8 @@
       REAL(fp), INTENT(IN)  :: O2
       REAL(fp), INTENT(IN)  :: O3
       REAL(fp), INTENT(IN)  :: LAI
-      LOGICAL,  INTENT(IN)  :: LO3_DAMAGE
       REAL(fp), INTENT(IN)  :: SOIL_WETNESS
       INTEGER,  INTENT(IN)  :: PFT
-      LOGICAL,  INTENT(IN)  :: prtDebug    ! temporary debugging control
 !
 !OUTPUT PARAMETERS:
 !
@@ -476,7 +458,6 @@
             ! Close stomata if the above conditions are satisfied
             A_NET    = - RESP * BETA
             G_LEAF   = G_LEAF_MIN(PFT)
-            ! PRINT *, "Stomata is closed."
          ELSE
             ! Step 2: Photosynthesis model
             CALL PHOTOSYNTHESIS_LIMITS( CO2_IN,       CO2_GAMMA,    &
@@ -486,7 +467,6 @@
                                         RATE_PRODUCT, RATE_RUBISCO  )
             CALL SOLVE_COLIMIT( RATE_LIGHT,   RATE_PRODUCT, &
                                 RATE_RUBISCO, A_GROSS      )
-            ! PRINT *, "Photosynthesis calculated."
             A_NET    = ( A_GROSS - RESP ) * BETA
             ! Step 3: Diffusive CO2 flux thru open stomata
             CALL LEAF_CONDUCTANCE( A_NET, CO2_AMBIENT, CO2_IN,  &
@@ -496,14 +476,12 @@
             IF ( A_NET <= 0.e+0_fp .OR. G_LEAF <= G_LEAF_MIN(PFT) ) THEN
                A_NET    = - RESP * BETA
                G_LEAF   = G_LEAF_MIN(PFT)
-               ! PRINT *, "Stomata is now closed."
             END IF
             ! Apply ozone damage scheme by Sitch et al. (2007)
             IF ( LO3_DAMAGE ) THEN
                CALL OZONE_DAMAGE ( O3_CONC,  RA,          &
                                    G_LEAF,   PFT,         &
                                    FLUXO3,   FACTOR_O3    )
-               ! PRINT *, "Ozone damage calculated."
                A_NET_OUT   = FACTOR_O3 * A_NET
                RESP_OUT    = FACTOR_O3 * RESP
                G_LEAF_OUT  = FACTOR_O3 * G_LEAF
@@ -512,7 +490,6 @@
                   IF ( A_NET_OUT <= 0.e+0_fp .OR. G_LEAF_OUT <= G_LEAF_MIN(PFT) ) THEN
                      A_NET_OUT   = - RESP * BETA
                      G_LEAF_OUT  = G_LEAF_MIN(PFT)
-                     ! PRINT *, "Stomata is now closed."
                   END IF
             ELSE
                A_NET_OUT   = A_NET
@@ -530,8 +507,6 @@
          CO2_IN_PREV  = CO2_IN
          A_NET_PREV   = A_NET
          G_LEAF_PREV  = G_LEAF
-         ! PRINT *, "iteration = ", ITER
-         ! PRINT *, "Delta = ", DELTA
          ITER = ITER + 1
       END DO  ! Do while loop
 
@@ -543,29 +518,6 @@
 
       ! Deal with diagnoses
 
-      ! ! Print for debugs
-      ! IF ( prtDebug ) THEN
-      !   PRINT *, "TEMPC = ", TEMPC
-      !   PRINT *, "SPHU_SAT = ", SPHU_SAT
-      !   PRINT *, "DEFICIT_Q = ", DEFICIT_Q
-      !   PRINT *, "APAR = ", APAR 
-      !   PRINT *, "G_LEAF_PREV = ", G_LEAF_PREV
-      !   PRINT *, "CO2_IN_PREV = ",  CO2_IN_PREV
-      !   PRINT *, "A_NET_PREV = ", A_NET_PREV
-      !   PRINT *, "V_CMAX = ", V_CMAX
-      !   PRINT *, "CO2_GAMMA = ", CO2_GAMMA
-      !   PRINT *, "RATE_LIGHT = ", RATE_LIGHT
-      !   PRINT *, "RATE_PRODUCT = ", RATE_PRODUCT
-      !   PRINT *, "RATE_RUBISCO = ", RATE_RUBISCO
-      !   PRINT *, "A_GROSS = ", A_GROSS
-      !   PRINT *, "TAU = ", TAU
-      !   PRINT *, "DENOM = ", DENOM
-      !   PRINT *, "ITER = ", ITER
-      !   PRINT *, "ERR1 = ", ERR1
-      !   PRINT *, "ERR2 = ", ERR2
-      !   PRINT *, "ERR3 = ", ERR3
-      !   PRINT *, "DELTA = ", DELTA
-      ! END IF
       END SUBROUTINE DO_PHOTOSYNTHESIS
 
       SUBROUTINE PHOTOSYNTHESIS_LIMITS( CO2_IN,       CO2_GAMMA,    &
@@ -806,7 +758,7 @@
                                     TEMPK,        SPHU,                &
                                     PAR_ABSORBED, PRESSURE,  CO2,      &
                                     O2,           LAI,       O3,       &
-                                    LO3_DAMAGE,   SOIL_WETNESS         &
+                                    SOIL_WETNESS                       &
                                     )
 !
 ! !USES:
@@ -840,7 +792,6 @@
       ! O2            : Ambient O2 mole fraction                          [kg / kg dry]
       ! O3            : Ozone mole fraction in canopy layer               [kg / kg dry]
       ! LAI           : Leaf area index for the PFT                       [m^2 m^-2]
-      ! LO3_DAMAGE    : Logical switch for ozone damage scheme            []
       ! SOIL_WETNESS  : Fraction of moisture in soil pores                []
       !---------------------------------------------------------------------------------------
       REAL(fp), INTENT(OUT) :: TEMPK
@@ -851,7 +802,6 @@
       REAL(fp), INTENT(OUT) :: O2
       REAL(fp), INTENT(OUT) :: O3
       REAL(fp), INTENT(OUT) :: LAI
-      LOGICAL,  INTENT(OUT) :: LO3_DAMAGE
       REAL(fp), INTENT(OUT) :: SOIL_WETNESS
 !
 ! !LOCAL VARIABLES:

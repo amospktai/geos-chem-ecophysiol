@@ -927,6 +927,7 @@ CONTAINS
     Input_Opt%WETD_CONV_SCAL         = 1.0_fp 
     Input_Opt%PBL_DRYDEP             = .FALSE.
     Input_Opt%LECOPHY                = .FALSE.
+    Input_Opt%LO3_DAMAGE             = .FALSE.
 
     !----------------------------------------
     ! GAMAP_MENU fields

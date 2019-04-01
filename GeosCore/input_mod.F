@@ -3440,6 +3440,14 @@
       ENDIF
       READ( SUBSTRS(1:N), * ) Input_Opt%LECOPHY
 
+      ! Turn on Sitch ozone damage scheme?
+      CALL SPLIT_ONE_LINE( SUBSTRS, N, 1, 'LO3_DAMAGE', RC )
+      IF ( RC /= GC_SUCCESS ) THEN
+         CALL GC_Error( ErrMsg, RC, ThisLoc )
+         RETURN
+      ENDIF
+      READ( SUBSTRS(1:N), * ) Input_Opt%LO3_DAMAGE
+
       ! Turn on wetdep?
       CALL SPLIT_ONE_LINE( SUBSTRS, N, 1, 'LWETD', RC )
       IF ( RC /= GC_SUCCESS ) THEN
@@ -3474,6 +3482,9 @@
       ! Turn off ecophysiology for simulations that don't need it
       IF ( .NOT. Input_Opt%LDRYD     ) Input_Opt%LECOPHY = .FALSE.
 
+      ! Turn off ozone damage scheme for simulations that don't need it
+      IF ( .NOT. Input_Opt%LECOPHY) Input_Opt%LO3_DAMAGE = .FALSE.
+
       ! Set the PBL drydep flag. This determines if dry deposition is 
       ! applied (and drydep frequencies are calculated) over the entire 
       ! PBL or the first model layer only. For now, set this value 
@@ -3493,12 +3504,14 @@
          WRITE( 6, '(  a)' ) '---------------'
          WRITE( 6, 100     ) 'Turn on dry deposition?     : ', 
      &                        Input_Opt%LDRYD
+         WRITE( 6, 100     ) 'Turn on ecophysiology?      : ', 
+     &                        Input_Opt%LECOPHY
+         WRITE( 6, 100     ) ' => O3 damage (Sitch)?      : ', 
+     &                        Input_Opt%LO3_DAMAGE
          WRITE( 6, 100     ) 'Dry dep over full PBL?      : ', 
      &                        Input_Opt%PBL_DRYDEP
          WRITE( 6, 100     ) 'Turn on wet deposition?     : ', 
      &                        Input_Opt%LWETD
-         WRITE( 6, 100     ) 'Turn on ecophysiology?      : ', 
-     &                        Input_Opt%LECOPHY
       ENDIF
 
       ! FORMAT statements

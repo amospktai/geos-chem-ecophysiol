@@ -1110,7 +1110,6 @@
       INTEGER IOLSON,II,IW
       INTEGER K,LDT
       REAL(f8)  RCLX,RIXX    !,BIOFIT
-      REAL(fp)  RS
 
 #if   defined( TOMAS )
       ! For TOMAS aerosol (win, 7/15/09)
@@ -1154,9 +1153,10 @@
       !LOGICAL           :: WriteRa10m
 #endif
 
-      ! Turn on ecophysiology module?
-      LOGICAL           :: LECOPHY
-      INTEGER           :: PFT
+      ! Turn on ecophysiology module? (Joey Lam, 01 Apr 2019)
+      LOGICAL           :: LECOPHY  ! Turn on ecophysiology
+      INTEGER           :: PFT      ! mapping indices for PFT
+      REAL(fp)          :: RS       ! Bulk stomatal resistance
 
       ! For the species database
       INTEGER                :: SpcId
