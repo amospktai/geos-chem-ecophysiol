@@ -117,7 +117,7 @@
 !
       SUBROUTINE DO_ECOPHY ( am_I_Root, Input_Opt,  State_Met, &
                              State_Chm, State_Diag, RC,        &
-                             I, J,      LDT, PFT,   RA, RS     )
+                             I, J,      LDT, PFT,   RAB, RS    )
 !
 ! !USES:
 !
@@ -137,7 +137,8 @@
       INTEGER,        INTENT(IN)    :: LDT         ! Land type index (for archiving)
       TYPE(OptInput), INTENT(IN)    :: Input_Opt   ! Input Options object
       TYPE(MetState), INTENT(IN)    :: State_Met   ! Meteorology State object
-      REAL(fp),       INTENT(IN)    :: RA          ! Aerodynamic resistance
+      REAL(fp),       INTENT(IN)    :: RAB         ! Aerodynamic and 
+                                                   ! boundary layer resistance
 !
 ! !INPUT/OUTPUT PARAMETERS:
 !
@@ -161,7 +162,6 @@
       !  Note: Read subroutine DO_PHOTOSYNTHESIS for descriptions.
       REAL(fp)   :: TEMPK
       REAL(fp)   :: QV2M
-      ! REAL(fp)   :: RA
       REAL(fp)   :: PAR_ABSORBED
       REAL(fp)   :: PRESSURE
       REAL(fp)   :: CO2
@@ -226,7 +226,7 @@
       ENDIF
 
       ! simulate plant processes
-      CALL DO_PHOTOSYNTHESIS( TEMPK,        QV2M,       RA,           &
+      CALL DO_PHOTOSYNTHESIS( TEMPK,        QV2M,       RAB,          &
                               PAR_ABSORBED, PRESSURE,   CO2,          &
                               O2,           LAI,        O3,           &
                               SOIL_WETNESS,                           &
@@ -277,7 +277,7 @@
 !\\
 ! !INTERFACE:
 !
-      SUBROUTINE DO_PHOTOSYNTHESIS( TEMPK,        QV2M,       RA,           &
+      SUBROUTINE DO_PHOTOSYNTHESIS( TEMPK,        QV2M,       RAB,          &
                                     PAR_ABSORBED, PRESSURE,   CO2,          &
                                     O2,           LAI,        O3,           &
                                     SOIL_WETNESS,                           &
@@ -296,7 +296,7 @@
       !---------------------------------------------------------------------------------------
       ! TEMPK         : Leaf temperature in Kelvin                        [K]
       ! QV2M          : Specific humidity in canopy layer                 [kg H2O / kg air]
-      ! RA            : Aerodynamic and boundary layer resistance         [s m^-1]
+      ! RAB           : Aerodynamic and boundary layer resistance         [s m^-1]
       ! PAR_ABSORBED  : Absorbed PAR                                      [W m^-2]
       ! PRESSURE      : Atmospheric Pressure in canopy layer              [Pa]
       ! CO2           : Ambient CO2 mole fraction                         [mol/mol air]
@@ -309,7 +309,7 @@
       !---------------------------------------------------------------------------------------
       REAL(fp), INTENT(IN)  :: TEMPK
       REAL(fp), INTENT(IN)  :: QV2M
-      REAL(fp), INTENT(IN)  :: RA
+      REAL(fp), INTENT(IN)  :: RAB
       REAL(fp), INTENT(IN)  :: PAR_ABSORBED
       REAL(fp), INTENT(IN)  :: PRESSURE
       REAL(fp), INTENT(IN)  :: CO2
@@ -474,7 +474,7 @@
             END IF
             ! Apply ozone damage scheme by Sitch et al. (2007)
             IF ( LO3_DAMAGE ) THEN
-               CALL OZONE_DAMAGE ( O3_CONC,  RA,          &
+               CALL OZONE_DAMAGE ( O3_CONC,  RAB,         &
                                    G_LEAF,   PFT,         &
                                    FLUXO3,   FACTOR_O3    )
                A_NET_OUT   = FACTOR_O3 * A_NET
@@ -662,20 +662,20 @@
              * A_NET / ( CO2_AMBIENT - CO2_IN )
       END SUBROUTINE LEAF_CONDUCTANCE
 
-      SUBROUTINE OZONE_DAMAGE ( O3_CONC, RA,          &                          ! Should be Ra + Rb? Need to check
+      SUBROUTINE OZONE_DAMAGE ( O3_CONC, RAB,         &
                                 G_LEAF,  PFT,         &
                                 FLUXO3,  FACTOR_O3    )
 ! Calculate ozone damage factor based on Sitch et al. (2008)
       !---------------------------------------------------------------------------------------
       ! O3_CONC         : Ozone concentration in canopy layer                     [nmol m^-3]
-      ! RA              : Aerodynamic and boundary resistance                     [s m^-1]
+      ! RAB             : Aerodynamic and boundary resistance                     [s m^-1]
       ! G_LEAF          : Leaf conductance for H2O in the absence of O3 effects   [m s^-1]
       ! PFT             : Index for PFT                                           []
       ! FLUXO3          : Leaf uptake of O3                                       [nmol m^-2 s^-1]
       ! FACTOR_O3       : Ozone damage factor                                     []
       !---------------------------------------------------------------------------------------
       REAL(fp), INTENT(IN)    :: O3_CONC
-      REAL(fp), INTENT(IN)    :: RA
+      REAL(fp), INTENT(IN)    :: RAB
       REAL(fp), INTENT(IN)    :: G_LEAF
       INTEGER,  INTENT(IN)    :: PFT
       REAL(fp), INTENT(OUT)   :: FLUXO3
@@ -689,18 +689,18 @@
       TEMP1       = 1.e+0_fp + PARAM_A(PFT) * FLUXO3_CRIT(PFT)
       TEMP2       = 1.67e+0_fp / G_LEAF
       ! Calculate coefficients for quadratic equation F^2 + B*F + C = 0
-      IF ( ABS(RA) < EPSILON(1.e+0_fp) ) THEN
-!        RA        = 0.0
+      IF ( ABS(RAB) < EPSILON(1.e+0_fp) ) THEN
+!        RAB        = 0.0
         FACTOR_O3 = TEMP1 / ( 1.e+0_fp + PARAM_A(PFT) * O3_CONC / TEMP2 )
       ELSE
-        B         = TEMP2 / RA - TEMP1 + PARAM_A(PFT) * O3_CONC / RA
-        C         = - TEMP1 * TEMP2 / RA
+        B         = TEMP2 / RAB - TEMP1 + PARAM_A(PFT) * O3_CONC / RAB
+        C         = - TEMP1 * TEMP2 / RAB
         ! Note that C < 0, SQRT( B^2 - 4*C ) > ABS(B)
         ! Take positive root
         F         = 0.5e+0_fp * ( SQRT( B * B - 4.e+0_fp * C ) - B )
         FACTOR_O3 = MIN( MAX( F, 0.e+0_fp ), 1.e+0_fp )
       END IF
-      FLUXO3      = O3_CONC / ( RA + TEMP2 / FACTOR_O3 )      ! MAYBE NOT NEEDED?
+      FLUXO3      = O3_CONC / ( RAB + TEMP2 / FACTOR_O3 )      ! MAYBE NOT NEEDED?
       END SUBROUTINE OZONE_DAMAGE
 
       FUNCTION FACTOR_Q10( Q10, TEMPC ) RESULT( FACTOR )

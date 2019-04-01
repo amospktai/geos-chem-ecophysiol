@@ -872,7 +872,7 @@
       USE ERROR_MOD
       USE Input_Opt_Mod,      ONLY : OptInput
       USE Species_Mod,        ONLY : Species
-      USE State_Chm_Mod,      ONLY : ChmState
+      USE State_Chm_Mod,      ONLY : ChmState, Ind_
       USE State_Met_Mod,      ONLY : MetState
       USE State_Diag_Mod,     ONLY : DgnState
       USE Ecophy_Mod,         ONLY : Do_Ecophy
@@ -1156,7 +1156,11 @@
       ! Turn on ecophysiology module? (Joey Lam, 01 Apr 2019)
       LOGICAL           :: LECOPHY  ! Turn on ecophysiology
       INTEGER           :: PFT      ! mapping indices for PFT
+      INTEGER           :: id_O3    ! species index of O3 in State_Chm
       REAL(fp)          :: RS       ! Bulk stomatal resistance
+      REAL(fp)          :: XMWO3    ! Molecular weight of O3 
+      REAL(fp)          :: RB_O3    ! Boundary layer resistance for O3
+      REAL(fp)          :: RAB      ! Aerodynamic and boundary layer resistance
 
       ! For the species database
       INTEGER                :: SpcId
@@ -1770,13 +1774,28 @@ C  170     CONTINUE
             ! orders of calculation of surface resistance and aerodynamic 
             ! resistance are interchanged. (Joey Lam, 2/26/2019)
             !-----------------------------------------------------------------
-
+            ! Use default Wesely scheme values for non-vegetated grid boxes
+            ! or if ecophysiology module is turned off
             IF ( LECOPHY .AND. IPFT(IOLSON) .NE. 0 ) THEN
+
+               ! Get boundary layer resistance Rb for ozone in order to 
+               ! implement ozone damage scheme in ecophysiology module
+
+               !** DAIR is the thermal diffusivity of air; value of 0.2*1.E-4 m2 s-1 
+!** cited on p. 16,476 of Jacob et al. [1992]
+               DAIR  = 0.2e0_f8*1.e-4_f8
+               id_O3 = IND_( 'O3' )
+               XMWO3 = State_Chm%SpcData( id_O3 )%Info%MW_g
+               RB_O3 = (2.e+0_f8/CKUSTR)*
+     &                 (DAIR/DIFFG(TEMPK,PRESSU(I,J),XMWO3))
+     &                 **0.667e+0_f8
+               RAB   = RA + RB_O3
+
                PFT = IPFT(IOLSON)
                ! Call from ecophysiology module to get RIX 
                CALL DO_ECOPHY ( am_I_Root, Input_Opt,  State_Met, 
      &                          State_Chm, State_Diag, RC,         
-     &                          I, J,      LDT, PFT,   RA, RS     )
+     &                          I, J,      LDT, PFT,   RAB, RS  )
                RIX = RS
             ELSE
                RIX = RI(LDT)
