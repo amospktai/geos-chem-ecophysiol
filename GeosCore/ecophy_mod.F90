@@ -95,7 +95,6 @@
       REAL(fp)              :: CRIT
       REAL(fp), ALLOCATABLE :: THETA_WILT    ( :,: )
       REAL(fp)              :: WILT
-      LOGICAL               :: LECOPHY
       LOGICAL               :: LO3_DAMAGE
       ! INTEGER               :: NUMPFT
 
@@ -289,7 +288,6 @@
                                     G_LEAF_OUT,   CO2_IN,     A_NET_OUT,    &
                                     RESP_OUT,     FLUXO3_CAN, FLUXO3,       &
                                     FACTOR_O3,    BETA,       PFT           &
-                                    , prtDebug                              &
                                     )
 ! Main driver of the photosynthesis-stomatal conductance model
 !
@@ -1236,11 +1234,6 @@
 !
 ! !LOCAL VARIABLES:
 !
-      LOGICAL                :: LECOPHY
-      LOGICAL                :: LO3_DAMAGE
-      INTEGER                :: NUMPFT
-      INTEGER                :: N
-
       ! Strings
       CHARACTER(LEN=255)     :: Msg, ErrMsg, ThisLoc
 
@@ -1250,9 +1243,7 @@
 
       ! Initialize
       RC        = GC_SUCCESS
-      LECOPHY   = Input_Opt%LECOPHY
       LO3_DAMAGE= Input_Opt%LO3_DAMAGE
-      NUMPFT    = 5
       ErrMsg    = ''
       ThisLoc   = ' -> at Init_Ecophy (in module GeosCore/ecophysiology.F90)'
 
