@@ -816,7 +816,7 @@
       ! Surface temperature [K]
       TEMPK         = State_Met%TS( I,J )
       ! Specific humidity [kg/kg]
-      QV2M          = State_Met%QV2M( I,J,1 ) * 1.e-3_fp
+      QV2M          = State_Met%QV2M( I,J ) * 1.e-3_fp
       ! Photosynthetically active radiation absorbed [W m^-2]
       PARDR         = State_Met%PARDR( I,J )
       PARDF         = State_Met%PARDF( I,J )
