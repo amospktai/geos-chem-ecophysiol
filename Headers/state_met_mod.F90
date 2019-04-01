@@ -93,6 +93,7 @@ MODULE State_Met_Mod
                                                 !  end of timestep [hPa]
      REAL(fp), POINTER :: PSC2_DRY      (:,:  ) ! Dry interpolated surface
                                                 !  pressure [hPa]
+     REAL(fp), POINTER :: QV2M          (:,:  ) ! 2m specific humidity [kg/kg]
      REAL(fp), POINTER :: SEAICE00      (:,:  ) ! Sea ice coverage 00-10%
      REAL(fp), POINTER :: SEAICE10      (:,:  ) ! Sea ice coverage 10-20%
      REAL(fp), POINTER :: SEAICE20      (:,:  ) ! Sea ice coverage 20-30%
@@ -509,6 +510,7 @@ CONTAINS
     State_Met%PMID_DRY       => NULL()
     State_Met%QI             => NULL()
     State_Met%QL             => NULL()
+    State_Met%QV2M           => NULL()
     State_Met%REEVAPCN       => NULL()
     State_Met%REEVAPLS       => NULL()
     State_Met%RH             => NULL()
@@ -851,6 +853,17 @@ CONTAINS
     IF ( RC /= GC_SUCCESS ) RETURN
     State_Met%PSC2_DRY = 0.0_fp
     CALL Register_MetField( am_I_Root, 'PSC2DRY', State_Met%PSC2_DRY, &
+                            State_Met, RC )
+    IF ( RC /= GC_SUCCESS ) RETURN
+
+    !-------------------------
+    ! QV2M [kg/kg]
+    !-------------------------
+    ALLOCATE( State_Met%QV2M( IM, JM ), STAT=RC )
+    CALL GC_CheckVar( 'State_Met%QV2M', 0, RC )
+    IF ( RC /= GC_SUCCESS ) RETURN
+    State_Met%QV2N = 0.0_fp
+    CALL Register_MetField( am_I_Root, 'QV2M', State_Met%QV2M, &
                             State_Met, RC )
     IF ( RC /= GC_SUCCESS ) RETURN
 
@@ -2239,6 +2252,13 @@ CONTAINS
        State_Met%PSC2_DRY => NULL()
     ENDIF
 
+    IF ( ASSOCIATED( State_Met%QV2M ) ) THEN
+       DEALLOCATE( State_Met%QV2M, STAT=RC  )
+       CALL GC_CheckVar( 'State_Met%QV2M', 2, RC )
+       IF ( RC /= GC_SUCCESS ) RETURN
+       State_Met%QV2M => NULL()
+    ENDIF
+
     IF ( ASSOCIATED( State_Met%SEAICE00 ) ) THEN
        DEALLOCATE( State_Met%SEAICE00, STAT=RC  )
        CALL GC_CheckVar( 'State_Met%SEAICE00', 2, RC )
@@ -3352,7 +3372,7 @@ CONTAINS
 !          IF ( isUnits ) Units = 'W m-2'
 !          IF ( isRank  ) Rank  = 2
 !------------------------------------------------------------------------------
- 
+
        CASE ( 'SLP' )
           IF ( isDesc  ) Desc  = 'Sea level pressure'
           IF ( isUnits ) Units = 'hPa'
@@ -3899,6 +3919,11 @@ CONTAINS
        CASE ( 'THETA_SATU' )
           IF ( isDesc  ) Desc  = 'Soil moisture conc. at saturation'
           IF ( isUnits ) Units = 'm3 m-3'
+          IF ( isRank  ) Rank  = 2
+
+       CASE ( 'QV2M' )
+          IF ( isDesc  ) Desc  = '2-meter_specific_humidity'
+          IF ( isUnits ) Units = 'kg kg-1'
           IF ( isRank  ) Rank  = 2
 
        CASE DEFAULT

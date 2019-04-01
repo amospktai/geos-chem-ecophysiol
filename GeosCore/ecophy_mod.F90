@@ -160,7 +160,7 @@
 
       !  Note: Read subroutine DO_PHOTOSYNTHESIS for descriptions.
       REAL(fp)   :: TEMPK
-      REAL(fp)   :: SPHU
+      REAL(fp)   :: QV2M
       ! REAL(fp)   :: RA
       REAL(fp)   :: PAR_ABSORBED
       REAL(fp)   :: PRESSURE
@@ -211,7 +211,7 @@
 
       ! get inputs for the module
       CALL GET_ECOPHY_INPUTS( State_Met,    State_Chm, I, J, LDT,&
-                              TEMPK,        SPHU,                &
+                              TEMPK,        QV2M,                &
                               PAR_ABSORBED, PRESSURE,  CO2,      &
                               O2,           LAI,       O3,       &
                               SOIL_WETNESS                       &
@@ -226,7 +226,7 @@
       ENDIF
 
       ! simulate plant processes
-      CALL DO_PHOTOSYNTHESIS( TEMPK,        SPHU,       RA,           &
+      CALL DO_PHOTOSYNTHESIS( TEMPK,        QV2M,       RA,           &
                               PAR_ABSORBED, PRESSURE,   CO2,          &
                               O2,           LAI,        O3,           &
                               SOIL_WETNESS,                           &
@@ -277,7 +277,7 @@
 !\\
 ! !INTERFACE:
 !
-      SUBROUTINE DO_PHOTOSYNTHESIS( TEMPK,        SPHU,       RA,           &
+      SUBROUTINE DO_PHOTOSYNTHESIS( TEMPK,        QV2M,       RA,           &
                                     PAR_ABSORBED, PRESSURE,   CO2,          &
                                     O2,           LAI,        O3,           &
                                     SOIL_WETNESS,                           &
@@ -295,7 +295,7 @@
 !
       !---------------------------------------------------------------------------------------
       ! TEMPK         : Leaf temperature in Kelvin                        [K]
-      ! SPHU          : Specific humidity in canopy layer                 [kg H2O / kg air]
+      ! QV2M          : Specific humidity in canopy layer                 [kg H2O / kg air]
       ! RA            : Aerodynamic and boundary layer resistance         [s m^-1]
       ! PAR_ABSORBED  : Absorbed PAR                                      [W m^-2]
       ! PRESSURE      : Atmospheric Pressure in canopy layer              [Pa]
@@ -308,7 +308,7 @@
       ! PFT           : Index for PFT                                     []
       !---------------------------------------------------------------------------------------
       REAL(fp), INTENT(IN)  :: TEMPK
-      REAL(fp), INTENT(IN)  :: SPHU
+      REAL(fp), INTENT(IN)  :: QV2M
       REAL(fp), INTENT(IN)  :: RA
       REAL(fp), INTENT(IN)  :: PAR_ABSORBED
       REAL(fp), INTENT(IN)  :: PRESSURE
@@ -350,7 +350,7 @@
 !
       !---------------------------------------------------------------------------------------
       ! TEMPC         : Leaf temperature in degree Celsius                [deg C]
-      ! SPHU_SAT      : SPHU at saturation in canopy layer                [kg H2O / kg air]
+      ! SPHU_SAT      : Saturation specific humidity in canopy layer      [kg H2O / kg air]
       ! DEFICIT_Q     : Specific humidity deficit at leaf surface         [kg H2O / kg air]
       ! APAR          : Absorbed PAR                                      [mol m^-2 s^-1]
       ! CO2_AMBIENT   : Ambient CO2 partial pressure                      [Pa]
@@ -445,7 +445,7 @@
          ! Step 1: Closure condition by Jacobs (1994)
          SPHU_SAT    = 0.622e+0_fp * E_SAT( TEMPC ) / PRESSURE
          G_CAN       = G_LEAF * BIGLEAFSCALE
-         DEFICIT_Q   = ( SPHU_SAT - SPHU ) / ( 1 + RA * G_CAN )
+         DEFICIT_Q   = SPHU_SAT - QV2M
          CO2_IN      = CO2_GAMMA + f0(PFT)*( 1 - DEFICIT_Q / D_STAR(PFT) ) &
                      * ( CO2_AMBIENT - CO2_GAMMA )
          IF ( BETA <= 0.e+0_fp .OR. DEFICIT_Q >= D_STAR(PFT) & 
@@ -750,7 +750,7 @@
 ! !INTERFACE:
 !
       SUBROUTINE GET_ECOPHY_INPUTS( State_Met,    State_Chm, I, J, LDT,&
-                                    TEMPK,        SPHU,                &
+                                    TEMPK,        QV2M,                &
                                     PAR_ABSORBED, PRESSURE,  CO2,      &
                                     O2,           LAI,       O3,       &
                                     SOIL_WETNESS                       &
@@ -780,7 +780,7 @@
 !
       !---------------------------------------------------------------------------------------
       ! TEMPK         : Temperature in Kelvin                             [K]
-      ! SPHU          : Specific humidity in canopy layer                 [kg H2O / kg air]
+      ! QV2M          : Specific humidity in canopy layer                 [kg H2O / kg air]
       ! PAR_ABSORBED  : Absorbed PAR                                      [W m^-2]
       ! PRESSURE      : Atmospheric Pressure in canopy layer              [Pa]
       ! CO2           : Ambient CO2 mole fraction                         [kg / kg dry]
@@ -790,7 +790,7 @@
       ! SOIL_WETNESS  : Fraction of moisture in soil pores                []
       !---------------------------------------------------------------------------------------
       REAL(fp), INTENT(OUT) :: TEMPK
-      REAL(fp), INTENT(OUT) :: SPHU
+      REAL(fp), INTENT(OUT) :: QV2M
       REAL(fp), INTENT(OUT) :: PAR_ABSORBED
       REAL(fp), INTENT(OUT) :: PRESSURE
       REAL(fp), INTENT(OUT) :: CO2
@@ -816,7 +816,7 @@
       ! Surface temperature [K]
       TEMPK         = State_Met%TS( I,J )
       ! Specific humidity [kg/kg]
-      SPHU          = State_Met%SPHU( I,J,1 ) * 1.e-3_fp
+      QV2M          = State_Met%QV2M( I,J,1 ) * 1.e-3_fp
       ! Photosynthetically active radiation absorbed [W m^-2]
       PARDR         = State_Met%PARDR( I,J )
       PARDF         = State_Met%PARDF( I,J )

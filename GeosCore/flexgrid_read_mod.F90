@@ -429,13 +429,10 @@ CONTAINS
     CALL Get_Met_2D( Q, TRIM(v_name) )
     State_Met%PRECTOT = Q
 
-    !-----------------------------------------------------------------------
-    ! Comment this out for now, this field isn't needed (bmy, 2/2/12)
-    !! Read QV2M
-    !v_name = "QV2M"
-    !CALL Get_Met_2D( Q, TRIM(v_name) )
-    !State_Met%QV2M = Q
-    !-----------------------------------------------------------------------
+    ! Read QV2M
+    v_name = "QV2M"
+    CALL Get_Met_2D( Q, TRIM(v_name) )
+    State_Met%QV2M = Q
 
     ! Read SEAICE00
     v_name = "SEAICE00"
