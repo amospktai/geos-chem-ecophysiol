@@ -89,11 +89,8 @@
       ! LO3_DAMAGE    : Logical switch for ozone damage scheme            []
       ! NUMPFT        : Total number of PFTs                              []
       !========================================================================
-      REAL(fp), ALLOCATABLE :: THETA_SATU    ( :,: )
       REAL(fp)              :: SATU
-      REAL(fp), ALLOCATABLE :: THETA_CRIT    ( :,: )
       REAL(fp)              :: CRIT
-      REAL(fp), ALLOCATABLE :: THETA_WILT    ( :,: )
       REAL(fp)              :: WILT
       LOGICAL               :: LO3_DAMAGE
       ! INTEGER               :: NUMPFT
@@ -840,355 +837,17 @@
       ! Root zone soil wetness
       SOIL_WETNESS  = State_Met%GWETROOT( I,J )
       ! Soil moisture at saturation
-      SATU          = THETA_SATU( I,J )
+      SATU          = State_Met%THETA_SATU( I,J )
       ! Soil moisture at critical point
-      CRIT          = THETA_CRIT( I,J )
+      CRIT          = State_Met%THETA_CRIT( I,J )
       ! Soil moisture at wilting point
-      WILT          = THETA_WILT( I,J )
+      WILT          = State_Met%THETA_WILT( I,J )
       ! NOTE: Leave possibility to call soil matric potentials instead
       !       of soil moistures
        ! END DO
        ! END DO
       END SUBROUTINE GET_ECOPHY_INPUTS
 !EOC
-!------------------------------------------------------------------------------
-!                  GEOS-Chem Global Chemical Transport Model                  !
-!------------------------------------------------------------------------------
-!BOP
-!
-! !MODULE: hadgem2_soilmap_mod.F90
-!
-! !DESCRIPTION: Module HADGEM2\_SOILMAP\_MOD reads the HadGEM2 soil map and
-!  computes the THETA_WILT and THETA_CRIT State\_Met arrays.
-!\\
-!\\
-! ! !INTERFACE:
-! !
-! MODULE HadGEM2_SoilMap_Mod
-! !
-! ! !USES:
-! !
-! !  USE CMN_SIZE_MOD                      ! Size parameters
-!   USE ERROR_MOD                         ! Error checking routines
-!   USE GC_GRID_MOD                       ! Horizontal grid definition
-!   ! USE MAPPING_MOD                       ! Mapping weights & areas
-! !  USE PhysConstants                     ! Physical constants
-!   USE PRECISION_MOD                     ! For GEOS-Chem Precision (fp)
-
-!   IMPLICIT NONE
-!   PRIVATE
-! !
-! ! !PUBLIC MEMBER FUNCTIONS:
-! !
-!   PUBLIC  :: Init_Soilmap
-!   PUBLIC  :: Compute_Soilmap
-!   PUBLIC  :: Cleanup_SoilMap
-! !
-! !  The variables are defined as follows:
-! !      State_Met%THETA_WILT(I,J)    : Volumetric soil moisture content at wilting point
-! !      State_Met%THETA_CRIT(I,J)    : Volumetric soil moisture content at critical point
-! !      State_Met%THETA_SATU(I,J)    : Volumetric soil moisture content at saturation
-! !
-! !  NOTES:
-! !  (1) These parameters are used by ecophysiology modules
-! !
-! ! !REVISION HISTORY:
-! !  09 Feb 2019 - J. Lam - Initial version
-! !EOP
-! !------------------------------------------------------------------------------
-! !BOC
-! !
-! ! !PRIVATE TYPES:
-! !
-!   ! Scalars
-!   INTEGER              :: I_SOIL       ! # of lons (0.5 x 0.5)
-!   INTEGER              :: J_SOIL       ! # of lats (0.5 x 0.5)
-!   REAL(fp)             :: D_LON         ! Delta longitude, HadGEM2 grid [degrees]
-!   REAL(fp)             :: D_LAT         ! Delta latitude,  HadGEM2 grid [degrees]
-
-!   ! Arrays
-!   REAL(fp),ALLOCATABLE :: lon       (:  )  ! Lon centers, HadGEM2 grid [degrees]
-!   REAL(fp),ALLOCATABLE :: lat       (  :)  ! Lat centers, HadGEM2 grid [degrees]
-!   INTEGER, ALLOCATABLE :: THETA_WILT(:,:)  ! Soil moisture at wilting point
-!   INTEGER, ALLOCATABLE :: THETA_CRIT(:,:)  ! Soil moisture at critical point
-!   INTEGER, ALLOCATABLE :: THETA_SATU(:,:)  ! Soil moisture at saturation point
-
-! CONTAINS
-!EOC
-!------------------------------------------------------------------------------
-!                  GEOS-Chem Global Chemical Transport Model                  !
-!------------------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: init_soilmap
-!
-! !DESCRIPTION: Subroutine INIT\_SOILMAP reads HadGEM2 soil map
-! information from disk (in netCDF format).
-!\\
-!\\
-! !INTERFACE:
-!
-  SUBROUTINE Init_SoilMap( am_I_Root, Input_Opt, RC )
-!
-! !USES:
-!
-
-    USE ErrCode_Mod
-    USE Input_Opt_Mod, ONLY : OptInput
-    USE m_netcdf_io_open
-    USE m_netcdf_io_read
-    USE m_netcdf_io_readattr
-    USE m_netcdf_io_close
-
-    IMPLICIT NONE
-
-#   include "netcdf.inc"
-!
-! !INPUT PARAMETERS:
-!
-    LOGICAL,        INTENT(IN)  :: am_I_Root   ! Are we on the root CPU?
-    TYPE(OptInput), INTENT(IN)  :: Input_Opt   ! Input Options object
-!
-! !OUTPUT PARAMETERS:
-!
-    INTEGER,        INTENT(OUT) :: RC          ! Success or failure?
-!
-! !REMARKS:
-!  Assumes that you have:
-!  (1) A netCDF library (either v3 or v4) installed on your system
-!  (2) The NcdfUtilities package (from Bob Yantosca) source code
-!
-! !REVISION HISTORY:
-!  09 Feb 2019 - J. Lam - Initial version
-!EOP
-!------------------------------------------------------------------------------
-!BOC
-!
-! !LOCAL VARIABLES:
-!
-      !======================================================================
-      ! Variable declarations
-      !======================================================================
-
-      ! Scalars
-      INTEGER              :: I, J                 ! Loop indices
-      INTEGER              :: fId                  ! netCDF file ID
-      INTEGER              :: as                   ! Allocation status
-      INTEGER              :: I_SOIL               ! # of lons (0.5 x 0.5)
-      INTEGER              :: J_SOIL               ! # of lats (0.5 x 0.5)
-      REAL(fp)             :: D_LON                ! Delta longitude, HadGEM2 grid [degrees]
-      REAL(fp)             :: D_LAT                ! Delta latitude,  HadGEM2 grid [degrees]
-
-
-      ! Character strings
-      CHARACTER(LEN=255)   :: nc_dir               ! netCDF directory name
-      CHARACTER(LEN=255)   :: nc_file              ! netCDF file name
-      CHARACTER(LEN=255)   :: nc_path              ! netCDF path name
-      CHARACTER(LEN=255)   :: v_name               ! netCDF variable name
-      CHARACTER(LEN=255)   :: a_name               ! netCDF attribute name
-      CHARACTER(LEN=255)   :: a_val                ! netCDF attribute value
-      CHARACTER(LEN=255)   :: Msg, ErrMsg, ThisLoc
-
-      ! Arrays for netCDF start and count values
-      INTEGER              :: st1d(1), ct1d(1)     ! For 1D arrays
-      INTEGER              :: st2d(2), ct2d(2)     ! For 2D arrays
-      REAL(fp), ALLOCATABLE:: lon  (:  )           ! Lon centers, Olson grid [degrees]
-      REAL(fp), ALLOCATABLE:: lat  (  :)           ! Lat centers, Olson grid [degrees]
-
-      !=================================================================
-      ! Init_Soilmap begins here!
-      !=================================================================
-
-      ! Initialize
-      RC        = GC_SUCCESS
-      ErrMsg    = ''
-      ThisLoc   = ' -> at Init_Soilmap (in module GeosCore/soilmap_mod.F90)'
-
-      !======================================================================
-      ! Initialize variables
-      !======================================================================
-
-      ! I_SOIL  = 192                                      ! # lons (1.25x1.875)
-      ! J_SOIL  = 145                                      ! # lats (1.25x1.875)
-      ! D_LON   = 1.875e+0_fp                              ! Delta lon [degrees]
-      ! D_LAT   = 1.250e+0_fp                              ! Delta lat [degrees]
-      ! nc_file = 'HadGEM2ES_Soil_Ancil.nc'                ! Input file name
-      I_SOIL  = IIPAR
-      J_SOIL  = JJPAR
-      D_LON   = 2.5e+0_fp
-      D_LAT   = 2.0e+0_fp
-      nc_file = 'HadGEM2ES_Soil_Ancil_2x25.nc'            ! Input file name
-
-      ! Allocate arrays
-      ALLOCATE( lon( I_SOIL ), STAT=RC )
-      CALL GC_CheckVar( 'soilmap_mod:lon', 0, RC)
-      IF ( RC /= GC_SUCCESS ) RETURN
-      lon( : ) = 0e+0_fp
-
-      ALLOCATE( lat( J_SOIL ), STAT=RC )
-      CALL GC_CheckVar( 'soilmap_mod:lat', 0, RC)
-      IF ( RC /= GC_SUCCESS ) RETURN
-      lat( : ) = 0e+0_fp
-
-      ALLOCATE( THETA_WILT( I_SOIL, J_SOIL ), STAT=RC )
-      CALL GC_CheckVar( 'soilmap_mod:THETA_WILT', 0, RC)
-      IF ( RC /= GC_SUCCESS ) RETURN
-      THETA_WILT( :,: ) = 0e+0_fp
-
-      ALLOCATE( THETA_CRIT( I_SOIL, J_SOIL ), STAT=RC )
-      CALL GC_CheckVar( 'soilmap_mod:THETA_CRIT', 0, RC)
-      IF ( RC /= GC_SUCCESS ) RETURN
-      THETA_CRIT( :,: ) = 0e+0_fp
-
-      ALLOCATE( THETA_SATU( I_SOIL, J_SOIL ), STAT=RC )
-      CALL GC_CheckVar( 'soilmap_mod:THETA_SATU', 0, RC)
-      IF ( RC /= GC_SUCCESS ) RETURN
-      THETA_SATU( :,: ) = 0e+0_fp
-
-    !======================================================================
-    ! Open and read data from the netCDF file
-    !======================================================================
-
-    ! Construct file path from directory & file name
-    nc_dir  = TRIM( Input_Opt%CHEM_INPUTS_DIR ) // 'HadGEM2ES_Soil_Ancil/'
-    nc_path = TRIM( nc_dir )                    // TRIM( nc_file )
-
-    ! Open file for read
-    CALL Ncop_Rd( fId, TRIM(nc_path) )
-
-    ! Echo info to stdout
-    IF ( am_I_Root ) THEN
-       WRITE( 6, 100 ) REPEAT( '%', 79 )
-       WRITE( 6, 110 ) TRIM(nc_file)
-       WRITE( 6, 120 ) TRIM(nc_dir)
-    ENDIF
-
-    ! !----------------------------------------
-    ! ! VARIABLE: lon
-    ! !----------------------------------------
-
-    ! ! Variable name
-    ! v_name = "longitude"
-
-    ! ! Read lon from file
-    ! st1d   = (/ 1      /)
-    ! ct1d   = (/ I_SOIL /)
-    ! CALL NcRd( lon, fId, TRIM(v_name), st1d, ct1d )
-
-    ! ! Read the lon:units attribute
-    ! a_name = "units"
-    ! CALL NcGet_Var_Attributes( fId,TRIM(v_name),TRIM(a_name),a_val )
-
-    ! ! Echo info to stdout
-    ! IF ( am_I_Root ) THEN
-    !    WRITE( 6, 130 ) TRIM(v_name), TRIM(a_val)
-    ! ENDIF
-
-    ! !----------------------------------------
-    ! ! VARIABLE: lat
-    ! !----------------------------------------
-
-    ! ! Variable name
-    ! v_name = "latitude"
-
-    ! ! Read lat from file
-    ! st1d   = (/ 1      /)
-    ! ct1d   = (/ J_SOIL /)
-    ! CALL NcRd( lat, fId, TRIM(v_name), st1d, ct1d )
-
-    ! ! Read the lat:units attribute
-    ! a_name = "units"
-    ! CALL NcGet_Var_Attributes( fId,TRIM(v_name),TRIM(a_name),a_val )
-
-    ! ! Echo info to stdout
-    ! IF ( am_I_Root ) THEN
-    !    WRITE( 6, 130 ) TRIM(v_name), TRIM(a_val)
-    ! ENDIF
-
-    !----------------------------------------
-    ! VARIABLE: THETA_WILT
-    !----------------------------------------
-
-    ! Variable name
-    v_name = "sm_wilt"
-
-    ! Read THETA_WILT from file
-    st2d   = (/ 1, 1 /)
-    ct2d   = (/ I_SOIL, J_SOIL /)
-    CALL NcRd( THETA_WILT, fId, TRIM(v_name), st2d, ct2d )
-
-    ! Read the THETA_WILT:units attribute
-    a_name = "units"
-    CALL NcGet_Var_Attributes( fId,TRIM(v_name),TRIM(a_name),a_val )
-
-    ! Echo info to stdout
-    IF ( am_I_Root ) THEN
-       WRITE( 6, 130 ) TRIM(v_name), TRIM(a_val)
-    ENDIF
-
-    !----------------------------------------
-    ! VARIABLE: THETA_CRIT
-    !----------------------------------------
-
-    ! Variable name
-    v_name = "sm_crit"
-
-    ! Read THETA_CRIT from file
-    st2d   = (/ 1, 1 /)
-    ct2d   = (/ I_SOIL, J_SOIL /)
-    CALL NcRd( THETA_CRIT, fId, TRIM(v_name), st2d, ct2d )
-
-    ! Read the THETA_CRIT:units attribute
-    a_name = "units"
-    CALL NcGet_Var_Attributes( fId,TRIM(v_name),TRIM(a_name),a_val )
-
-    ! Echo info to stdout
-    IF ( am_I_Root ) THEN
-       WRITE( 6, 130 ) TRIM(v_name), TRIM(a_val)
-    ENDIF
-
-    !----------------------------------------
-    ! VARIABLE: THETA_SATU
-    !----------------------------------------
-
-    ! Variable name
-    v_name = "sm_sat"
-
-    ! Read THETA_SATU from file
-    st2d   = (/ 1, 1 /)
-    ct2d   = (/ I_SOIL, J_SOIL /)
-    CALL NcRd( THETA_SATU, fId, TRIM(v_name), st2d, ct2d )
-
-    ! Read the THETA_SATU:units attribute
-    a_name = "units"
-    CALL NcGet_Var_Attributes( fId,TRIM(v_name),TRIM(a_name),a_val )
-
-    ! Echo info to stdout
-    IF ( am_I_Root ) THEN
-       WRITE( 6, 130 ) TRIM(v_name), TRIM(a_val)
-    ENDIF
-
-    !=================================================================
-    ! Cleanup and quit
-    !=================================================================
-
-    ! Close netCDF file
-    CALL NcCl( fId )
-
-    ! Echo info to stdout
-    IF ( am_I_Root ) THEN
-       WRITE( 6, 140 )
-       WRITE( 6, 100 ) REPEAT( '%', 79 )
-    ENDIF
-
-    ! FORMAT statements
-100 FORMAT( a                                              )
-110 FORMAT( '%% Opening file  : ',         a               )
-120 FORMAT( '%%  in directory : ',         a, / , '%%'     )
-130 FORMAT( '%% Successfully read ',       a, ' [', a, ']' )
-140 FORMAT( '%% Successfully closed file!'                 )
-
-  END SUBROUTINE Init_SoilMap
 !------------------------------------------------------------------------------
 !                  GEOS-Chem Global Chemical Transport Model                  !
 !------------------------------------------------------------------------------
@@ -1247,28 +906,6 @@
       ErrMsg    = ''
       ThisLoc   = ' -> at Init_Ecophy (in module GeosCore/ecophysiology.F90)'
 
-      !===================================================================
-      ! Arrays that hold inputs for the main driver do_ecophy
-      ! Only allocate these if ecophysiology is activated
-      !===================================================================
-      ! ALLOCATE( THETA_SATU( IIPAR, JJPAR ), STAT=RC )
-      ! CALL GC_CheckVar( 'ecophy_mod:THETA_SATU', 0, RC )
-      ! IF ( RC /= GC_SUCCESS ) RETURN
-      ! THETA_SATU( :,: ) = 0e+0_f8
-
-      ! ALLOCATE( THETA_CRIT( IIPAR, JJPAR ), STAT=RC )
-      ! CALL GC_CheckVar( 'ecophy_mod:THETA_CRIT', 0, RC )
-      ! IF ( RC /= GC_SUCCESS ) RETURN
-      ! THETA_CRIT( :,: ) = 0e+0_f8
-
-      ! ALLOCATE( THETA_WILT( IIPAR, JJPAR ), STAT=RC )
-      ! CALL GC_CheckVar( 'ecophy_mod:THETA_WILT', 0, RC )
-      ! IF ( RC /= GC_SUCCESS ) RETURN
-      ! THETA_WILT( :,: ) = 0e+0_f8
-
-      ! Get soil map
-      CALL Init_Soilmap( am_I_Root, Input_Opt, RC )
-
       END SUBROUTINE INIT_ECOPHY
 !EOC
 !------------------------------------------------------------------------------
@@ -1294,9 +931,6 @@
       !=================================================================
       ! CLEANUP_ECOPHY begins here!
       !=================================================================
-      IF ( ALLOCATED ( THETA_SATU ) ) DEALLOCATE ( THETA_SATU )
-      IF ( ALLOCATED ( THETA_CRIT ) ) DEALLOCATE ( THETA_CRIT )
-      IF ( ALLOCATED ( THETA_WILT ) ) DEALLOCATE ( THETA_WILT )
 
       ! Return to calling program
       END SUBROUTINE CLEANUP_ECOPHY

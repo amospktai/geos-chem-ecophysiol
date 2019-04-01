@@ -164,6 +164,21 @@ CONTAINS
     CALL Get_Met_2D( Q, TRIM(v_name) )
     State_Met%PHIS = Q
 
+    IF ( Input_Opt%LECOPHY ) THEN
+       ! Read THETA_WILT
+       v_name = "THETA_WILT"
+       CALL Get_Met_2D( Q, TRIM(v_name) )
+       State_Met%THETA_WILT = Q
+       ! Read THETA_CRIT
+       v_name = "THETA_CRIT"
+       CALL Get_Met_2D( Q, TRIM(v_name) )
+       State_Met%THETA_CRIT = Q       
+       ! Read THETA_SATU
+       v_name = "THETA_SATU"
+       CALL Get_Met_2D( Q, TRIM(v_name) )
+       State_Met%THETA_SATU = Q     
+    END IF
+
     ! Echo info
     stamp = TimeStamp_String( 20110101, 000000 )
     WRITE( 6, 10 ) stamp
