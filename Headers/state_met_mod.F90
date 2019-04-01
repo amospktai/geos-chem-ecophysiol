@@ -862,7 +862,7 @@ CONTAINS
     ALLOCATE( State_Met%QV2M( IM, JM ), STAT=RC )
     CALL GC_CheckVar( 'State_Met%QV2M', 0, RC )
     IF ( RC /= GC_SUCCESS ) RETURN
-    State_Met%QV2N = 0.0_fp
+    State_Met%QV2M = 0.0_fp
     CALL Register_MetField( am_I_Root, 'QV2M', State_Met%QV2M, &
                             State_Met, RC )
     IF ( RC /= GC_SUCCESS ) RETURN
