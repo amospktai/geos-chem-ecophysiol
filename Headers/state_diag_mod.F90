@@ -729,7 +729,7 @@ CONTAINS
     INTEGER                :: N,        IM,      JM,      LM
     INTEGER                :: nSpecies, nAdvect, nDryDep, nKppSpc
     INTEGER                :: nWetDep,  nPhotol, nProd,   nLoss
-    INTEGER                :: nHygGrth, nEcophy
+    INTEGER                :: nHygGrth, nOlson
     LOGICAL                :: EOF,      Found,   Found2
 
     !=======================================================================
