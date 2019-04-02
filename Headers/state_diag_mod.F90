@@ -839,7 +839,14 @@ CONTAINS
     State_Diag%EcophyBETA                          => NULL()
     State_Diag%EcophyFAC_O3                        => NULL()
     State_Diag%EcophyO3                            => NULL()
-    State_Diag%Archive_Ecophy                      = .FALSE.
+    State_Diag%Archive_EcophyRS                    = .FALSE.
+    State_Diag%Archive_EcophyA_CAN                 = .FALSE.
+    State_Diag%Archive_EcophyRESP                  = .FALSE.
+    State_Diag%Archive_EcophyCO2_IN                = .FALSE.
+    State_Diag%Archive_EcophyLAI                   = .FALSE.
+    State_Diag%Archive_EcophyBETA                  = .FALSE.
+    State_Diag%Archive_EcophyFAC_O3                = .FALSE.
+    State_Diag%Archive_EcophyO3                    = .FALSE.
 
 #if defined( MODEL_GEOS )
     State_Diag%DryDepRa2m                          => NULL()
