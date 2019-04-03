@@ -180,7 +180,7 @@
       REAL(fp)   :: FACTOR_O3
       REAL(fp)   :: BETA
       REAL(fp)   :: LAI
-      ! Pointers
+      ! ! Pointers
       ! REAL(fp), POINTER :: G_CANOPY       ( :,:,: )
       ! REAL(fp), POINTER :: A_CANOPY       ( :,:,: )
       ! REAL(fp), POINTER :: R_CANOPY       ( :,:,: )
@@ -243,15 +243,22 @@
          RETURN
       ENDIF
 
-! #if defined( NC_DIAG )
-!             ! send to diagnostics outputs
-!             State_Diag%G_CAN(I,J) = G_CAN_OUT
-! #endif
-
       ! Write a subroutine to get PFT-weighted values
 
       ! Output RS to dry deposition module
       RS = 1.0 / G_CAN_OUT
+
+#if defined( NC_DIAG )
+      ! send to diagnostics outputs
+      State_Diag%EcophyRS        ( I,J,LDT ) = 2.e+0_fp
+      State_Diag%EcophyA_CAN     ( I,J,LDT ) = 2.e+0_fp
+      State_Diag%EcophyRESP      ( I,J,LDT ) = 2.e+0_fp
+      State_Diag%EcophyCO2_IN    ( I,J,LDT ) = 2.e+0_fp
+      State_Diag%EcophyLAI       ( I,J,LDT ) = 2.e+0_fp
+      State_Diag%EcophyBETA      ( I,J,LDT ) = 2.e+0_fp
+      State_Diag%EcophyFAC_O3    ( I,J,LDT ) = 2.e+0_fp
+      State_Diag%EcophyO3        ( I,J,LDT ) = 2.e+0_fp
+#endif
 
       ! Nullify pointers
 !       NULLIFY( G_CANOPY     )
