@@ -181,13 +181,14 @@
       REAL(fp)   :: BETA
       REAL(fp)   :: LAI
       ! ! Pointers
-      ! REAL(fp), POINTER :: G_CANOPY       ( :,:,: )
-      ! REAL(fp), POINTER :: A_CANOPY       ( :,:,: )
-      ! REAL(fp), POINTER :: R_CANOPY       ( :,:,: )
-      ! REAL(fp), POINTER :: A_NET_CANOPY   ( :,:,: )
-      ! REAL(fp), POINTER :: FLXO3_CANOPY   ( :,:,: )
-      ! REAL(fp), POINTER :: BETA_O3        ( :,:,: )
-      ! REAL(fp), POINTER :: BETA_SM        ( :,:,: )
+      REAL(fp), POINTER :: EcophyRS    
+      REAL(fp), POINTER :: EcophyA_CAN 
+      REAL(fp), POINTER :: EcophyRESP  
+      REAL(fp), POINTER :: EcophyCO2_IN
+      REAL(fp), POINTER :: EcophyLAI   
+      REAL(fp), POINTER :: EcophyBETA  
+      REAL(fp), POINTER :: EcophyFAC_O3
+      REAL(fp), POINTER :: EcophyO3    
 
       !=================================================================
       ! DO_ECOPHY begins here!
@@ -201,13 +202,15 @@
       ' -> at Do_ECOPHY (in module GeosCore/ecophysiology.F90)'
 
       ! Point to columns of derived-type object fields
-      ! G_CANOPY     => State_Chm%G_CAN
-      ! A_CANOPY     => State_Chm%A_CAN
-      ! R_CANOPY     => State_Chm%RESP
-      ! A_NET_CANOPY => State_Chm%A_NET
-      ! FLXO3_CANOPY => State_Chm%FLXO3
-      ! BETA_O3      => State_Chm%BETA_O3
-      ! BETA_SM      => State_Chm%BETA_SM
+      EcophyRS       => State_Diag%EcophyRS    
+      EcophyA_CAN    => State_Diag%EcophyA_CAN 
+      EcophyRESP     => State_Diag%EcophyRESP  
+      EcophyCO2_IN   => State_Diag%EcophyCO2_IN
+      EcophyLAI      => State_Diag%EcophyLAI   
+      EcophyBETA     => State_Diag%EcophyBETA  
+      EcophyFAC_O3   => State_Diag%EcophyFAC_O3
+      EcophyO3       => State_Diag%EcophyO3    
+
 
       ! get inputs for the module
       CALL GET_ECOPHY_INPUTS( State_Met,    State_Chm, I, J, LDT,&
@@ -250,24 +253,26 @@
 
 #if defined( NC_DIAG )
       ! send to diagnostics outputs
-      State_Diag%EcophyRS        ( I,J,LDT ) = 2.e+0_fp
-      State_Diag%EcophyA_CAN     ( I,J,LDT ) = 2.e+0_fp
-      State_Diag%EcophyRESP      ( I,J,LDT ) = 2.e+0_fp
-      State_Diag%EcophyCO2_IN    ( I,J,LDT ) = 2.e+0_fp
-      State_Diag%EcophyLAI       ( I,J,LDT ) = 2.e+0_fp
-      State_Diag%EcophyBETA      ( I,J,LDT ) = 2.e+0_fp
-      State_Diag%EcophyFAC_O3    ( I,J,LDT ) = 2.e+0_fp
-      State_Diag%EcophyO3        ( I,J,LDT ) = 2.e+0_fp
+      EcophyRS        ( I,J,LDT ) = 2.e+0_fp
+      EcophyA_CAN     ( I,J,LDT ) = 2.e+0_fp
+      EcophyRESP      ( I,J,LDT ) = 2.e+0_fp
+      EcophyCO2_IN    ( I,J,LDT ) = 2.e+0_fp
+      EcophyLAI       ( I,J,LDT ) = 2.e+0_fp
+      EcophyBETA      ( I,J,LDT ) = 2.e+0_fp
+      EcophyFAC_O3    ( I,J,LDT ) = 2.e+0_fp
+      EcophyO3        ( I,J,LDT ) = 2.e+0_fp
 #endif
 
       ! Nullify pointers
-!       NULLIFY( G_CANOPY     )
-!       NULLIFY( A_CANOPY     )
-!       NULLIFY( R_CANOPY     )
-!       NULLIFY( A_NET_CANOPY )
-!       NULLIFY( FLXO3_CANOPY )
-!       NULLIFY( BETA_O3      )
-!       NULLIFY( BETA_SM      )
+      NULLIFY( EcophyRS     )
+      NULLIFY( EcophyA_CAN  )
+      NULLIFY( EcophyRESP   )
+      NULLIFY( EcophyCO2_IN )
+      NULLIFY( EcophyLAI    )
+      NULLIFY( EcophyBETA   )
+      NULLIFY( EcophyFAC_O3 )
+      NULLIFY( EcophyO3     )
+
 
       END SUBROUTINE DO_ECOPHY
 !EOC
