@@ -1,68 +1,51 @@
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1343546.svg)](https://doi.org/10.5281/zenodo.1343546) [![Build
-Status](https://travis-ci.org/JiaweiZhuang/geos-chem.svg?branch=travis_ci)](https://travis-ci.org/JiaweiZhuang/geos-chem)
+This branch is where I test how I can work with diagnostics.
 
-# README for the GEOS-Chem Source code repository
+Copied from the ecophysiology branch:
 
-This repository (https://github.com/gcst/geos-chem) contains the source code for the GEOS-Chem model of atmospheric chemistry and composition. 
+# Development of ecophysiology module in GEOS-Chem 
 
-## We have migrated from Bitbucket to Github!
-As of June 2018, we have migrated the GEOS-Chem source code repository to back Github.  Going forward, please make sure to clone or pull code updates ONLY from this repository.
+## Summary
 
-## GEOS-Chem Development
+I am working on developing an ecophysiology module in GEOS-Chem. This module aims at better representing atmosphere-biosphere fluxes by mechanistically simulating vegetation processes, e.g. photosynthesis and dry deposition. For the moment, I am still using some of the most simple parameterizations and schemes from other land surface models (Mostly from [JULES](https://jules.jchmr.org), [Clark et. al. (2011)](https://doi.org/10.5194/gmd-4-701-2011) summarizes the science of this model), but having the framework of this module enables easier future modifications.
 
-### Branches
-This repository contains several branches.  Each branch contains code updates belonging to a particular line of development.
+## Code updates
 
- * The __master__ branch always contains the __current stable version__.  You should never add new code directly into this branch.  Instead, open a new branch off of master and add your code there.
+Most of the new stuffs are inside GeosCore/ecophy_mod.F90. Updates in other files are mostly about enabling my module to work in GEOS-Chem. I have already tested that when the ecophysiology module is turned off, the other modules work exactly the same as in version 12.2.0. When the module is turned on, the dry deposition over vegetated land will be modified. The resulting ozone concentration over land becomes higher after a 1-month simulation in summer, due to a decrease in ozone deposition flux. This is not expected, so I will keep checking and updating this module.
 
- * The __dev/X.Y.Z__ branches always contains in-development code for upcoming version X.Y.Z.  Code in dev/X.Y.Z is very much "work in progress" and should not be relied upon until it has been fully debugged, validated, and merged back into the master branch.
+### Model structure
+Currently, my module is called inside the drydep_mod.F when the bulk canopy stomatal resistance is calculated. If ecophysiology is turned on, it replaces the default parameterizations in Wesely scheme.
 
- * The __GEOS__ branch contains updates that are specific to the interface between GEOS-Chem and the NASA GEOS-DAS Earth System Model.  Most GEOS-Chem users can simply ignore this branch.
+### Clarifications on my changes in drydep_mod.F
+I found that the differene provided by git is not very informative for this file, so I would like to clarify that all I did is just interchanging the order of calculation of aerodynamic resistance RA and surface conductance RSURFC (which involves removing a DO loop), and include an IF-statement to call the ecophysiology module.
 
- * From time to time, you will see other branches pertaining to new lines of development being created.  These branches usually will start with __feature/__ or __bugfix/__.  Once the code in these branches has been sufficiently validated, these branches will be merged back into the master branch.  You should not use code in these branches.
+## Run directory updates 
 
-### Versions
+I used some new and edited input files for input.geos and HEMCO_Config.rc, but since they are not included in the source code directory, I did not put them here, and probably I will send them directly to the GEOS-Chem Support Team soon.
 
-GEOS-Chem versions are now denoted by 3 digits (X.Y.Z):
+## Data file update
 
- * The __X__ digit is the __major version number__.  A change in X denotes that the current version contains a significant update that breaks backwards-compatibility with the prior series of GEOS-Chem versions.  Major structural updates typically will require an update to X.  In the past we have changed the X digit when replacing SMVGEAR with FlexChem (version 10 to version 11) and replacing legacy emissions with HEMCO (version 9 to version 10).
+To enable the parameterizations in the ecophysiology module, I included a map of some soil parameters. It is read by HEMCO.
 
-* The __Y__ digit is the __feature version number__.  A change in Y denotes that a 1-month benchmark has been performed to validate a new feature or set of features.  Some (but not all) Y versions will have 1-year benchmarks performed as well.  In general, the Y digit changes whenever a new feature  breaks backwards compatibility with one or more run directories from the prior version.
+# Documentation of the ecophysiology module
 
-* The __Z__ digit is the __bug fix (or patch) version number__.   A change in Z denotes that a bug fix was made that does not break backwards compatibility with run directories from the prior verison.  Z will also be updated when bug fixes or minor updates are made to one or more of the GEOS-Chem "Specialty" simulations.  Updating specialty simulations should not affect the output of the GEOS-Chem 1-month or 1-year benchmark simulations.
+This section is under development.
 
-For more information, please see this wiki page: http://wiki.geos-chem.org/GEOS-Chem_version_numbering_system
+# Future work
 
-All benchmarked GEOS-Chem versions are tagged in the Git history. Use _git tag_ in your terminal to see a list of available tags. Tags will also be highlighted in the _gitk_ browser window.
+ecophy_mod.F90:
+1. Deal with diagnostics
+1. Move away from module variables? Especially the PFT-specific parameters.
+1. Tidy up the codes: formatting, comments and enable the use of Protex.
+1. Add error handlings and floating point exception checkings.
+1. Include other parameterizations into the module.
 
-### Citing GEOS-Chem versions with DOI's
+HEMCO_Config.rc:
+1. Try using the original soil parameters map with finer resolution, insteaed of the regridded one.
 
-You can now cite GEOS-Chem in publications with a Digital Object Identifier (DOI). Each GEOS-Chem release will be assigned its own individual DOI.  DOI's for each GEOS-Chem version will be posted on the [GEOS-Chem website](http://geos-chem.org) and [GEOS-Chem wiki](http://wiki.geos-chem.org).
+# Others
 
-We have also generated a concept DOI, which will always point to the current stable version of GEOS-Chem (i.e. corresponding to the __master__ branch): [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1343546.svg)](https://doi.org/10.5281/zenodo.1343546)
+Also check out:
 
-# Documentation
-
-### Web site
-The __GEOS-Chem web site__ is a good place to get started.  It will point you to many important GEOS-Chem resources.
-* http://www.geos-chem.org
-
-### Online user's manual
-You can find the __The GEOS-Chem User's Guide__ online here:
-* http://manual.geos-chem.org
-
-### Wiki
-The most up-to-date information about GEOS-Chem is posted on the __GEOS-Chem wiki__.  Here you will find information about technical issues, bug fixes, and other pertinent topics.
-* http://wiki-geos.chem.org
-
-## GEOS-Chem run directories
-To generate GEOS-Chem run directories, please clone the [__geos-chem-unittest__](https://github.com/geoschem/geos-chem-unittest) repository and follow the instructions as listed on this GEOS-Chem wiki page: http://wiki.seas.harvard.edu/geos-chem/index.php/Creating_GEOS-Chem_run_directories
-
-## Support 
-We encourage GEOS-Chem users to use the Github issue tracker attached to this repository to report  bugs or technical issues with the GEOS-Chem code.
-
-You are also invited to direct GEOS-Chem support requests to the GEOS-Chem Support Team at geos-chem-support@as.harvard.edu.
-
-14 Nov 2018
-GEOS-Chem Support Team
-geos-chem-support@as.harvard.edu
+- GEOS-Chem: http://www.geos-chem.org
+- GEOS-Chem Wiki: http://wiki-geos.chem.org
+- TGABI: http://www.cuhk.edu.hk/sci/essc/tgabi/
