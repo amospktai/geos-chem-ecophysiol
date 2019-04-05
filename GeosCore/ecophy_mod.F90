@@ -253,14 +253,15 @@
 
 #if defined( NC_DIAG )
       ! send to diagnostics outputs
-      State_Diag%EcophyRS        ( I,J,LDT ) = 2.e+0_fp
-      State_Diag%EcophyA_CAN     ( I,J,LDT ) = 2.e+0_fp
-      State_Diag%EcophyRESP      ( I,J,LDT ) = 2.e+0_fp
-      State_Diag%EcophyCO2_IN    ( I,J,LDT ) = 2.e+0_fp
-      State_Diag%EcophyLAI       ( I,J,LDT ) = 2.e+0_fp
-      State_Diag%EcophyBETA      ( I,J,LDT ) = 2.e+0_fp
-      State_Diag%EcophyFAC_O3    ( I,J,LDT ) = 2.e+0_fp
-      State_Diag%EcophyO3        ( I,J,LDT ) = 2.e+0_fp
+      IOLSON = State_Met%ILAND( I,J,LDT ) + 1
+      State_Diag%EcophyRS        ( I,J,IOLSON ) = 2.e+0_fp
+      State_Diag%EcophyA_CAN     ( I,J,IOLSON ) = 2.e+0_fp
+      State_Diag%EcophyRESP      ( I,J,IOLSON ) = 2.e+0_fp
+      State_Diag%EcophyCO2_IN    ( I,J,IOLSON ) = 2.e+0_fp
+      State_Diag%EcophyLAI       ( I,J,IOLSON ) = 2.e+0_fp
+      State_Diag%EcophyBETA      ( I,J,IOLSON ) = 2.e+0_fp
+      State_Diag%EcophyFAC_O3    ( I,J,IOLSON ) = 2.e+0_fp
+      State_Diag%EcophyO3        ( I,J,IOLSON ) = 2.e+0_fp
 #endif
 
       ! Nullify pointers

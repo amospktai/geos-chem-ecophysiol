@@ -9588,7 +9588,7 @@ CONTAINS
        CASE( 'WET'     )
           numTags = State_Chm%nWetDep
        CASE( 'OLSON'   )
-          numTags = nOlson
+          numTags = 74
        CASE DEFAULT
           FOUND = .FALSE.
           ErrMsg = 'Handling of tagId ' // TRIM(tagId) // &
@@ -9691,7 +9691,7 @@ CONTAINS
 
        ! Olson land types
        CASE( 'OLSON' )
-          WRITE ( Nstr, "(I1)" ) D
+          WRITE ( Nstr, "(I2.2)" ) D
           tagName = 'LandType' // TRIM(Nstr)
        ! Photolysis species
        CASE( 'PHO' )
