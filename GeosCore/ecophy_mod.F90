@@ -839,7 +839,7 @@
       ! Surface temperature [K]
       TEMPK         = State_Met%TS( I,J )
       ! Specific humidity [kg/kg]
-      QV2M          = State_Met%QV2M( I,J ) * 1.e-3_fp
+      QV2M          = State_Met%QV2M( I,J )
       ! Photosynthetically active radiation absorbed [W m^-2]
       PARDR         = State_Met%PARDR( I,J )
       PARDF         = State_Met%PARDF( I,J )
@@ -847,8 +847,9 @@
       ! Pressure [Pa]
       PRESSURE      = State_Met%SLP( I,J ) * 1.e+2_fp
       ! CO2 mole fraction [mol/mol]
-      CO2           = State_Chm%Species( I,J,1,id_CO2 ) * AIRMW &
-                    / State_Chm%SpcData( id_CO2 )%Info%MW_g
+      ! CO2           = State_Chm%Species( I,J,1,id_CO2 ) * AIRMW &
+      !               / State_Chm%SpcData( id_CO2 )%Info%MW_g
+      CO2           = 4.e-4_fp
       ! O2 mole fraction [mol/mol]
       O2            = State_Chm%Species( I,J,1,id_O2  ) * AIRMW &
                     / State_Chm%SpcData( id_O2  )%Info%MW_g
