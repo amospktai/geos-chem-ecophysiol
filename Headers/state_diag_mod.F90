@@ -8328,42 +8328,50 @@ CONTAINS
     ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYRS' ) THEN
        IF ( isDesc    ) Desc  = 'Bulk canopy stomatal resistance'
        IF ( isUnits   ) Units = 's m-1'
-       IF ( isRank    ) Rank  = 3
+       IF ( isRank    ) Rank  = 2
+       IF ( isTagged  ) TagID = 'OLSON'
 
     ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYA_CAN' ) THEN
        IF ( isDesc    ) Desc  = 'Bulk canopy photosynthesis'
        IF ( isUnits   ) Units = 'mol CO2 m-2 s-1'
-       IF ( isRank    ) Rank  = 3
+       IF ( isRank    ) Rank  = 2
+       IF ( isTagged  ) TagID = 'OLSON'
 
     ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYRESP' ) THEN
        IF ( isDesc    ) Desc  = 'Bulk canopy respiration'
        IF ( isUnits   ) Units = 'mol CO2 m-2 s-1'
-       IF ( isRank    ) Rank  = 3
+       IF ( isRank    ) Rank  = 2
+       IF ( isTagged  ) TagID = 'OLSON'
 
     ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYCO2_IN' ) THEN
        IF ( isDesc    ) Desc  = 'CO2 internal partial pressure'
        IF ( isUnits   ) Units = 'Pa'
-       IF ( isRank    ) Rank  = 3
+       IF ( isRank    ) Rank  = 2
+       IF ( isTagged  ) TagID = 'OLSON'
 
     ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYLAI' ) THEN
        IF ( isDesc    ) Desc  = 'Leaf Area Indices'
        IF ( isUnits   ) Units = 'm2 m-2'
-       IF ( isRank    ) Rank  = 3
+       IF ( isRank    ) Rank  = 2
+       IF ( isTagged  ) TagID = 'OLSON'
 
     ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYBETA' ) THEN
        IF ( isDesc    ) Desc  = 'Soil moisture stress factor'
        IF ( isUnits   ) Units = 'cm s-1'
-       IF ( isRank    ) Rank  = 3
+       IF ( isRank    ) Rank  = 2
+       IF ( isTagged  ) TagID = 'OLSON'
 
     ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYFAC_O3' ) THEN
        IF ( isDesc    ) Desc  = 'Ozone damage factor'
        IF ( isUnits   ) Units = '1'
-       IF ( isRank    ) Rank  = 3
+       IF ( isRank    ) Rank  = 2
+       IF ( isTagged  ) TagID = 'OLSON'
 
     ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYO3' ) THEN
        IF ( isDesc    ) Desc  = 'Canopy ozone uptake flux'
        IF ( isUnits   ) Units = 'nmol m-2 s-1'
-       IF ( isRank    ) Rank  = 3
+       IF ( isRank    ) Rank  = 2
+       IF ( isTagged  ) TagID = 'OLSON'
 
 #if defined( MODEL_GEOS )
     ELSE IF ( TRIM( Name_AllCaps ) == 'DRYDEPRA2M' ) THEN
@@ -9579,6 +9587,8 @@ CONTAINS
           numTags = State_Chm%nKppVar
        CASE( 'WET'     )
           numTags = State_Chm%nWetDep
+       CASE( 'OLSON'   )
+          numTags = nOlson
        CASE DEFAULT
           FOUND = .FALSE.
           ErrMsg = 'Handling of tagId ' // TRIM(tagId) // &
@@ -9609,7 +9619,7 @@ CONTAINS
     ! Get mapping index
     !=======================================================================
     SELECT CASE( TRIM( tagID ) )
-       CASE( 'ALL', 'ADV', 'DUSTBIN', 'PRD', 'LOS' )
+       CASE( 'ALL', 'ADV', 'DUSTBIN', 'PRD', 'LOS', 'OLSON' )
           D = N
        CASE( 'AER'  )
           D = State_Chm%Map_Aero(N)
@@ -9679,6 +9689,10 @@ CONTAINS
           D       = INDEX( tagName, '_' )
           tagName = tagName(D+1:)
 
+       ! Olson land types
+       CASE( 'OLSON' )
+          WRITE ( Nstr, "(I1)" ) D
+          tagName = 'LandType' // TRIM(Nstr)
        ! Photolysis species
        CASE( 'PHO' )
 
