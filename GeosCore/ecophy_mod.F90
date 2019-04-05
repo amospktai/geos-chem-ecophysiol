@@ -180,6 +180,7 @@
       REAL(fp)   :: FACTOR_O3
       REAL(fp)   :: BETA
       REAL(fp)   :: LAI
+      INTEGER    :: IOLSON
       ! ! Pointers
       ! REAL(fp), POINTER :: EcophyRS     ( :,:,: )
       ! REAL(fp), POINTER :: EcophyA_CAN  ( :,:,: )
@@ -254,14 +255,14 @@
 #if defined( NC_DIAG )
       ! send to diagnostics outputs
       IOLSON = State_Met%ILAND( I,J,LDT ) + 1
-      State_Diag%EcophyRS        ( I,J,IOLSON ) = 2.e+0_fp
-      State_Diag%EcophyA_CAN     ( I,J,IOLSON ) = 2.e+0_fp
-      State_Diag%EcophyRESP      ( I,J,IOLSON ) = 2.e+0_fp
-      State_Diag%EcophyCO2_IN    ( I,J,IOLSON ) = 2.e+0_fp
-      State_Diag%EcophyLAI       ( I,J,IOLSON ) = 2.e+0_fp
-      State_Diag%EcophyBETA      ( I,J,IOLSON ) = 2.e+0_fp
-      State_Diag%EcophyFAC_O3    ( I,J,IOLSON ) = 2.e+0_fp
-      State_Diag%EcophyO3        ( I,J,IOLSON ) = 2.e+0_fp
+      State_Diag%EcophyRS        ( I,J,IOLSON ) = RS
+      State_Diag%EcophyA_CAN     ( I,J,IOLSON ) = A_CAN_OUT
+      State_Diag%EcophyRESP      ( I,J,IOLSON ) = RESP_OUT  
+      State_Diag%EcophyCO2_IN    ( I,J,IOLSON ) = CO2_IN
+      State_Diag%EcophyLAI       ( I,J,IOLSON ) = LAI
+      State_Diag%EcophyBETA      ( I,J,IOLSON ) = BETA
+      State_Diag%EcophyFAC_O3    ( I,J,IOLSON ) = FACTOR_O3
+      State_Diag%EcophyO3        ( I,J,IOLSON ) = FLUXO3
 #endif
 
       ! Nullify pointers
