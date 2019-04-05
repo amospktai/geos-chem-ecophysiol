@@ -129,14 +129,14 @@ MODULE State_Diag_Mod
      REAL(f8),  POINTER :: EcophyBETA      (:,:,:  ) ! Soil moisture stress factor
      REAL(f8),  POINTER :: EcophyFAC_O3    (:,:,:  ) ! Ozone damage factor 
      REAL(f8),  POINTER :: EcophyFLUXO3    (:,:,:  ) ! Canopy ozone uptake flux
-     REAL(f8),  POINTER :: EcophyTEMPK       (:,:  ) ! Temperature
-     REAL(f8),  POINTER :: EcophyQV2M        (:,:  ) ! 2m specific humidity
-     REAL(f8),  POINTER :: EcophyPAR_ABSORBED(:,:  ) ! PAR absorbed
-     REAL(f8),  POINTER :: EcophyPRESSURE    (:,:  ) ! sea level pressure
-     REAL(f8),  POINTER :: EcophyCO2         (:,:  ) ! CO2 mole fraction
-     REAL(f8),  POINTER :: EcophyO2          (:,:  ) ! O2 mole fraction
-     REAL(f8),  POINTER :: EcophyO3          (:,:  ) ! O3 mole fraction
-     REAL(f8),  POINTER :: EcophySOIL_WETNESS(:,:  ) ! Soil wetness
+     REAL(f4),  POINTER :: EcophyTEMPK       (:,:  ) ! Temperature
+     REAL(f4),  POINTER :: EcophyQV2M        (:,:  ) ! 2m specific humidity
+     REAL(f4),  POINTER :: EcophyPAR_ABSORBED(:,:  ) ! PAR absorbed
+     REAL(f4),  POINTER :: EcophyPRESSURE    (:,:  ) ! sea level pressure
+     REAL(f4),  POINTER :: EcophyCO2         (:,:  ) ! CO2 mole fraction
+     REAL(f4),  POINTER :: EcophyO2          (:,:  ) ! O2 mole fraction
+     REAL(f4),  POINTER :: EcophyO3          (:,:  ) ! O3 mole fraction
+     REAL(f4),  POINTER :: EcophySOIL_WETNESS(:,:  ) ! Soil wetness
      LOGICAL :: Archive_EcophyRS
      LOGICAL :: Archive_EcophyA_CAN
      LOGICAL :: Archive_EcophyRESP
