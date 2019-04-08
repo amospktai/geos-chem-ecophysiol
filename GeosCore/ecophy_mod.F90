@@ -824,7 +824,7 @@
 !
 ! !LOCAL VARIABLES:
 !
-      REAL(fp) :: PARDR, PARDF, PAR
+      REAL(fp) :: PARDR, PARDF, ALBD
       ! INTEGER :: I, J
       INTEGER  :: id_CO2, id_O2, id_O3
 
@@ -843,7 +843,8 @@
       ! Photosynthetically active radiation absorbed [W m^-2]
       PARDR         = State_Met%PARDR( I,J )
       PARDF         = State_Met%PARDF( I,J )
-      PAR_ABSORBED  = PARDR + PARDF
+      ALBD          = State_Met%ALBD ( I,J )
+      PAR_ABSORBED  = ( 1 - ALBD ) * ( PARDR + PARDF ) 
       ! Pressure [Pa]
       PRESSURE      = State_Met%SLP( I,J ) * 1.e+2_fp
       ! CO2 mole fraction [mol/mol]

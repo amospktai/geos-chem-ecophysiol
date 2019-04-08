@@ -8589,7 +8589,7 @@ CONTAINS
 
     ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYBETA' ) THEN
        IF ( isDesc    ) Desc  = 'Soil moisture stress factor'
-       IF ( isUnits   ) Units = 'cm s-1'
+       IF ( isUnits   ) Units = '1'
        IF ( isRank    ) Rank  = 2
        IF ( isTagged  ) TagID = 'OLSON'
 
