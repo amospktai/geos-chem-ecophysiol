@@ -1819,6 +1819,12 @@ C  170     CONTINUE
                RIX = RIX*GFACT*GFACI
  150           CONTINUE
             ENDIF
+
+! Archive stomatal resistance for checking ecophysiology module (Joey Lam, 09 Apr 2019)
+#if defined( NC_DIAG )
+            State_Diag%EcophyRS  ( I,J,IOLSON ) = RIX
+#endif
+
 !*                                 
 !*    Compute aerodynamic resistance to lower elements in lower part           
 !*    of the canopy or structure, assuming level terrain - 

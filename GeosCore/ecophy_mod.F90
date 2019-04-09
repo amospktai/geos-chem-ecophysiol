@@ -255,7 +255,7 @@
 #if defined( NC_DIAG )
       ! send to diagnostics outputs
       IOLSON = State_Met%ILAND( I,J,LDT ) + 1
-      State_Diag%EcophyRS        ( I,J,IOLSON ) = RS
+      ! State_Diag%EcophyRS        ( I,J,IOLSON ) = RS
       State_Diag%EcophyA_CAN     ( I,J,IOLSON ) = A_CAN_OUT
       State_Diag%EcophyRESP      ( I,J,IOLSON ) = RESP_OUT  
       State_Diag%EcophyCO2_IN    ( I,J,IOLSON ) = CO2_IN
