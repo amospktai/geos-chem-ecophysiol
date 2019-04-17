@@ -439,7 +439,7 @@
       CO2_GAMMA      = IS_C3_PLANT(PFT) / ( 2.e+0_fp * TAU ) &
                      * PRESSURE * O2
       ! Calculate canopy scaling factor
-      BIGLEAFSCALE   = ( 1.e+0_fp - EXP( - K_EXTINCT(PFT) * LAI ) ) / K_EXTINCT(PFT)
+      BIGLEAFSCALE   = MAX( ( 1.e+0_fp - EXP( - K_EXTINCT(PFT) * LAI ) ) / K_EXTINCT(PFT), 0.e+0_fp )
       ! Convert unit of absorbed PAR to mol photon m^-2 s^-1
       APAR           = 4.6e-6_fp * PAR_ABSORBED
       ! Calculate CO2 partial pressure in ambient air
@@ -468,14 +468,16 @@
          ! Step 1: Closure condition by Jacobs (1994)
          SPHU_SAT    = 0.622e+0_fp * E_SAT( TEMPC ) / PRESSURE
          G_CAN       = G_LEAF * BIGLEAFSCALE
-         DEFICIT_Q   = SPHU_SAT - QV2M
+         DEFICIT_Q   = MAX( SPHU_SAT - QV2M, 0.e+0_fp )
          CO2_IN      = CO2_GAMMA + f0(PFT)*( 1 - DEFICIT_Q / D_STAR(PFT) ) &
                      * ( CO2_AMBIENT - CO2_GAMMA )
          IF ( BETA <= 0.e+0_fp .OR. DEFICIT_Q >= D_STAR(PFT) & 
                                .OR. PAR_ABSORBED <= 0.e+0_fp ) THEN
             ! Close stomata if the above conditions are satisfied
-            A_NET    = - RESP * BETA
-            G_LEAF   = G_LEAF_MIN(PFT)
+            A_NET_OUT   = - RESP * BETA
+            RESP_OUT    = RESP
+            G_LEAF_OUT  = G_LEAF_MIN(PFT)
+            EXIT
          ELSE
             ! Step 2: Photosynthesis model
             CALL PHOTOSYNTHESIS_LIMITS( CO2_IN,       CO2_GAMMA,    &
@@ -492,8 +494,10 @@
             ! Close stomata if net photosynthesis <= 0 or
             ! stomatal conductance is too small
             IF ( A_NET <= 0.e+0_fp .OR. G_LEAF <= G_LEAF_MIN(PFT) ) THEN
-               A_NET    = - RESP * BETA
-               G_LEAF   = G_LEAF_MIN(PFT)
+               A_NET_OUT   = - RESP * BETA
+               RESP_OUT    = RESP
+               G_LEAF_OUT  = G_LEAF_MIN(PFT)
+               EXIT
             END IF
             ! Apply ozone damage scheme by Sitch et al. (2007)
             IF ( LO3_DAMAGE ) THEN
@@ -507,7 +511,9 @@
                   ! stomatal conductance is too small
                   IF ( A_NET_OUT <= 0.e+0_fp .OR. G_LEAF_OUT <= G_LEAF_MIN(PFT) ) THEN
                      A_NET_OUT   = - RESP * BETA
+                     RESP_OUT    = RESP
                      G_LEAF_OUT  = G_LEAF_MIN(PFT)
+                     EXIT
                   END IF
             ELSE
                A_NET_OUT   = A_NET
@@ -739,7 +745,7 @@
       REAL(fp), INTENT(IN)    :: ITEM
       REAL(fp), INTENT(IN)    :: ITEM_PREV
       REAL(fp)                :: ERROR
-      ERROR = ( ITEM - ITEM_PREV ) / ITEM_PREV
+      ERROR = ABS( ITEM - ITEM_PREV ) / ABS( ITEM_PREV )
       END FUNCTION REL_ERR
 
       FUNCTION E_SAT( TEMPC ) RESULT ( Esat )
