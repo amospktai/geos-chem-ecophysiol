@@ -264,14 +264,14 @@
       State_Diag%EcophyFAC_O3    ( I,J,IOLSON ) = FACTOR_O3
       State_Diag%EcophyFLUXO3    ( I,J,IOLSON ) = FLUXO3
 
-      State_Diag%EcophyTEMPK        ( I,J ) = TEMPK       
-      State_Diag%EcophyQV2M         ( I,J ) = QV2M        
-      State_Diag%EcophyPAR_ABSORBED ( I,J ) = PAR_ABSORBED
-      State_Diag%EcophyPRESSURE     ( I,J ) = PRESSURE    
-      State_Diag%EcophyCO2          ( I,J ) = CO2         
-      State_Diag%EcophyO2           ( I,J ) = O2          
-      State_Diag%EcophyO3           ( I,J ) = O3          
-      State_Diag%EcophySOIL_WETNESS ( I,J ) = SOIL_WETNESS
+      ! State_Diag%EcophyTEMPK        ( I,J ) = TEMPK       
+      ! State_Diag%EcophyQV2M         ( I,J ) = QV2M        
+      ! State_Diag%EcophyPAR_ABSORBED ( I,J ) = PAR_ABSORBED
+      ! State_Diag%EcophyPRESSURE     ( I,J ) = PRESSURE    
+      ! State_Diag%EcophyCO2          ( I,J ) = CO2         
+      ! State_Diag%EcophyO2           ( I,J ) = O2          
+      ! State_Diag%EcophyO3           ( I,J ) = O3          
+      ! State_Diag%EcophySOIL_WETNESS ( I,J ) = SOIL_WETNESS
 #endif
 
       ! Nullify pointers
