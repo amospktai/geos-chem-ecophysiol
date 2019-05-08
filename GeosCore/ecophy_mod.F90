@@ -856,7 +856,7 @@
       ! CO2 mole fraction [mol/mol]
       ! CO2           = State_Chm%Species( I,J,1,id_CO2 ) * AIRMW &
       !               / State_Chm%SpcData( id_CO2 )%Info%MW_g
-      CO2           = 4.e-4_fp
+      CO2           = 3.7e-4_fp
       ! O2 mole fraction [mol/mol]
       O2            = State_Chm%Species( I,J,1,id_O2  ) * AIRMW &
                     / State_Chm%SpcData( id_O2  )%Info%MW_g
