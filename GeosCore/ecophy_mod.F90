@@ -79,7 +79,7 @@
       REAL(fp), PARAMETER   :: V_CMAX25      (NUMPFT) = (/ 0.061, 0.065, 0.007, 0.051, 0.041 /) * &
                                                         (/ 0.0008, 0.0008, 0.0008, 0.0004, 0.0008 /)
       REAL(fp), PARAMETER   :: T_UPP         (NUMPFT) = (/ 38.578, 34.721, 36.242, 44.897, 35.385 /)
-      REAL(fp), PARAMETER   :: T_LOW         (NUMPFT) = (/ 1.203, -8.698, -1.985  11.37, -5.208 /)
+      REAL(fp), PARAMETER   :: T_LOW         (NUMPFT) = (/ 1.203, -8.698, -1.985, 11.37, -5.208 /)
       REAL(fp), PARAMETER   :: D_STAR        (NUMPFT) = (/ 0.048, 0.036, 0.086, 0.046, 0.077 /)
       REAL(fp), PARAMETER   :: f0            (NUMPFT) = (/ 0.765, 0.737, 0.817, 0.765, 0.782 /)  
       Constants
