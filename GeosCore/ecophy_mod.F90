@@ -82,7 +82,7 @@
       REAL(fp), PARAMETER   :: T_LOW         (NUMPFT) = (/ 1.203, -8.698, -1.985, 11.37, -5.208 /)
       REAL(fp), PARAMETER   :: D_STAR        (NUMPFT) = (/ 0.048, 0.036, 0.086, 0.046, 0.077 /)
       REAL(fp), PARAMETER   :: f0            (NUMPFT) = (/ 0.765, 0.737, 0.817, 0.765, 0.782 /)  
-      Constants
+      ! Constants
       ! REAL(fp), PARAMETER   :: RSTARG = 8.31446        ! Switch to call physconstant.F later (in Headers)
       REAL(fp), PARAMETER   :: CO2_O2_RATIO = 1.6
 !
