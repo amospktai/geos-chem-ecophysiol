@@ -40,6 +40,7 @@
 !
       !---------------------------------------------------------------------------------------
       ! NUMPFT        : Total number of PFTs                              []
+      ! MAX_ITER      : Maximum number of iterations                      []
       ! IS_C3_PLANT   : IS_C3_PLANT = 1 for C3 plants, else 0             []
       ! V_CMAX25      : V_CMAX at 25 deg C                                [mol CO2 m^-2 s^-1]
       ! ALPHA         : Quantum efficiency of photosynthesis              [mol CO2 mol^-1 PAR]
@@ -58,6 +59,7 @@
       ! THRESHOLD     : Threshold of relative error                       []
       !---------------------------------------------------------------------------------------
       INTEGER,  PARAMETER   :: NUMPFT                 = 5 ! Switch to call CMN_SIZE_MOD.F later
+      INTEGER,  PARAMETER   :: MAX_ITER               = 1
       INTEGER,  PARAMETER   :: IS_C3_PLANT   (NUMPFT) = (/ 1,1,1,0,1 /)
       REAL(fp), PARAMETER   :: ALPHA         (NUMPFT) = (/ 0.08, 0.08, 0.12, 0.06, 0.08 /)
       REAL(fp), PARAMETER   :: V_CMAX25      (NUMPFT) = (/ 0.046, 0.033, 0.073, 0.060, 0.060 /) * &
@@ -409,11 +411,11 @@
       REAL(fp)    :: BIGLEAFSCALE
       REAL(fp)    :: G_CAN
       REAL(fp)    :: G_LEAF
-      REAL(fp)    :: G_LEAF_PREV
-      REAL(fp)    :: CO2_IN_PREV
+      ! REAL(fp)    :: G_LEAF_PREV
+      ! REAL(fp)    :: CO2_IN_PREV
       REAL(fp)    :: A_NET
       REAL(fp)    :: RESP
-      REAL(fp)    :: A_NET_PREV
+      ! REAL(fp)    :: A_NET_PREV
       REAL(fp)    :: V_CMAX
       REAL(fp)    :: CO2_GAMMA
       REAL(fp)    :: RATE_LIGHT
@@ -423,9 +425,9 @@
       REAL(fp)    :: TAU
       REAL(fp)    :: DENOM
       INTEGER     :: ITER
-      REAL(fp)    :: ERR1
-      REAL(fp)    :: ERR2
-      REAL(fp)    :: ERR3
+      ! REAL(fp)    :: ERR1
+      ! REAL(fp)    :: ERR2
+      ! REAL(fp)    :: ERR3
       REAL(fp)    :: DELTA
 
       TEMPC          = TEMPK - 273.15e+0_fp
@@ -457,14 +459,14 @@
       ITER           = 1
       G_LEAF         = 0.e+0_fp
       G_CAN          = 0.e+0_fp
-      CO2_IN_PREV    = 0.e+0_fp
-      A_NET_PREV     = 0.e+0_fp
-      G_LEAF_PREV    = 0.e+0_fp
-      ERR1           = 1.e+0_fp
-      ERR2           = 1.e+0_fp
-      ERR3           = 1.e+0_fp
+      ! CO2_IN_PREV    = 0.e+0_fp
+      ! A_NET_PREV     = 0.e+0_fp
+      ! G_LEAF_PREV    = 0.e+0_fp
+      ! ERR1           = 1.e+0_fp
+      ! ERR2           = 1.e+0_fp
+      ! ERR3           = 1.e+0_fp
       DELTA          = 1.e+0_fp
-      DO WHILE ( DELTA >= THRESHOLD .AND. ITER <= 100 )
+      DO WHILE ( DELTA >= THRESHOLD .AND. ITER <= MAX_ITER )
          ! Step 1: Closure condition by Jacobs (1994)
          SPHU_SAT    = 0.622e+0_fp * E_SAT( TEMPC ) / PRESSURE
          G_CAN       = G_LEAF * BIGLEAFSCALE
@@ -521,16 +523,16 @@
                G_LEAF_OUT  = G_LEAF
             END IF   ! O3 damage
          END IF      ! Open or closed stomata
-         IF ( ITER >= 2 ) THEN
-         ! calculate error from step 2 onwards
-            ERR1  = REL_ERR( G_LEAF, G_LEAF_PREV )
-            ERR2  = REL_ERR( CO2_IN, CO2_IN_PREV )
-            ERR3  = REL_ERR( A_NET,  A_NET_PREV  )
-            DELTA = ABS( MAX( ERR1, ERR2, ERR3 ) )
-         END IF
-         CO2_IN_PREV  = CO2_IN
-         A_NET_PREV   = A_NET
-         G_LEAF_PREV  = G_LEAF
+         ! IF ( ITER >= 2 ) THEN
+         ! ! calculate error from step 2 onwards
+         !    ERR1  = REL_ERR( G_LEAF, G_LEAF_PREV )
+         !    ERR2  = REL_ERR( CO2_IN, CO2_IN_PREV )
+         !    ERR3  = REL_ERR( A_NET,  A_NET_PREV  )
+         !    DELTA = ABS( MAX( ERR1, ERR2, ERR3 ) )
+         ! END IF
+         ! CO2_IN_PREV  = CO2_IN
+         ! A_NET_PREV   = A_NET
+         ! G_LEAF_PREV  = G_LEAF
          ITER = ITER + 1
       END DO  ! Do while loop
 
