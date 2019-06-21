@@ -1161,6 +1161,7 @@
       REAL(fp)          :: XMWO3    ! Molecular weight of O3 
       REAL(fp)          :: RB_O3    ! Boundary layer resistance for O3
       REAL(fp)          :: RAB      ! Aerodynamic and boundary layer resistance
+      INTEGER           :: IUSE_PFT( MAXVAL(IPFT) ) ! fraction(*1000) of grid box per PFT
 
       ! For the species database
       INTEGER                :: SpcId
@@ -1333,19 +1334,13 @@
 !*        RT = 1000.0*EXP(-(TEMPC-4.0))
          RT = 1000.0e+0_f8*EXP(-TEMPC-4.0e+0_f8)
 !*
-C          ! Loop over the # of Olson land types in this grid box (I,J)
-C          DO 170 LDT = 1, IREG(I,J)
-
-C             ! If the land type is not represented in grid 
-C             ! box  (I,J), then skip to the next land type
-C             IF ( IUSE(I,J,LDT) == 0 ) GOTO 170
-
-C             ! Olson land type index + 1
-C             IOLSON = ILAND(I,J,LDT)+1
-
-
-C !*
-C  170     CONTINUE
+         ! Calculate fraction of grid occupied by each PFT (Joey Lam, 11 Jun 2019)
+         IUSE_PFT( : ) = 0
+         DO LDT = 1,NTYPE
+            IOLSON = ILAND( I,J,LDT ) + 1
+            PFT = IPFT(IOLSON)
+            IUSE_PFT( PFT ) = IUSE_PFT( PFT ) + IUSE( I,J,LDT ) 
+         END DO
 !*                                 
 !*    Loop through the different landuse types present in the grid square     
 !*           
@@ -1795,7 +1790,8 @@ C  170     CONTINUE
                ! Call from ecophysiology module to get RIX 
                CALL DO_ECOPHY ( am_I_Root, Input_Opt,  State_Met, 
      &                          State_Chm, State_Diag, RC,         
-     &                          I, J,      LDT, PFT,   RAB, RS  )
+     &                          I, J,      LDT, PFT,   RAB, 
+     &                          RS,        IUSE_PFT             )
                RIX = RS
             ELSE
                RIX = RI(LDT)
@@ -1821,11 +1817,11 @@ C  170     CONTINUE
             ENDIF
 
 ! Archive stomatal resistance for checking ecophysiology module (Joey Lam, 09 Apr 2019)
-#if defined( NC_DIAG )
-      IF ( State_Diag%Archive_EcophyRS ) THEN
-         State_Diag%EcophyRS        ( I,J,IOLSON ) = RIX
-      END IF
-#endif
+C #ifdef NC_DIAG 
+C       IF ( State_Diag%Archive_EcophyRS ) THEN
+C          State_Diag%EcophyRS        ( I,J,IOLSON ) = RIX
+C       END IF
+C #endif
 
 !*                                 
 !*    Compute aerodynamic resistance to lower elements in lower part           

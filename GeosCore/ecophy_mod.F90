@@ -191,15 +191,17 @@
       REAL(fp)   :: BETA
       REAL(fp)   :: LAI
       INTEGER    :: IOLSON
-      ! ! Pointers
-      ! REAL(fp), POINTER :: EcophyRS     ( :,:,: )
-      ! REAL(fp), POINTER :: EcophyA_CAN  ( :,:,: )
-      ! REAL(fp), POINTER :: EcophyRESP   ( :,:,: )
-      ! REAL(fp), POINTER :: EcophyCO2_IN ( :,:,: )
-      ! REAL(fp), POINTER :: EcophyLAI    ( :,:,: )
-      ! REAL(fp), POINTER :: EcophyBETA   ( :,:,: )
-      ! REAL(fp), POINTER :: EcophyFAC_O3 ( :,:,: )
-      ! REAL(fp), POINTER :: EcophyO3     ( :,:,: )
+      INTEGER    :: IUSE
+#ifdef NC_DIAG 
+      REAL(fp) :: EcophyRS     
+      REAL(fp) :: EcophyA_CAN  
+      REAL(fp) :: EcophyRESP   
+      REAL(fp) :: EcophyCO2_IN 
+      REAL(fp) :: EcophyLAI    
+      REAL(fp) :: EcophyBETA   
+      ! REAL(fp) :: EcophyFAC_O3 
+      REAL(fp) :: EcophyO3     
+#endif
 
       !=================================================================
       ! DO_ECOPHY begins here!
@@ -212,23 +214,24 @@
       ThisLoc = &
       ' -> at Do_ECOPHY (in module GeosCore/ecophysiology.F90)'
 
-      ! Point to columns of derived-type object fields
-      ! EcophyRS       => State_Diag%EcophyRS    
-      ! EcophyA_CAN    => State_Diag%EcophyA_CAN 
-      ! EcophyRESP     => State_Diag%EcophyRESP  
-      ! EcophyCO2_IN   => State_Diag%EcophyCO2_IN
-      ! EcophyLAI      => State_Diag%EcophyLAI   
-      ! EcophyBETA     => State_Diag%EcophyBETA  
-      ! EcophyFAC_O3   => State_Diag%EcophyFAC_O3
-      ! EcophyO3       => State_Diag%EcophyO3    
-
+! #ifdef NC_DIAG 
+!       ! Point to columns of derived-type object fields
+!       EcophyRS       => State_Diag%EcophyRS    
+!       EcophyA_CAN    => State_Diag%EcophyA_CAN 
+!       EcophyRESP     => State_Diag%EcophyRESP  
+!       EcophyCO2_IN   => State_Diag%EcophyCO2_IN
+!       EcophyLAI      => State_Diag%EcophyLAI   
+!       EcophyBETA     => State_Diag%EcophyBETA  
+!       ! EcophyFAC_O3   => State_Diag%EcophyFAC_O3
+!       EcophyFLUXO3   => State_Diag%EcophyFLUXO3    
+! #endif
 
       ! get inputs for the module
       CALL GET_ECOPHY_INPUTS( State_Met,    State_Chm, I, J, LDT,&
                               TEMPK,        QV2M,                &
                               PAR_ABSORBED, PRESSURE,  CO2,      &
                               O2,           LAI,       O3,       &
-                              SOIL_WETNESS                       &
+                              SOIL_WETNESS, IUSE                 &
                               ! WILT, CRIT,   SATU                 &
                               )
 
@@ -262,45 +265,60 @@
       ! Output RS to dry deposition module
       RS = 1.0 / G_CAN_OUT
 
-#if defined( NC_DIAG )
+#ifdef NC_DIAG 
       ! send to diagnostics outputs
       IOLSON = State_Met%ILAND( I,J,LDT ) + 1
-      ! IF ( State_Diag%Archive_EcophyRS ) THEN
-      !    State_Diag%EcophyRS        ( I,J,IOLSON ) = RS
+      IF ( State_Diag%ArchiveEcophyG_CAN ) THEN
+      EcophyG_CAN    = State_Diag%EcophyG_CAN  ( I,J,PFT )
+      State_Diag%EcophyG_CAN   ( I,J,PFT ) = EcophyG_CAN     &
+         + G_CAN_OUT    * DBLE( IUSE ) / DBLE( IUSE_PFT(PFT) )
+      END IF
+      IF ( State_Diag%ArchiveEcophyA_CAN ) THEN
+      EcophyA_CAN    = State_Diag%EcophyA_CAN  ( I,J,PFT )
+      State_Diag%EcophyA_CAN   ( I,J,PFT ) = EcophyA_CAN     &
+         + A_CAN_OUT    * DBLE( IUSE ) / DBLE( IUSE_PFT(PFT) )
+      END IF
+      IF ( State_Diag%ArchiveEcophyRESP ) THEN
+      EcophyRESP     = State_Diag%EcophyRESP   ( I,J,PFT )
+      State_Diag%EcophyRESP    ( I,J,PFT ) = EcophyRESP      &
+         + RESP_CAN_OUT * DBLE( IUSE ) / DBLE( IUSE_PFT(PFT) )
+      END IF
+      IF ( State_Diag%ArchiveEcophyCO2_IN ) THEN
+      EcophyCO2_IN   = State_Diag%EcophyCO2_IN ( I,J,PFT )
+      State_Diag%EcophyCO2_IN  ( I,J,PFT ) = EcophyCO2_IN    &
+         + CO2_IN       * DBLE( IUSE ) / DBLE( IUSE_PFT(PFT) )
+      END IF
+      IF ( State_Diag%ArchiveEcophyLAI ) THEN
+      EcophyLAI      = State_Diag%EcophyLAI    ( I,J,PFT )
+      State_Diag%EcophyLAI     ( I,J,PFT ) = EcophyLAI       &
+         + LAI          * DBLE( IUSE ) / DBLE( IUSE_PFT(PFT) )
+      END IF
+      IF ( State_Diag%ArchiveEcophyBETA ) THEN
+      EcophyBETA     = State_Diag%EcophyBETA   ( I,J,PFT )
+      State_Diag%EcophyBETA    ( I,J,PFT ) = EcophyBETA      &
+         + BETA         * DBLE( IUSE ) / DBLE( IUSE_PFT(PFT) )
+      END IF
+      ! IF ( State_Diag%ArchiveEcophyFAC_O3 ) THEN
+      ! EcophyFAC_O3   = State_Diag%EcophyFAC_O3 ( I,J,PFT )
+      ! State_Diag%EcophyFAC_O3  ( I,J,PFT ) = EcophyFAC_O3    &
+         ! + FACTOR_O3    * DBLE( IUSE ) / DBLE( IUSE_PFT(PFT) )
       ! END IF
-      IF ( State_Diag%Archive_EcophyA_CAN ) THEN
-         State_Diag%EcophyA_CAN     ( I,J,IOLSON ) = A_CAN_OUT
-      END IF 
-      IF ( State_Diag%Archive_EcophyRESP ) THEN
-         State_Diag%EcophyRESP      ( I,J,IOLSON ) = RESP_OUT
-      END IF   
-      IF ( State_Diag%Archive_EcophyCO2_IN ) THEN
-         State_Diag%EcophyCO2_IN    ( I,J,IOLSON ) = CO2_IN
-      END IF 
-      IF ( State_Diag%Archive_EcophyLAI ) THEN
-         State_Diag%EcophyLAI       ( I,J,IOLSON ) = LAI
-      END IF 
-      IF ( State_Diag%Archive_EcophyBETA ) THEN
-         State_Diag%EcophyBETA      ( I,J,IOLSON ) = BETA
-      END IF 
-      IF ( State_Diag%Archive_EcophyFAC_O3 ) THEN
-         State_Diag%EcophyFAC_O3    ( I,J,IOLSON ) = FACTOR_O3
-      END IF 
-      IF ( State_Diag%Archive_EcophyFLUXO3 ) THEN
-         State_Diag%EcophyFLUXO3    ( I,J,IOLSON ) = FLUXO3
-      END IF 
-
+      IF ( State_Diag%ArchiveEcophyFLUXO3 ) THEN
+      EcophyFLUXO3   = State_Diag%EcophyFLUXO3 ( I,J,PFT )
+      State_Diag%EcophyFLUXO3  ( I,J,PFT ) = EcophyFLUXO3    &
+         + FLUXO3_CAN   * DBLE( IUSE ) / DBLE( IUSE_PFT(PFT) )
+      END IF
 #endif
 
       ! Nullify pointers
-      ! NULLIFY( EcophyRS     )
+      ! NULLIFY( EcophyG_CAN  )
       ! NULLIFY( EcophyA_CAN  )
       ! NULLIFY( EcophyRESP   )
       ! NULLIFY( EcophyCO2_IN )
       ! NULLIFY( EcophyLAI    )
       ! NULLIFY( EcophyBETA   )
       ! NULLIFY( EcophyFAC_O3 )
-      ! NULLIFY( EcophyO3     )
+      ! NULLIFY( EcophyFLUXO3 )
 
 
       END SUBROUTINE DO_ECOPHY
@@ -800,7 +818,7 @@
                                     TEMPK,        QV2M,                &
                                     PAR_ABSORBED, PRESSURE,  CO2,      &
                                     O2,           LAI,       O3,       &
-                                    SOIL_WETNESS                       &
+                                    SOIL_WETNESS, IUSE                 &
                                     )
 !
 ! !USES:
@@ -835,6 +853,7 @@
       ! O3            : Ozone mole fraction in canopy layer               [kg / kg dry]
       ! LAI           : Leaf area index for the PFT                       [m^2 m^-2]
       ! SOIL_WETNESS  : Fraction of moisture in soil pores                []
+      ! IUSE          : Fraction(*1000) of grid occupied by land type LDT []
       !---------------------------------------------------------------------------------------
       REAL(fp), INTENT(OUT) :: TEMPK
       REAL(fp), INTENT(OUT) :: QV2M
@@ -845,6 +864,7 @@
       REAL(fp), INTENT(OUT) :: O3
       REAL(fp), INTENT(OUT) :: LAI
       REAL(fp), INTENT(OUT) :: SOIL_WETNESS
+      INTEGER,  INTENT(OUT) :: IUSE
 !
 ! !LOCAL VARIABLES:
 !
@@ -893,6 +913,9 @@
       WILT          = State_Met%THETA_WILT( I,J )
       ! NOTE: Leave possibility to call soil matric potentials instead
       !       of soil moistures
+      ! Fraction(*1000) of grid occupied by land type LDT 
+      ! IUSE=500 => 50% of the grid 
+      IUSE          = State_Met%IUSE( I,J,LDT )
        ! END DO
        ! END DO
       END SUBROUTINE GET_ECOPHY_INPUTS
