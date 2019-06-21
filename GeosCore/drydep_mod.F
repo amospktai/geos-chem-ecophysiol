@@ -1791,7 +1791,7 @@
                CALL DO_ECOPHY ( am_I_Root, Input_Opt,  State_Met, 
      &                          State_Chm, State_Diag, RC,         
      &                          I, J,      LDT, PFT,   RAB, 
-     &                          RS,        IUSE_PFT             )
+     &                          RS,        IUSE_PFT(PFT)          )
                RIX = RS
             ELSE
                RIX = RI(LDT)
