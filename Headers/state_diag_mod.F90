@@ -129,14 +129,6 @@ MODULE State_Diag_Mod
      REAL(f8),  POINTER :: EcophyBETA      (:,:,:  ) ! Soil moisture stress factor
      REAL(f8),  POINTER :: EcophyFAC_O3    (:,:,:  ) ! Ozone damage factor 
      REAL(f8),  POINTER :: EcophyFLUXO3    (:,:,:  ) ! Canopy ozone uptake flux
-     REAL(f4),  POINTER :: EcophyTEMPK       (:,:  ) ! Temperature
-     REAL(f4),  POINTER :: EcophyQV2M        (:,:  ) ! 2m specific humidity
-     REAL(f4),  POINTER :: EcophyPAR_ABSORBED(:,:  ) ! PAR absorbed
-     REAL(f4),  POINTER :: EcophyPRESSURE    (:,:  ) ! sea level pressure
-     REAL(f4),  POINTER :: EcophyCO2         (:,:  ) ! CO2 mole fraction
-     REAL(f4),  POINTER :: EcophyO2          (:,:  ) ! O2 mole fraction
-     REAL(f4),  POINTER :: EcophyO3          (:,:  ) ! O3 mole fraction
-     REAL(f4),  POINTER :: EcophySOIL_WETNESS(:,:  ) ! Soil wetness
      LOGICAL :: Archive_EcophyRS
      LOGICAL :: Archive_EcophyA_CAN
      LOGICAL :: Archive_EcophyRESP
@@ -145,14 +137,6 @@ MODULE State_Diag_Mod
      LOGICAL :: Archive_EcophyBETA
      LOGICAL :: Archive_EcophyFAC_O3
      LOGICAL :: Archive_EcophyFLUXO3
-     LOGICAL :: Archive_EcophyTEMPK       
-     LOGICAL :: Archive_EcophyQV2M        
-     LOGICAL :: Archive_EcophyPAR_ABSORBED
-     LOGICAL :: Archive_EcophyPRESSURE    
-     LOGICAL :: Archive_EcophyCO2         
-     LOGICAL :: Archive_EcophyO2          
-     LOGICAL :: Archive_EcophyO3          
-     LOGICAL :: Archive_EcophySOIL_WETNESS
 
      ! Waiting for inputs on new resistance diagnostics
      !REAL(f4),  POINTER :: DryDepRst_RA    (:,:,:  ) ! Aerodynamic resistance
@@ -855,14 +839,6 @@ CONTAINS
     State_Diag%EcophyBETA                          => NULL()
     State_Diag%EcophyFAC_O3                        => NULL()
     State_Diag%EcophyFLUXO3                        => NULL()
-    State_Diag%EcophyTEMPK                         => NULL()
-    State_Diag%EcophyQV2M                          => NULL()
-    State_Diag%EcophyPAR_ABSORBED                  => NULL()
-    State_Diag%EcophyPRESSURE                      => NULL()
-    State_Diag%EcophyCO2                           => NULL()
-    State_Diag%EcophyO2                            => NULL()
-    State_Diag%EcophyO3                            => NULL()
-    State_Diag%EcophySOIL_WETNESS                  => NULL()
     State_Diag%Archive_EcophyRS                    = .FALSE.
     State_Diag%Archive_EcophyA_CAN                 = .FALSE.
     State_Diag%Archive_EcophyRESP                  = .FALSE.
@@ -871,14 +847,6 @@ CONTAINS
     State_Diag%Archive_EcophyBETA                  = .FALSE.
     State_Diag%Archive_EcophyFAC_O3                = .FALSE.
     State_Diag%Archive_EcophyFLUXO3                = .FALSE.
-    State_Diag%Archive_EcophyTEMPK                 = .FALSE.
-    State_Diag%Archive_EcophyQV2M                  = .FALSE.
-    State_Diag%Archive_EcophyPAR_ABSORBED          = .FALSE.
-    State_Diag%Archive_EcophyPRESSURE              = .FALSE.
-    State_Diag%Archive_EcophyCO2                   = .FALSE.
-    State_Diag%Archive_EcophyO2                    = .FALSE.
-    State_Diag%Archive_EcophyO3                    = .FALSE.
-    State_Diag%Archive_EcophySOIL_WETNESS          = .FALSE.
 
 #if defined( MODEL_GEOS )
     State_Diag%DryDepRa2m                          => NULL()
@@ -1961,150 +1929,6 @@ CONTAINS
        State_Diag%EcophyFLUXO3 = 0.0_f4
        State_Diag%Archive_EcophyFLUXO3 = .TRUE.
        CALL Register_DiagField( am_I_Root, diagID, State_Diag%EcophyFLUXO3,   &
-                                State_Chm, State_Diag, RC                   )
-       IF ( RC /= GC_SUCCESS ) RETURN
-    ENDIF
-
-    !-----------------------------------------------------------------------
-    ! Ecophysiology: Temperature
-    !-----------------------------------------------------------------------
-    arrayID = 'State_Diag%EcophyTEMPK'
-    diagID  = 'EcophyTEMPK'
-    CALL Check_DiagList( am_I_Root, Diag_List, diagID, Found, RC )
-    IF ( Found ) THEN
-       IF ( am_I_Root ) WRITE(6,20) ADJUSTL( arrayID ), TRIM( diagID )
-       ALLOCATE( State_Diag%EcophyTEMPK( IM, JM ), STAT=RC )
-       CALL GC_CheckVar( arrayID, 0, RC )
-       IF ( RC /= GC_SUCCESS ) RETURN
-       State_Diag%EcophyTEMPK = 0.0_f4
-       State_Diag%Archive_EcophyTEMPK = .TRUE.
-       CALL Register_DiagField( am_I_Root, diagID, State_Diag%EcophyTEMPK,   &
-                                State_Chm, State_Diag, RC                   )
-       IF ( RC /= GC_SUCCESS ) RETURN
-    ENDIF
-
-    !-----------------------------------------------------------------------
-    ! Ecophysiology: 2m specific humidity
-    !-----------------------------------------------------------------------
-    arrayID = 'State_Diag%EcophyQV2M'
-    diagID  = 'EcophyQV2M'
-    CALL Check_DiagList( am_I_Root, Diag_List, diagID, Found, RC )
-    IF ( Found ) THEN
-       IF ( am_I_Root ) WRITE(6,20) ADJUSTL( arrayID ), TRIM( diagID )
-       ALLOCATE( State_Diag%EcophyQV2M( IM, JM ), STAT=RC )
-       CALL GC_CheckVar( arrayID, 0, RC )
-       IF ( RC /= GC_SUCCESS ) RETURN
-       State_Diag%EcophyQV2M = 0.0_f4
-       State_Diag%Archive_EcophyQV2M = .TRUE.
-       CALL Register_DiagField( am_I_Root, diagID, State_Diag%EcophyQV2M,    &
-                                State_Chm, State_Diag, RC                   )
-       IF ( RC /= GC_SUCCESS ) RETURN
-    ENDIF
-
-    !-----------------------------------------------------------------------
-    ! Ecophysiology: PAR absorbed
-    !-----------------------------------------------------------------------
-    arrayID = 'State_Diag%EcophyPAR_ABSORBED'
-    diagID  = 'EcophyPAR_ABSORBED'
-    CALL Check_DiagList( am_I_Root, Diag_List, diagID, Found, RC )
-    IF ( Found ) THEN
-       IF ( am_I_Root ) WRITE(6,20) ADJUSTL( arrayID ), TRIM( diagID )
-       ALLOCATE( State_Diag%EcophyPAR_ABSORBED( IM, JM ), STAT=RC )
-       CALL GC_CheckVar( arrayID, 0, RC )
-       IF ( RC /= GC_SUCCESS ) RETURN
-       State_Diag%EcophyPAR_ABSORBED = 0.0_f4
-       State_Diag%Archive_EcophyPAR_ABSORBED = .TRUE.
-       CALL Register_DiagField( am_I_Root, diagID, State_Diag%EcophyPAR_ABSORBED,   &
-                                State_Chm, State_Diag, RC                   )
-       IF ( RC /= GC_SUCCESS ) RETURN
-    ENDIF
-
-    !-----------------------------------------------------------------------
-    ! Ecophysiology: Sea level pressure
-    !-----------------------------------------------------------------------
-    arrayID = 'State_Diag%EcophyPRESSURE'
-    diagID  = 'EcophyPRESSURE'
-    CALL Check_DiagList( am_I_Root, Diag_List, diagID, Found, RC )
-    IF ( Found ) THEN
-       IF ( am_I_Root ) WRITE(6,20) ADJUSTL( arrayID ), TRIM( diagID )
-       ALLOCATE( State_Diag%EcophyPRESSURE( IM, JM ), STAT=RC )
-       CALL GC_CheckVar( arrayID, 0, RC )
-       IF ( RC /= GC_SUCCESS ) RETURN
-       State_Diag%EcophyPRESSURE = 0.0_f4
-       State_Diag%Archive_EcophyPRESSURE = .TRUE.
-       CALL Register_DiagField( am_I_Root, diagID, State_Diag%EcophyPRESSURE,   &
-                                State_Chm, State_Diag, RC                   )
-       IF ( RC /= GC_SUCCESS ) RETURN
-    ENDIF
-
-    !-----------------------------------------------------------------------
-    ! Ecophysiology: CO2 mole fraction
-    !-----------------------------------------------------------------------
-    arrayID = 'State_Diag%EcophyCO2'
-    diagID  = 'EcophyCO2'
-    CALL Check_DiagList( am_I_Root, Diag_List, diagID, Found, RC )
-    IF ( Found ) THEN
-       IF ( am_I_Root ) WRITE(6,20) ADJUSTL( arrayID ), TRIM( diagID )
-       ALLOCATE( State_Diag%EcophyCO2( IM, JM ), STAT=RC )
-       CALL GC_CheckVar( arrayID, 0, RC )
-       IF ( RC /= GC_SUCCESS ) RETURN
-       State_Diag%EcophyCO2 = 0.0_f4
-       State_Diag%Archive_EcophyCO2 = .TRUE.
-       CALL Register_DiagField( am_I_Root, diagID, State_Diag%EcophyCO2,   &
-                                State_Chm, State_Diag, RC                   )
-       IF ( RC /= GC_SUCCESS ) RETURN
-    ENDIF
-
-    !-----------------------------------------------------------------------
-    ! Ecophysiology: O2 mole fraction
-    !-----------------------------------------------------------------------
-    arrayID = 'State_Diag%EcophyO2'
-    diagID  = 'EcophyO2'
-    CALL Check_DiagList( am_I_Root, Diag_List, diagID, Found, RC )
-    IF ( Found ) THEN
-       IF ( am_I_Root ) WRITE(6,20) ADJUSTL( arrayID ), TRIM( diagID )
-       ALLOCATE( State_Diag%EcophyO2( IM, JM ), STAT=RC )
-       CALL GC_CheckVar( arrayID, 0, RC )
-       IF ( RC /= GC_SUCCESS ) RETURN
-       State_Diag%EcophyO2 = 0.0_f4
-       State_Diag%Archive_EcophyO2 = .TRUE.
-       CALL Register_DiagField( am_I_Root, diagID, State_Diag%EcophyO2,   &
-                                State_Chm, State_Diag, RC                   )
-       IF ( RC /= GC_SUCCESS ) RETURN
-    ENDIF
-
-    !-----------------------------------------------------------------------
-    ! Ecophysiology: O3 mole fraction
-    !-----------------------------------------------------------------------
-    arrayID = 'State_Diag%EcophyO3'
-    diagID  = 'EcophyO3'
-    CALL Check_DiagList( am_I_Root, Diag_List, diagID, Found, RC )
-    IF ( Found ) THEN
-       IF ( am_I_Root ) WRITE(6,20) ADJUSTL( arrayID ), TRIM( diagID )
-       ALLOCATE( State_Diag%EcophyO3( IM, JM ), STAT=RC )
-       CALL GC_CheckVar( arrayID, 0, RC )
-       IF ( RC /= GC_SUCCESS ) RETURN
-       State_Diag%EcophyO3 = 0.0_f4
-       State_Diag%Archive_EcophyO3 = .TRUE.
-       CALL Register_DiagField( am_I_Root, diagID, State_Diag%EcophyO3,   &
-                                State_Chm, State_Diag, RC                   )
-       IF ( RC /= GC_SUCCESS ) RETURN
-    ENDIF
-
-    !-----------------------------------------------------------------------
-    ! Ecophysiology: Soil wetness
-    !-----------------------------------------------------------------------
-    arrayID = 'State_Diag%EcophySOIL_WETNESS'
-    diagID  = 'EcophySOIL_WETNESS'
-    CALL Check_DiagList( am_I_Root, Diag_List, diagID, Found, RC )
-    IF ( Found ) THEN
-       IF ( am_I_Root ) WRITE(6,20) ADJUSTL( arrayID ), TRIM( diagID )
-       ALLOCATE( State_Diag%EcophySOIL_WETNESS( IM, JM ), STAT=RC )
-       CALL GC_CheckVar( arrayID, 0, RC )
-       IF ( RC /= GC_SUCCESS ) RETURN
-       State_Diag%EcophySOIL_WETNESS = 0.0_f4
-       State_Diag%Archive_EcophySOIL_WETNESS = .TRUE.
-       CALL Register_DiagField( am_I_Root, diagID, State_Diag%EcophySOIL_WETNESS,   &
                                 State_Chm, State_Diag, RC                   )
        IF ( RC /= GC_SUCCESS ) RETURN
     ENDIF
@@ -6847,62 +6671,6 @@ CONTAINS
        State_Diag%EcophyFLUXO3 => NULL()
     ENDIF 
 
-    IF ( ASSOCIATED( State_Diag%EcophyTEMPK ) ) THEN
-       DEALLOCATE( State_Diag%EcophyTEMPK, STAT=RC )
-       CALL GC_CheckVar( 'State_Diag%EcophyTEMPK', 2, RC )
-       IF ( RC /= GC_SUCCESS ) RETURN
-       State_Diag%EcophyTEMPK => NULL()
-    ENDIF 
-
-    IF ( ASSOCIATED( State_Diag%EcophyQV2M ) ) THEN
-       DEALLOCATE( State_Diag%EcophyQV2M, STAT=RC )
-       CALL GC_CheckVar( 'State_Diag%EcophyQV2M', 2, RC )
-       IF ( RC /= GC_SUCCESS ) RETURN
-       State_Diag%EcophyQV2M => NULL()
-    ENDIF 
-
-    IF ( ASSOCIATED( State_Diag%EcophyPAR_ABSORBED ) ) THEN
-       DEALLOCATE( State_Diag%EcophyPAR_ABSORBED, STAT=RC )
-       CALL GC_CheckVar( 'State_Diag%EcophyPAR_ABSORBED', 2, RC )
-       IF ( RC /= GC_SUCCESS ) RETURN
-       State_Diag%EcophyPAR_ABSORBED => NULL()
-    ENDIF 
-
-    IF ( ASSOCIATED( State_Diag%EcophyPRESSURE ) ) THEN
-       DEALLOCATE( State_Diag%EcophyPRESSURE, STAT=RC )
-       CALL GC_CheckVar( 'State_Diag%EcophyPRESSURE', 2, RC )
-       IF ( RC /= GC_SUCCESS ) RETURN
-       State_Diag%EcophyPRESSURE => NULL()
-    ENDIF 
-
-    IF ( ASSOCIATED( State_Diag%EcophyCO2 ) ) THEN
-       DEALLOCATE( State_Diag%EcophyCO2, STAT=RC )
-       CALL GC_CheckVar( 'State_Diag%EcophyCO2', 2, RC )
-       IF ( RC /= GC_SUCCESS ) RETURN
-       State_Diag%EcophyCO2 => NULL()
-    ENDIF 
-
-    IF ( ASSOCIATED( State_Diag%EcophyO2 ) ) THEN
-       DEALLOCATE( State_Diag%EcophyO2, STAT=RC )
-       CALL GC_CheckVar( 'State_Diag%EcophyO2', 2, RC )
-       IF ( RC /= GC_SUCCESS ) RETURN
-       State_Diag%EcophyO2 => NULL()
-    ENDIF 
-
-    IF ( ASSOCIATED( State_Diag%EcophyO3 ) ) THEN
-       DEALLOCATE( State_Diag%EcophyO3, STAT=RC )
-       CALL GC_CheckVar( 'State_Diag%EcophyO3', 2, RC )
-       IF ( RC /= GC_SUCCESS ) RETURN
-       State_Diag%EcophyO3 => NULL()
-    ENDIF 
-
-    IF ( ASSOCIATED( State_Diag%EcophySOIL_WETNESS ) ) THEN
-       DEALLOCATE( State_Diag%EcophySOIL_WETNESS, STAT=RC )
-       CALL GC_CheckVar( 'State_Diag%EcophySOIL_WETNESS', 2, RC )
-       IF ( RC /= GC_SUCCESS ) RETURN
-       State_Diag%EcophySOIL_WETNESS => NULL()
-    ENDIF 
-
 #if defined( MODEL_GEOS )
     IF ( ASSOCIATED( State_Diag%DryDepRa2m ) ) THEN
        DEALLOCATE( State_Diag%DryDepRa2m, STAT=RC )
@@ -8604,46 +8372,6 @@ CONTAINS
        IF ( isUnits   ) Units = 'nmol m-2 s-1'
        IF ( isRank    ) Rank  = 2
        IF ( isTagged  ) TagID = 'OLSON'
-
-    ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYTEMPK' ) THEN
-       IF ( isDesc    ) Desc  = 'Temperature'
-       IF ( isUnits   ) Units = 'K'
-       IF ( isRank    ) Rank  = 2
-
-    ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYQV2M' ) THEN
-       IF ( isDesc    ) Desc  = '2m specific humidity'
-       IF ( isUnits   ) Units = 'kg kg-1'
-       IF ( isRank    ) Rank  = 2
-
-    ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYPAR_ABSORBED' ) THEN
-       IF ( isDesc    ) Desc  = 'PAR absorbed'
-       IF ( isUnits   ) Units = 'W m-2'
-       IF ( isRank    ) Rank  = 2
-
-    ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYPRESSURE' ) THEN
-       IF ( isDesc    ) Desc  = 'Sea level pressure'
-       IF ( isUnits   ) Units = 'Pa'
-       IF ( isRank    ) Rank  = 2
-
-    ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYCO2' ) THEN
-       IF ( isDesc    ) Desc  = 'CO2 mole fraction'
-       IF ( isUnits   ) Units = 'mol mol-1'
-       IF ( isRank    ) Rank  = 2
-
-    ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYO2' ) THEN
-       IF ( isDesc    ) Desc  = 'O2 mole fraction'
-       IF ( isUnits   ) Units = 'mol mol-1'
-       IF ( isRank    ) Rank  = 2
-
-    ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYO3' ) THEN
-       IF ( isDesc    ) Desc  = 'O3 mole fraction'
-       IF ( isUnits   ) Units = 'mol mol-1'
-       IF ( isRank    ) Rank  = 2
-
-    ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYSOIL_WETNESS' ) THEN
-       IF ( isDesc    ) Desc  = 'Soil wetness'
-       IF ( isUnits   ) Units = 'm3 m-3'
-       IF ( isRank    ) Rank  = 2
 
 #if defined( MODEL_GEOS )
     ELSE IF ( TRIM( Name_AllCaps ) == 'DRYDEPRA2M' ) THEN

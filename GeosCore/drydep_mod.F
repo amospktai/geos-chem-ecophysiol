@@ -1822,7 +1822,9 @@ C  170     CONTINUE
 
 ! Archive stomatal resistance for checking ecophysiology module (Joey Lam, 09 Apr 2019)
 #if defined( NC_DIAG )
-            State_Diag%EcophyRS  ( I,J,IOLSON ) = RIX
+      IF ( State_Diag%Archive_EcophyRS ) THEN
+         State_Diag%EcophyRS        ( I,J,IOLSON ) = RIX
+      END IF
 #endif
 
 !*                                 

@@ -265,23 +265,31 @@
 #if defined( NC_DIAG )
       ! send to diagnostics outputs
       IOLSON = State_Met%ILAND( I,J,LDT ) + 1
-      ! State_Diag%EcophyRS        ( I,J,IOLSON ) = RS
-      State_Diag%EcophyA_CAN     ( I,J,IOLSON ) = A_CAN_OUT
-      State_Diag%EcophyRESP      ( I,J,IOLSON ) = RESP_OUT  
-      State_Diag%EcophyCO2_IN    ( I,J,IOLSON ) = CO2_IN
-      State_Diag%EcophyLAI       ( I,J,IOLSON ) = LAI
-      State_Diag%EcophyBETA      ( I,J,IOLSON ) = BETA
-      State_Diag%EcophyFAC_O3    ( I,J,IOLSON ) = FACTOR_O3
-      State_Diag%EcophyFLUXO3    ( I,J,IOLSON ) = FLUXO3
+      ! IF ( State_Diag%Archive_EcophyRS ) THEN
+      !    State_Diag%EcophyRS        ( I,J,IOLSON ) = RS
+      ! END IF
+      IF ( State_Diag%Archive_EcophyA_CAN ) THEN
+         State_Diag%EcophyA_CAN     ( I,J,IOLSON ) = A_CAN_OUT
+      END IF 
+      IF ( State_Diag%Archive_EcophyRESP ) THEN
+         State_Diag%EcophyRESP      ( I,J,IOLSON ) = RESP_OUT
+      END IF   
+      IF ( State_Diag%Archive_EcophyCO2_IN ) THEN
+         State_Diag%EcophyCO2_IN    ( I,J,IOLSON ) = CO2_IN
+      END IF 
+      IF ( State_Diag%Archive_EcophyLAI ) THEN
+         State_Diag%EcophyLAI       ( I,J,IOLSON ) = LAI
+      END IF 
+      IF ( State_Diag%Archive_EcophyBETA ) THEN
+         State_Diag%EcophyBETA      ( I,J,IOLSON ) = BETA
+      END IF 
+      IF ( State_Diag%Archive_EcophyFAC_O3 ) THEN
+         State_Diag%EcophyFAC_O3    ( I,J,IOLSON ) = FACTOR_O3
+      END IF 
+      IF ( State_Diag%Archive_EcophyFLUXO3 ) THEN
+         State_Diag%EcophyFLUXO3    ( I,J,IOLSON ) = FLUXO3
+      END IF 
 
-      ! State_Diag%EcophyTEMPK        ( I,J ) = TEMPK       
-      ! State_Diag%EcophyQV2M         ( I,J ) = QV2M        
-      ! State_Diag%EcophyPAR_ABSORBED ( I,J ) = PAR_ABSORBED
-      ! State_Diag%EcophyPRESSURE     ( I,J ) = PRESSURE    
-      ! State_Diag%EcophyCO2          ( I,J ) = CO2         
-      ! State_Diag%EcophyO2           ( I,J ) = O2          
-      ! State_Diag%EcophyO3           ( I,J ) = O3          
-      ! State_Diag%EcophySOIL_WETNESS ( I,J ) = SOIL_WETNESS
 #endif
 
       ! Nullify pointers
