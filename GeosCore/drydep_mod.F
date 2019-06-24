@@ -1339,7 +1339,9 @@
          DO LDT = 1,NTYPE
             IOLSON = ILAND( I,J,LDT ) + 1
             PFT = IPFT(IOLSON)
-            IUSE_PFT( PFT ) = IUSE_PFT( PFT ) + IUSE( I,J,LDT ) 
+            IF ( PFT /= 0 ) THEN
+               IUSE_PFT( PFT ) = IUSE_PFT( PFT ) + IUSE( I,J,LDT ) 
+            END IF
          END DO
 !*                                 
 !*    Loop through the different landuse types present in the grid square     
