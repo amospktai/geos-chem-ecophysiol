@@ -272,6 +272,10 @@
 #ifdef NC_DIAG 
       ! send to diagnostics outputs
       IOLSON = State_Met%ILAND( I,J,LDT ) + 1
+      IF ( IUSE > IUSE_PFT ) THEN 
+         WRITE(6,1000) IUSE, I,J,LDT,PFT,IUSE,IUSE_PFT
+ 1000    FORMAT( 'WARNING: IUSE > IUSE_PFT in subroutine DO_ECOPHY',4I4,2I8 )
+      END IF
       IF ( State_Diag%Archive_EcophyG_CAN .AND. IUSE_PFT /= 0 ) THEN
       EcophyG_CAN    = State_Diag%EcophyG_CAN  ( I,J,PFT )
       State_Diag%EcophyG_CAN   ( I,J,PFT ) = EcophyG_CAN     &

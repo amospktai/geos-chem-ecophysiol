@@ -1343,6 +1343,10 @@
                IUSE_PFT( PFT ) = IUSE_PFT( PFT ) + IUSE( I,J,LDT ) 
             END IF
          END DO
+         IF ( IUSE_PFT > 1000 ) THEN 
+            WRITE (6,1234) I,J,IUSE_PFT
+ 1234       FORMAT( 'WARNING: IUSE_PFT > 1000 IN SUBROUTINE DEPVEL',2I4,I8 )  
+         END IF
 !*                                 
 !*    Loop through the different landuse types present in the grid square     
 !*           
