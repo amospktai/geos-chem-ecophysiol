@@ -1338,6 +1338,8 @@
          ! Calculate fraction of grid occupied by each PFT (Joey Lam, 11 Jun 2019)
          IUSE_PFT( : ) = 0
          DO LDT = 1,NTYPE
+            ! Skip if land type is absent
+            IF ( IUSE(I,J,LDT) == 0 ) CYCLE
             IOLSON = ILAND( I,J,LDT ) + 1
             PFT = IPFT(IOLSON)
             IF ( PFT /= 0 ) THEN
@@ -1349,7 +1351,7 @@
  1234       FORMAT( 'WARNING: IUSE_PFT > 1000 IN SUBROUTINE DEPVEL; ',
      &               'I,J=',2I4,1X,'IUSE_PFT=',I8/)  
          END IF
-         IF ( MAXVAL(IUSE_PFT) == 0 ) THEN 
+         IF ( MAXVAL(IUSE_PFT) == 0 .AND. MAXVAL(IUSE(I,J,:)) /= 0 ) THEN 
             WRITE (6,1235) I,J
  1235       FORMAT( 'WARNING: IUSE_PFT = 0 IN SUBROUTINE DEPVEL; ',
      &               'I,J=',2I4)  
