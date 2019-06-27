@@ -1289,6 +1289,7 @@
 !$OMP+PRIVATE( DUMMY1, DUMMY2, DUMMY3, DUMMY4, DAIR,   RB     )
 !$OMP+PRIVATE( C1X,    VK,     I,      J,      IW             )
 !$OMP+PRIVATE( DIAM,   DEN,    XLAI_FP, SUNCOS_FP, CFRAC_FP   )
+!$OMP+PRIVATE( IUSE_PFT, PFT,  RS,     RAB,    id_O3,  RB_O3  )
 #if defined( MODEL_GEOS )
 !$OMP+PRIVATE( RA2M,   Z0OBK2M, RA10M, Z0OBK10M               )
 #endif
@@ -1343,9 +1344,15 @@
                IUSE_PFT( PFT ) = IUSE_PFT( PFT ) + IUSE( I,J,LDT ) 
             END IF
          END DO
-         IF ( IUSE_PFT > 1000 ) THEN 
+         IF ( MAXVAL(IUSE_PFT) > 1000 ) THEN 
             WRITE (6,1234) I,J,IUSE_PFT
- 1234       FORMAT( 'WARNING: IUSE_PFT > 1000 IN SUBROUTINE DEPVEL',2I4,I8 )  
+ 1234       FORMAT( 'WARNING: IUSE_PFT > 1000 IN SUBROUTINE DEPVEL; ',
+     &               'I,J=',2I4,1X,'IUSE_PFT=',I8/)  
+         END IF
+         IF ( MAXVAL(IUSE_PFT) == 0 ) THEN 
+            WRITE (6,1235) I,J
+ 1235       FORMAT( 'WARNING: IUSE_PFT = 0 IN SUBROUTINE DEPVEL; ',
+     &               'I,J=',2I4)  
          END IF
 !*                                 
 !*    Loop through the different landuse types present in the grid square     
