@@ -1034,6 +1034,8 @@
                CALL Error_Stop( ErrMsg, ThisLoc )
             ENDIF
          ENDIF
+         CALL Zero_Diagnostics_StartofTimestep( am_I_Root,  State_Chm,
+     &                                          State_Diag, RC )
 
 #if defined( USE_TIMERS )
          CALL GEOS_Timer_End( "All diagnostics",           RC )

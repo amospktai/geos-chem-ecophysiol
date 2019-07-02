@@ -1351,12 +1351,12 @@
  1234       FORMAT( 'WARNING: IUSE_PFT > 1000 IN SUBROUTINE DEPVEL; ',
      &               'I,J=',2I4,1X,'IUSE_PFT=',I8/)  
          END IF
-         IF ( ( MAXVAL(IUSE_PFT) == 0 ) 
-     &         .AND. ( MAXVAL(IUSE(I,J,:)) /= 0 ) ) THEN 
-            WRITE (6,1235) I,J, MAXVAL(IUSE(I,J,:))
- 1235       FORMAT( 'WARNING: IUSE_PFT = 0 IN SUBROUTINE DEPVEL; ',
-     &               'I,J=',2I4, 'MAXVAL(IUSE(I,J,:))=', I8)  
-         END IF
+C          IF ( ( MAXVAL(IUSE_PFT) == 0 ) 
+C      &         .AND. ( MAXVAL(IUSE(I,J,:)) /= 0 ) ) THEN 
+C             WRITE (6,1235) I,J, MAXVAL(IUSE(I,J,:))
+C  1235       FORMAT( 'WARNING: IUSE_PFT = 0 IN SUBROUTINE DEPVEL; ',
+C      &               'I,J=',2I4, 'MAXVAL(IUSE(I,J,:))=', I8)  
+C          END IF
 !*                                 
 !*    Loop through the different landuse types present in the grid square     
 !*           

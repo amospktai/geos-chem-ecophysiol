@@ -270,6 +270,30 @@ CONTAINS
     ThisLoc = ' -> Zero_Diagnostics_StartofTimestep ' // ModLoc
 
     ! Zero diagnostics here
+    IF ( State_Diag%Archive_EcophyG_CAN ) THEN
+       State_Diag%EcophyG_CAN(:,:,:) = 0.0_f4
+    ENDIF
+    IF ( State_Diag%Archive_EcophyA_CAN ) THEN
+       State_Diag%EcophyA_CAN(:,:,:) = 0.0_f4
+    ENDIF
+    IF ( State_Diag%Archive_EcophyRESP ) THEN
+       State_Diag%EcophyRESP(:,:,:) = 0.0_f4
+    ENDIF
+    IF ( State_Diag%Archive_EcophyCO2_IN ) THEN
+       State_Diag%EcophyCO2_IN(:,:,:) = 0.0_f4
+    ENDIF
+    IF ( State_Diag%Archive_EcophyLAI ) THEN
+       State_Diag%EcophyLAI(:,:,:) = 0.0_f4
+    ENDIF
+    IF ( State_Diag%Archive_EcophyBETA ) THEN
+       State_Diag%EcophyBETA(:,:,:) = 0.0_f4
+    ENDIF
+    IF ( State_Diag%Archive_EcophyFAC_O3 ) THEN
+       State_Diag%EcophyFAC_O3(:,:,:) = 0.0_f4
+    ENDIF
+    IF ( State_Diag%Archive_EcophyFLUXO3 ) THEN
+       State_Diag%EcophyFLUXO3(:,:,:) = 0.0_f4
+    ENDIF
 
 #endif
   END SUBROUTINE Zero_Diagnostics_StartofTimestep
