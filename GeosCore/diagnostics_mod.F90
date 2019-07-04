@@ -234,7 +234,7 @@ CONTAINS
 !
     USE State_Chm_Mod,    ONLY : ChmState
     USE State_Diag_Mod,   ONLY : DgnState
-    USE Error_Mod,        ONLY : Debug_Msg 
+    USE Time_Mod,         ONLY : ITS_TIME_FOR_EMIS
 !
 ! !INPUT PARAMETERS:
 !
