@@ -1161,7 +1161,8 @@
       REAL(fp)          :: XMWO3    ! Molecular weight of O3 
       REAL(fp)          :: RB_O3    ! Boundary layer resistance for O3
       REAL(fp)          :: RAB      ! Aerodynamic and boundary layer resistance
-      INTEGER           :: IUSE_PFT( MAXVAL(IPFT) ) ! fraction(*1000) of grid box per PFT
+      REAL(fp)          :: SumLAI_PFT( MAXVAL(IPFT) ) ! grid box fraction-weighted
+                                                      ! leaf area index per PFT
 
       ! For the species database
       INTEGER                :: SpcId
@@ -1289,7 +1290,7 @@
 !$OMP+PRIVATE( DUMMY1, DUMMY2, DUMMY3, DUMMY4, DAIR,   RB     )
 !$OMP+PRIVATE( C1X,    VK,     I,      J,      IW             )
 !$OMP+PRIVATE( DIAM,   DEN,    XLAI_FP, SUNCOS_FP, CFRAC_FP   )
-!$OMP+PRIVATE( IUSE_PFT, PFT,  RS,     RAB,    id_O3,  RB_O3  )
+!$OMP+PRIVATE( SumLAI_PFT, RS, PFT,    RAB,    id_O3,  RB_O3  )
 #if defined( MODEL_GEOS )
 !$OMP+PRIVATE( RA2M,   Z0OBK2M, RA10M, Z0OBK10M               )
 #endif
@@ -1336,27 +1337,22 @@
          RT = 1000.0e+0_f8*EXP(-TEMPC-4.0e+0_f8)
 !*
          ! Calculate fraction of grid occupied by each PFT (Joey Lam, 11 Jun 2019)
-         IUSE_PFT( : ) = 0
+         SumLAI_PFT( : ) = 0
          DO LDT = 1,NTYPE
             ! Skip if land type is absent
             IF ( IUSE(I,J,LDT) == 0 ) CYCLE
             IOLSON = ILAND( I,J,LDT ) + 1
             PFT = IPFT(IOLSON)
             IF ( PFT /= 0 ) THEN
-               IUSE_PFT( PFT ) = IUSE_PFT( PFT ) + IUSE( I,J,LDT ) 
+               SumLAI_PFT( PFT ) = SumLAI_PFT( PFT ) 
+     &                  + DBLE( IUSE( I,J,LDT ) ) * XLAI ( I,J,LDT ) 
             END IF
          END DO
-         IF ( MAXVAL(IUSE_PFT) > 1000 ) THEN 
-            WRITE (6,1234) I,J,IUSE_PFT
- 1234       FORMAT( 'WARNING: IUSE_PFT > 1000 IN SUBROUTINE DEPVEL; ',
-     &               'I,J=',2I4,1X,'IUSE_PFT=',I8/)  
+         IF ( MAXVAL(SumLAI_PFT) > 1000 ) THEN 
+            WRITE (6,1234) I,J,SumLAI_PFT
+ 1234       FORMAT( 'WARNING: SumLAI_PFT > 1000 IN SUBROUTINE DEPVEL; ',
+     &               'I,J=',2I4,1X,'SumLAI_PFT=',I8/)  
          END IF
-C          IF ( ( MAXVAL(IUSE_PFT) == 0 ) 
-C      &         .AND. ( MAXVAL(IUSE(I,J,:)) /= 0 ) ) THEN 
-C             WRITE (6,1235) I,J, MAXVAL(IUSE(I,J,:))
-C  1235       FORMAT( 'WARNING: IUSE_PFT = 0 IN SUBROUTINE DEPVEL; ',
-C      &               'I,J=',2I4, 'MAXVAL(IUSE(I,J,:))=', I8)  
-C          END IF
 !*                                 
 !*    Loop through the different landuse types present in the grid square     
 !*           
@@ -1807,7 +1803,7 @@ C          END IF
                CALL DO_ECOPHY ( am_I_Root, Input_Opt,  State_Met, 
      &                          State_Chm, State_Diag, RC,         
      &                          I, J,      LDT, PFT,   RAB, 
-     &                          RS,        IUSE_PFT(PFT)          )
+     &                          RS,        SumLAI_PFT(PFT)          )
                RIX = RS
             ELSE
                RIX = RI(LDT)

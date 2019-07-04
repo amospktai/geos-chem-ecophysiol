@@ -61,27 +61,27 @@
       INTEGER,  PARAMETER   :: NUMPFT                 = 5 ! Switch to call CMN_SIZE_MOD.F later
       INTEGER,  PARAMETER   :: MAX_ITER               = 1
       INTEGER,  PARAMETER   :: IS_C3_PLANT   (NUMPFT) = (/ 1,1,1,0,1 /)
-      ! REAL(fp), PARAMETER   :: ALPHA         (NUMPFT) = (/ 0.08, 0.08, 0.12, 0.06, 0.08 /)
-      ! REAL(fp), PARAMETER   :: V_CMAX25      (NUMPFT) = (/ 0.046, 0.033, 0.073, 0.060, 0.060 /) * &
-                                                        ! (/ 0.0008, 0.0008, 0.0008, 0.0004, 0.0008 /)
-      ! REAL(fp), PARAMETER   :: T_UPP         (NUMPFT) = (/ 36.0, 26.0, 36.0, 45.0, 36.0 /)
-      ! REAL(fp), PARAMETER   :: T_LOW         (NUMPFT) = (/ 0.0, -10.0, 0.0,  13.0, 0.0  /)
+      REAL(fp), PARAMETER   :: ALPHA         (NUMPFT) = (/ 0.08, 0.08, 0.12, 0.06, 0.08 /)
+      REAL(fp), PARAMETER   :: V_CMAX25      (NUMPFT) = (/ 0.046, 0.033, 0.073, 0.060, 0.060 /) * &
+                                                        (/ 0.0008, 0.0008, 0.0008, 0.0004, 0.0008 /)
+      REAL(fp), PARAMETER   :: T_UPP         (NUMPFT) = (/ 36.0, 26.0, 36.0, 45.0, 36.0 /)
+      REAL(fp), PARAMETER   :: T_LOW         (NUMPFT) = (/ 0.0, -10.0, 0.0,  13.0, 0.0  /)
       REAL(fp), PARAMETER   :: F_DARKRESP    (NUMPFT) = (/ .015, .015, .015, .025, .015 /)
-      ! REAL(fp), PARAMETER   :: D_STAR        (NUMPFT) = (/ 0.09, 0.06, 0.1,  .075, 0.1  /)
-      ! REAL(fp), PARAMETER   :: f0            (NUMPFT) = (/ .875, .875, 0.9,  0.8,  0.9  /)
+      REAL(fp), PARAMETER   :: D_STAR        (NUMPFT) = (/ 0.09, 0.06, 0.1,  .075, 0.1  /)
+      REAL(fp), PARAMETER   :: f0            (NUMPFT) = (/ .875, .875, 0.9,  0.8,  0.9  /)
       REAL(fp), PARAMETER   :: G_LEAF_MIN    (NUMPFT) = 1.0e-6
       REAL(fp), PARAMETER   :: K_EXTINCT     (NUMPFT) = 0.5
       REAL(fp), PARAMETER   :: PARAM_A       (NUMPFT) = (/ 0.04, 0.02, 0.25, 0.13, 0.03 /)
       REAL(fp), PARAMETER   :: FLUXO3_CRIT   (NUMPFT) = (/ 1.6,  1.6,  5.0,  5.0,  1.6  /)
       REAL(fp), PARAMETER   :: THRESHOLD              = 1.0e-3
       ! Second set of optimized parameters (from Raoult et al. 2016)
-      REAL(fp), PARAMETER   :: ALPHA         (NUMPFT) = (/ 0.131, 0.096, 0.179, 0.118, 0.102 /)
-      REAL(fp), PARAMETER   :: V_CMAX25      (NUMPFT) = (/ 0.061, 0.065, 0.007, 0.051, 0.041 /) * &
-                                                        (/ 0.0008, 0.0008, 0.0008, 0.0004, 0.0008 /)
-      REAL(fp), PARAMETER   :: T_UPP         (NUMPFT) = (/ 38.578, 34.721, 36.242, 44.897, 35.385 /)
-      REAL(fp), PARAMETER   :: T_LOW         (NUMPFT) = (/ 1.203, -8.698, -1.985, 11.37, -5.208 /)
-      REAL(fp), PARAMETER   :: D_STAR        (NUMPFT) = (/ 0.048, 0.036, 0.086, 0.046, 0.077 /)
-      REAL(fp), PARAMETER   :: f0            (NUMPFT) = (/ 0.765, 0.737, 0.817, 0.765, 0.782 /)  
+      ! REAL(fp), PARAMETER   :: ALPHA         (NUMPFT) = (/ 0.131, 0.096, 0.179, 0.118, 0.102 /)
+      ! REAL(fp), PARAMETER   :: V_CMAX25      (NUMPFT) = (/ 0.061, 0.065, 0.007, 0.051, 0.041 /) * &
+      !                                                   (/ 0.0008, 0.0008, 0.0008, 0.0004, 0.0008 /)
+      ! REAL(fp), PARAMETER   :: T_UPP         (NUMPFT) = (/ 38.578, 34.721, 36.242, 44.897, 35.385 /)
+      ! REAL(fp), PARAMETER   :: T_LOW         (NUMPFT) = (/ 1.203, -8.698, -1.985, 11.37, -5.208 /)
+      ! REAL(fp), PARAMETER   :: D_STAR        (NUMPFT) = (/ 0.048, 0.036, 0.086, 0.046, 0.077 /)
+      ! REAL(fp), PARAMETER   :: f0            (NUMPFT) = (/ 0.765, 0.737, 0.817, 0.765, 0.782 /)  
       ! Constants
       ! REAL(fp), PARAMETER   :: RSTARG = 8.31446        ! Switch to call physconstant.F later (in Headers)
       REAL(fp), PARAMETER   :: CO2_O2_RATIO = 1.6
@@ -128,7 +128,7 @@
       SUBROUTINE DO_ECOPHY ( am_I_Root, Input_Opt,  State_Met, &
                              State_Chm, State_Diag, RC,        &
                              I, J,      LDT, PFT,   RAB,       &
-                             RS,        IUSE_PFT               )
+                             RS,        SumLAI_PFT             )
 !
 ! !USES:
 !
@@ -150,7 +150,7 @@
       TYPE(MetState), INTENT(IN)    :: State_Met   ! Meteorology State object
       REAL(fp),       INTENT(IN)    :: RAB         ! Aerodynamic and 
                                                    ! boundary layer resistance
-      INTEGER,        INTENT(IN)    :: IUSE_PFT    ! Fraction of grid per PFT
+      REAL(fp),       INTENT(IN)    :: SumLAI_PFT  ! grid box area-weighted LAI per PFT
 !
 ! !INPUT/OUTPUT PARAMETERS:
 !
@@ -194,16 +194,6 @@
       REAL(fp)   :: LAI
       INTEGER    :: IOLSON
       INTEGER    :: IUSE
-#ifdef NC_DIAG 
-      REAL(fp) :: EcophyG_CAN     
-      REAL(fp) :: EcophyA_CAN  
-      REAL(fp) :: EcophyRESP   
-      REAL(fp) :: EcophyCO2_IN 
-      REAL(fp) :: EcophyLAI    
-      REAL(fp) :: EcophyBETA   
-      ! REAL(fp) :: EcophyFAC_O3 
-      REAL(fp) :: EcophyFLUXO3     
-#endif
 
       !=================================================================
       ! DO_ECOPHY begins here!
@@ -215,18 +205,6 @@
       ErrMsg  = ''
       ThisLoc = &
       ' -> at Do_ECOPHY (in module GeosCore/ecophysiology.F90)'
-
-! #ifdef NC_DIAG 
-!       ! Point to columns of derived-type object fields
-!       EcophyRS       => State_Diag%EcophyRS    
-!       EcophyA_CAN    => State_Diag%EcophyA_CAN 
-!       EcophyRESP     => State_Diag%EcophyRESP  
-!       EcophyCO2_IN   => State_Diag%EcophyCO2_IN
-!       EcophyLAI      => State_Diag%EcophyLAI   
-!       EcophyBETA     => State_Diag%EcophyBETA  
-!       ! EcophyFAC_O3   => State_Diag%EcophyFAC_O3
-!       EcophyFLUXO3   => State_Diag%EcophyFLUXO3    
-! #endif
 
       ! get inputs for the module
       CALL GET_ECOPHY_INPUTS( State_Met,    State_Chm, I, J, LDT,&
@@ -248,11 +226,13 @@
       CALL DO_PHOTOSYNTHESIS( TEMPK,        QV2M,       RAB,          &
                               PAR_ABSORBED, PRESSURE,   CO2,          &
                               O2,           LAI,        O3,           &
-                              SOIL_WETNESS,                           &
+                              SOIL_WETNESS, PFT,                      &
                               G_CAN_OUT,    A_CAN_OUT,  RESP_CAN_OUT, &
                               G_LEAF_OUT,   CO2_IN,     A_NET_OUT,    &
                               RESP_OUT,     FLUXO3_CAN, FLUXO3,       &
-                              FACTOR_O3,    BETA,       PFT           &
+                              FACTOR_O3,    BETA,       V_CMAX,       &
+                              RATE_LIGHT,   RATE_RUBISCO,             &
+                              RATE_PRODUCT, A_GROSS                   &
                               )
 
       ! Trap potential errors
@@ -262,72 +242,20 @@
          RETURN
       ENDIF
 
-      ! Write a subroutine to get PFT-weighted values
-
-      ! Write a subroutine to get LAI-weighted values
-
       ! Output RS to dry deposition module
       RS = 1.0 / G_CAN_OUT
 
-#ifdef NC_DIAG 
-      ! send to diagnostics outputs
-      IOLSON = State_Met%ILAND( I,J,LDT ) + 1
-      IF ( IUSE > IUSE_PFT ) THEN 
-         WRITE(6,1000) I,J,LDT,PFT,IUSE,IUSE_PFT
- 1000    FORMAT( 'WARNING: IUSE > IUSE_PFT in subroutine DO_ECOPHY',4I4,2I8 )
-      END IF
-      IF ( State_Diag%Archive_EcophyG_CAN .AND. IUSE_PFT /= 0 ) THEN
-         EcophyG_CAN    = State_Diag%EcophyG_CAN  ( I,J,PFT )
-         State_Diag%EcophyG_CAN   ( I,J,PFT ) = EcophyG_CAN     &
-            + G_CAN_OUT    * DBLE( IUSE ) / DBLE( IUSE_PFT )
-      END IF
-      IF ( State_Diag%Archive_EcophyA_CAN .AND. IUSE_PFT /= 0 ) THEN
-         EcophyA_CAN    = State_Diag%EcophyA_CAN  ( I,J,PFT )
-         State_Diag%EcophyA_CAN   ( I,J,PFT ) = EcophyA_CAN     &
-            + A_CAN_OUT    * DBLE( IUSE ) / DBLE( IUSE_PFT )
-      END IF
-      IF ( State_Diag%Archive_EcophyRESP .AND. IUSE_PFT /= 0 ) THEN
-         EcophyRESP     = State_Diag%EcophyRESP   ( I,J,PFT )
-         State_Diag%EcophyRESP    ( I,J,PFT ) = EcophyRESP      &
-            + RESP_CAN_OUT * DBLE( IUSE ) / DBLE( IUSE_PFT )
-      END IF
-      IF ( State_Diag%Archive_EcophyCO2_IN .AND. IUSE_PFT /= 0 ) THEN
-         EcophyCO2_IN   = State_Diag%EcophyCO2_IN ( I,J,PFT )
-         State_Diag%EcophyCO2_IN  ( I,J,PFT ) = EcophyCO2_IN    &
-            + CO2_IN       * DBLE( IUSE ) / DBLE( IUSE_PFT )
-      END IF
-      IF ( State_Diag%Archive_EcophyLAI .AND. IUSE_PFT /= 0 ) THEN
-         EcophyLAI      = State_Diag%EcophyLAI    ( I,J,PFT )
-         State_Diag%EcophyLAI     ( I,J,PFT ) = EcophyLAI       &
-            + LAI          * DBLE( IUSE ) / DBLE( IUSE_PFT )
-      END IF
-      IF ( State_Diag%Archive_EcophyBETA .AND. IUSE_PFT /= 0 ) THEN
-         EcophyBETA     = State_Diag%EcophyBETA   ( I,J,PFT )
-         State_Diag%EcophyBETA    ( I,J,PFT ) = EcophyBETA      &
-            + BETA         * DBLE( IUSE ) / DBLE( IUSE_PFT )
-      END IF
-      ! IF ( State_Diag%Archive_EcophyFAC_O3 .AND. IUSE_PFT /= 0 ) THEN
-      !    EcophyFAC_O3   = State_Diag%EcophyFAC_O3 ( I,J,PFT )
-      !    State_Diag%EcophyFAC_O3  ( I,J,PFT ) = EcophyFAC_O3    &
-      !       + FACTOR_O3    * DBLE( IUSE ) / DBLE( IUSE_PFT )
-      ! END IF
-      IF ( State_Diag%Archive_EcophyFLUXO3 .AND. IUSE_PFT /= 0 ) THEN
-         EcophyFLUXO3   = State_Diag%EcophyFLUXO3 ( I,J,PFT )
-         State_Diag%EcophyFLUXO3  ( I,J,PFT ) = EcophyFLUXO3    &
-            + FLUXO3_CAN   * DBLE( IUSE ) / DBLE( IUSE_PFT )
-      END IF
-#endif
-
-      ! Nullify pointers
-      ! NULLIFY( EcophyG_CAN  )
-      ! NULLIFY( EcophyA_CAN  )
-      ! NULLIFY( EcophyRESP   )
-      ! NULLIFY( EcophyCO2_IN )
-      ! NULLIFY( EcophyLAI    )
-      ! NULLIFY( EcophyBETA   )
-      ! NULLIFY( EcophyFAC_O3 )
-      ! NULLIFY( EcophyFLUXO3 )
-
+      ! Send output to State_Diag
+      CALL Ecophy_Diagn( I, J,         LDT,        PFT,          &
+                         IUSE,         LAI,        SumLAI_PFT,   &
+                         G_CAN_OUT,    A_CAN_OUT,  RESP_CAN_OUT, &
+                         G_LEAF_OUT,   CO2_IN,     A_NET_OUT,    &
+                         RESP_OUT,     FLUXO3_CAN, FLUXO3,       &
+                         FACTOR_O3,    BETA,       V_CMAX,       &
+                         RATE_LIGHT,   RATE_RUBISCO,             &
+                         RATE_PRODUCT, A_GROSS,                  &
+                         State_Met,    State_Diag, RC            &
+                       )
 
       END SUBROUTINE DO_ECOPHY
 !EOC
@@ -347,11 +275,13 @@
       SUBROUTINE DO_PHOTOSYNTHESIS( TEMPK,        QV2M,       RAB,          &
                                     PAR_ABSORBED, PRESSURE,   CO2,          &
                                     O2,           LAI,        O3,           &
-                                    SOIL_WETNESS,                           &
+                                    SOIL_WETNESS, PFT,                      &
                                     G_CAN_OUT,    A_CAN_OUT,  RESP_CAN_OUT, &
                                     G_LEAF_OUT,   CO2_IN,     A_NET_OUT,    &
                                     RESP_OUT,     FLUXO3_CAN, FLUXO3,       &
-                                    FACTOR_O3,    BETA,       PFT           &
+                                    FACTOR_O3,    BETA,       V_CMAX,       &
+                                    RATE_LIGHT,   RATE_RUBISCO,             &
+                                    RATE_PRODUCT, A_GROSS                   &
                                     )
 ! Main driver of the photosynthesis-stomatal conductance model
 !
@@ -400,6 +330,11 @@
       ! FLUXO3        : Stomatal ozone uptake                             [nmol m^-2 s^-1]
       ! FACTOR_O3     : Ozone damage factor                               []
       ! BETA          : Soil moisture stress factor                       []
+      ! V_CMAX        : Max Rubisco carboxylation rate                    [mol CO2 m^-2 s^-1]
+      ! RATE_LIGHT    : Light-limited rate                                [mol CO2 m^-2 s^-1]
+      ! RATE_PRODUCT  : Product-limited rate                              [mol CO2 m^-2 s^-1]
+      ! RATE_RUBISCO  : Rubisco-limited rate                              [mol CO2 m^-2 s^-1]
+      ! A_GROSS       : Leaf level gross photosynthesis                   [mol CO2 m^-2 s^-1]
       !---------------------------------------------------------------------------------------
       REAL(fp), INTENT(OUT) :: G_CAN_OUT
       REAL(fp), INTENT(OUT) :: G_LEAF_OUT
@@ -412,6 +347,11 @@
       REAL(fp), INTENT(OUT) :: FLUXO3
       REAL(fp), INTENT(OUT) :: FACTOR_O3
       REAL(fp), INTENT(OUT) :: BETA
+      REAL(fp), INTENT(OUT) :: V_CMAX
+      REAL(fp), INTENT(OUT) :: RATE_LIGHT
+      REAL(fp), INTENT(OUT) :: RATE_RUBISCO
+      REAL(fp), INTENT(OUT) :: RATE_PRODUCT
+      REAL(fp), INTENT(OUT) :: A_GROSS
 !
 !LOCAL VARIABLES:
 !
@@ -458,12 +398,12 @@
       REAL(fp)    :: A_NET
       REAL(fp)    :: RESP
       ! REAL(fp)    :: A_NET_PREV
-      REAL(fp)    :: V_CMAX
+      ! REAL(fp)    :: V_CMAX
       REAL(fp)    :: CO2_GAMMA
-      REAL(fp)    :: RATE_LIGHT
-      REAL(fp)    :: RATE_PRODUCT
-      REAL(fp)    :: RATE_RUBISCO
-      REAL(fp)    :: A_GROSS
+      ! REAL(fp)    :: RATE_LIGHT
+      ! REAL(fp)    :: RATE_PRODUCT
+      ! REAL(fp)    :: RATE_RUBISCO
+      ! REAL(fp)    :: A_GROSS
       REAL(fp)    :: TAU
       REAL(fp)    :: DENOM
       INTEGER     :: ITER
@@ -583,8 +523,6 @@
       G_CAN_OUT      = BIGLEAFSCALE * G_LEAF_OUT
       RESP_CAN_OUT   = BIGLEAFSCALE * RESP_OUT
       FLUXO3_CAN     = BIGLEAFSCALE * FLUXO3
-
-      ! Deal with diagnoses
 
       END SUBROUTINE DO_PHOTOSYNTHESIS
 
@@ -927,6 +865,213 @@
        ! END DO
        ! END DO
       END SUBROUTINE GET_ECOPHY_INPUTS
+!EOC
+!------------------------------------------------------------------------------
+!                  GEOS-Chem Global Chemical Transport Model                  !
+!------------------------------------------------------------------------------
+!BOP
+!
+! !IROUTINE: ecophy_diagn
+!
+! !DESCRIPTION: Subroutine ECOPHY\_DIAGN deals with saving ecophysiology
+!  module outputs (per land type) to State_Diag arrays (per PFT)
+!\\
+!\\
+! !INTERFACE:
+!
+      SUBROUTINE Ecophy_Diagn( I, J,         LDT,        PFT,          &
+                               IUSE,         LAI,        SumLAI_PFT,   &
+                               G_CAN_OUT,    A_CAN_OUT,  RESP_CAN_OUT, &
+                               G_LEAF_OUT,   CO2_IN,     A_NET_OUT,    &
+                               RESP_OUT,     FLUXO3_CAN, FLUXO3,       &
+                               FACTOR_O3,    BETA,       V_CMAX,       &
+                               RATE_LIGHT,   RATE_RUBISCO,             &
+                               RATE_PRODUCT, A_GROSS,                  &
+                               State_Met,    State_Diag, RC            &
+                             )
+!
+! !USES:
+!
+      USE ErrCode_Mod
+      USE State_Met_Mod,  ONLY : MetState
+      USE State_Diag_Mod, ONLY : DgnState
+!
+! !INPUT PARAMETERS:
+!
+      INTEGER,        INTENT(IN)    :: I, J, LDT, PFT
+      INTEGER,        INTENT(IN)    :: IUSE
+      REAL(fp),       INTENT(IN)    :: LAI
+      REAL(fp),       INTENT(IN)    :: SumLAI_PFT
+      REAL(fp),       INTENT(IN)    :: G_CAN_OUT
+      REAL(fp),       INTENT(IN)    :: A_CAN_OUT
+      REAL(fp),       INTENT(IN)    :: RESP_CAN_OUT
+      REAL(fp),       INTENT(IN)    :: G_LEAF_OUT
+      REAL(fp),       INTENT(IN)    :: CO2_IN
+      REAL(fp),       INTENT(IN)    :: A_NET_OUT
+      REAL(fp),       INTENT(IN)    :: RESP_OUT
+      REAL(fp),       INTENT(IN)    :: FLUXO3_CAN 
+      REAL(fp),       INTENT(IN)    :: FLUXO3
+      REAL(fp),       INTENT(IN)    :: FACTOR_O3
+      REAL(fp),       INTENT(IN)    :: BETA
+      REAL(fp),       INTENT(IN)    :: V_CMAX
+      REAL(fp),       INTENT(IN)    :: RATE_LIGHT
+      REAL(fp),       INTENT(IN)    :: RATE_RUBISCO
+      REAL(fp),       INTENT(IN)    :: RATE_PRODUCT
+      REAL(fp),       INTENT(IN)    :: A_GROSS
+      Type(MetState), INTENT(IN)    :: State_Met   ! Met State object
+!
+! !INPUT/OUTPUT PARAMETERS:
+!
+      TYPE(DgnState), INTENT(INOUT) :: State_Diag  ! Diagnostics State object
+!
+! !OUTPUT PARAMETERS:
+!
+      INTEGER,        INTENT(OUT)   :: RC          ! Success or failure
+!
+!EOP
+!------------------------------------------------------------------------------
+!BOC
+!
+! !LOCAL VARIABLES:
+!
+      INTEGER                :: IOLSON
+
+      ! Strings
+      CHARACTER(LEN=255)     :: Msg, ErrMsg, ThisLoc
+
+! #ifdef NC_DIAG 
+!       REAL(fp) :: EcophyG_CAN     
+!       REAL(fp) :: EcophyA_CAN  
+!       REAL(fp) :: EcophyRESP   
+!       REAL(fp) :: EcophyCO2_IN 
+!       REAL(fp) :: EcophyLAI    
+!       REAL(fp) :: EcophyBETA   
+!       ! REAL(fp) :: EcophyFAC_O3 
+!       REAL(fp) :: EcophyFLUXO3     
+! #endif
+
+      !=================================================================
+      ! Ecophy_Diagn begins here!
+      !=================================================================
+
+      ! Initialize
+      RC        = GC_SUCCESS
+      ErrMsg    = ''
+      ThisLoc   = ' -> at Ecophy_Diagn (in module GeosCore/ecophysiology.F90)'
+
+! #ifdef NC_DIAG 
+!       ! Point to columns of derived-type object fields
+!       EcophyRS       => State_Diag%EcophyRS    
+!       EcophyA_CAN    => State_Diag%EcophyA_CAN 
+!       EcophyRESP     => State_Diag%EcophyRESP  
+!       EcophyCO2_IN   => State_Diag%EcophyCO2_IN
+!       EcophyLAI      => State_Diag%EcophyLAI   
+!       EcophyBETA     => State_Diag%EcophyBETA  
+!       ! EcophyFAC_O3   => State_Diag%EcophyFAC_O3
+!       EcophyFLUXO3   => State_Diag%EcophyFLUXO3    
+! #endif
+
+#ifdef NC_DIAG 
+      ! send to diagnostics outputs
+      IOLSON = State_Met%ILAND( I,J,LDT ) + 1
+      IF ( IUSE > SumLAI_PFT ) THEN 
+         WRITE(6,1000) I,J,LDT,PFT,IUSE,SumLAI_PFT
+ 1000    FORMAT( 'WARNING: IUSE > SumLAI_PFT in subroutine DO_ECOPHY',4I4,2I8 )
+      END IF
+
+      IF ( State_Diag%Archive_EcophyG_CAN_OUT    .AND. SumLAI_PFT /= 0 ) THEN
+         Tmp = State_Diag%EcophyG_CAN_OUT    ( I,J,PFT )
+         State_Diag%EcophyG_CAN_OUT    ( I,J,PFT ) = Tmp    &
+            + G_CAN_OUT    * DBLE( IUSE ) * LAI / SumLAI_PFT
+      END IF
+      IF ( State_Diag%Archive_EcophyA_CAN_OUT    .AND. SumLAI_PFT /= 0 ) THEN
+         Tmp = State_Diag%EcophyA_CAN_OUT    ( I,J,PFT )
+         State_Diag%EcophyA_CAN_OUT    ( I,J,PFT ) = Tmp    &
+            + A_CAN_OUT    * DBLE( IUSE ) * LAI / SumLAI_PFT
+      END IF
+      IF ( State_Diag%Archive_EcophyRESP_CAN_OUT .AND. SumLAI_PFT /= 0 ) THEN
+         Tmp = State_Diag%EcophyRESP_CAN_OUT ( I,J,PFT )
+         State_Diag%EcophyRESP_CAN_OUT ( I,J,PFT ) = Tmp    &
+            + RESP_CAN_OUT * DBLE( IUSE ) * LAI / SumLAI_PFT
+      END IF
+      IF ( State_Diag%Archive_EcophyG_LEAF_OUT   .AND. SumLAI_PFT /= 0 ) THEN
+         Tmp = State_Diag%EcophyG_LEAF_OUT   ( I,J,PFT )
+         State_Diag%EcophyG_LEAF_OUT   ( I,J,PFT ) = Tmp    &
+            + G_LEAF_OUT   * DBLE( IUSE ) * LAI / SumLAI_PFT
+      END IF
+      IF ( State_Diag%Archive_EcophyCO2_IN       .AND. SumLAI_PFT /= 0 ) THEN
+         Tmp = State_Diag%EcophyCO2_IN       ( I,J,PFT )
+         State_Diag%EcophyCO2_IN       ( I,J,PFT ) = Tmp    &
+            + CO2_IN       * DBLE( IUSE ) * LAI / SumLAI_PFT
+      END IF
+      IF ( State_Diag%Archive_EcophyA_NET_OUT    .AND. SumLAI_PFT /= 0 ) THEN
+         Tmp = State_Diag%EcophyA_NET_OUT    ( I,J,PFT )
+         State_Diag%EcophyA_NET_OUT    ( I,J,PFT ) = Tmp    &
+            + A_NET_OUT    * DBLE( IUSE ) * LAI / SumLAI_PFT
+      END IF
+      IF ( State_Diag%Archive_EcophyRESP_OUT     .AND. SumLAI_PFT /= 0 ) THEN
+         Tmp = State_Diag%EcophyRESP_OUT     ( I,J,PFT )
+         State_Diag%EcophyRESP_OUT     ( I,J,PFT ) = Tmp    &
+            + RESP_OUT     * DBLE( IUSE ) * LAI / SumLAI_PFT
+      END IF
+      IF ( State_Diag%Archive_EcophyFLUXO3_CAN   .AND. SumLAI_PFT /= 0 ) THEN
+         Tmp = State_Diag%EcophyFLUXO3_CAN   ( I,J,PFT )
+         State_Diag%EcophyFLUXO3_CAN   ( I,J,PFT ) = Tmp    &
+            + FLUXO3_CAN   * DBLE( IUSE ) * LAI / SumLAI_PFT
+      END IF
+      IF ( State_Diag%Archive_EcophyFLUXO3       .AND. SumLAI_PFT /= 0 ) THEN
+         Tmp = State_Diag%EcophyFLUXO3       ( I,J,PFT )
+         State_Diag%EcophyFLUXO3       ( I,J,PFT ) = Tmp    &
+            + FLUXO3       * DBLE( IUSE ) * LAI / SumLAI_PFT
+      END IF
+      IF ( State_Diag%Archive_EcophyFACTOR_O3    .AND. SumLAI_PFT /= 0 ) THEN
+         Tmp = State_Diag%EcophyFACTOR_O3    ( I,J,PFT )
+         State_Diag%EcophyFACTOR_O3    ( I,J,PFT ) = Tmp    &
+            + FACTOR_O3    * DBLE( IUSE ) * LAI / SumLAI_PFT
+      END IF
+      IF ( State_Diag%Archive_EcophyBETA         .AND. SumLAI_PFT /= 0 ) THEN
+         Tmp = State_Diag%EcophyBETA         ( I,J,PFT )
+         State_Diag%EcophyBETA         ( I,J,PFT ) = Tmp    &
+            + BETA         * DBLE( IUSE ) * LAI / SumLAI_PFT
+      END IF
+      IF ( State_Diag%Archive_EcophyV_CMAX       .AND. SumLAI_PFT /= 0 ) THEN
+         Tmp = State_Diag%EcophyV_CMAX       ( I,J,PFT )
+         State_Diag%EcophyV_CMAX       ( I,J,PFT ) = Tmp    &
+            + V_CMAX       * DBLE( IUSE ) * LAI / SumLAI_PFT
+      END IF
+      IF ( State_Diag%Archive_EcophyRATE_LIGHT   .AND. SumLAI_PFT /= 0 ) THEN
+         Tmp = State_Diag%EcophyRATE_LIGHT   ( I,J,PFT )
+         State_Diag%EcophyRATE_LIGHT   ( I,J,PFT ) = Tmp    &
+            + RATE_LIGHT   * DBLE( IUSE ) * LAI / SumLAI_PFT
+      END IF
+      IF ( State_Diag%Archive_EcophyRATE_RUBISCO .AND. SumLAI_PFT /= 0 ) THEN
+         Tmp = State_Diag%EcophyRATE_RUBISCO ( I,J,PFT )
+         State_Diag%EcophyRATE_RUBISCO ( I,J,PFT ) = Tmp    &
+            + RATE_RUBISCO * DBLE( IUSE ) * LAI / SumLAI_PFT
+      END IF
+      IF ( State_Diag%Archive_EcophyRATE_PRODUCT .AND. SumLAI_PFT /= 0 ) THEN
+         Tmp = State_Diag%EcophyRATE_PRODUCT ( I,J,PFT )
+         State_Diag%EcophyRATE_PRODUCT ( I,J,PFT ) = Tmp    &
+            + RATE_PRODUCT * DBLE( IUSE ) * LAI / SumLAI_PFT
+      END IF
+      IF ( State_Diag%Archive_EcophyA_GROSS      .AND. SumLAI_PFT /= 0 ) THEN
+         Tmp = State_Diag%EcophyA_GROSS      ( I,J,PFT )
+         State_Diag%EcophyA_GROSS      ( I,J,PFT ) = Tmp    &
+            + A_GROSS      * DBLE( IUSE ) * LAI / SumLAI_PFT
+      END IF
+#endif
+
+      ! Nullify pointers
+      ! NULLIFY( EcophyG_CAN  )
+      ! NULLIFY( EcophyA_CAN  )
+      ! NULLIFY( EcophyRESP   )
+      ! NULLIFY( EcophyCO2_IN )
+      ! NULLIFY( EcophyLAI    )
+      ! NULLIFY( EcophyBETA   )
+      ! NULLIFY( EcophyFAC_O3 )
+      ! NULLIFY( EcophyFLUXO3 )
+
+      END SUBROUTINE Ecophy_Diagn
 !EOC
 !------------------------------------------------------------------------------
 !                  GEOS-Chem Global Chemical Transport Model                  !
