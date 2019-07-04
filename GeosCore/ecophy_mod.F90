@@ -277,44 +277,44 @@
  1000    FORMAT( 'WARNING: IUSE > IUSE_PFT in subroutine DO_ECOPHY',4I4,2I8 )
       END IF
       IF ( State_Diag%Archive_EcophyG_CAN .AND. IUSE_PFT /= 0 ) THEN
-      EcophyG_CAN    = State_Diag%EcophyG_CAN  ( I,J,PFT )
-      State_Diag%EcophyG_CAN   ( I,J,PFT ) = EcophyG_CAN     &
-         + G_CAN_OUT    * DBLE( IUSE ) / DBLE( IUSE_PFT )
+         EcophyG_CAN    = State_Diag%EcophyG_CAN  ( I,J,PFT )
+         State_Diag%EcophyG_CAN   ( I,J,PFT ) = EcophyG_CAN     &
+            + G_CAN_OUT    * DBLE( IUSE ) / DBLE( IUSE_PFT )
       END IF
       IF ( State_Diag%Archive_EcophyA_CAN .AND. IUSE_PFT /= 0 ) THEN
-      EcophyA_CAN    = State_Diag%EcophyA_CAN  ( I,J,PFT )
-      State_Diag%EcophyA_CAN   ( I,J,PFT ) = EcophyA_CAN     &
-         + A_CAN_OUT    * DBLE( IUSE ) / DBLE( IUSE_PFT )
+         EcophyA_CAN    = State_Diag%EcophyA_CAN  ( I,J,PFT )
+         State_Diag%EcophyA_CAN   ( I,J,PFT ) = EcophyA_CAN     &
+            + A_CAN_OUT    * DBLE( IUSE ) / DBLE( IUSE_PFT )
       END IF
       IF ( State_Diag%Archive_EcophyRESP .AND. IUSE_PFT /= 0 ) THEN
-      EcophyRESP     = State_Diag%EcophyRESP   ( I,J,PFT )
-      State_Diag%EcophyRESP    ( I,J,PFT ) = EcophyRESP      &
-         + RESP_CAN_OUT * DBLE( IUSE ) / DBLE( IUSE_PFT )
+         EcophyRESP     = State_Diag%EcophyRESP   ( I,J,PFT )
+         State_Diag%EcophyRESP    ( I,J,PFT ) = EcophyRESP      &
+            + RESP_CAN_OUT * DBLE( IUSE ) / DBLE( IUSE_PFT )
       END IF
       IF ( State_Diag%Archive_EcophyCO2_IN .AND. IUSE_PFT /= 0 ) THEN
-      EcophyCO2_IN   = State_Diag%EcophyCO2_IN ( I,J,PFT )
-      State_Diag%EcophyCO2_IN  ( I,J,PFT ) = EcophyCO2_IN    &
-         + CO2_IN       * DBLE( IUSE ) / DBLE( IUSE_PFT )
+         EcophyCO2_IN   = State_Diag%EcophyCO2_IN ( I,J,PFT )
+         State_Diag%EcophyCO2_IN  ( I,J,PFT ) = EcophyCO2_IN    &
+            + CO2_IN       * DBLE( IUSE ) / DBLE( IUSE_PFT )
       END IF
       IF ( State_Diag%Archive_EcophyLAI .AND. IUSE_PFT /= 0 ) THEN
-      EcophyLAI      = State_Diag%EcophyLAI    ( I,J,PFT )
-      State_Diag%EcophyLAI     ( I,J,PFT ) = EcophyLAI       &
-         + LAI          * DBLE( IUSE ) / DBLE( IUSE_PFT )
+         EcophyLAI      = State_Diag%EcophyLAI    ( I,J,PFT )
+         State_Diag%EcophyLAI     ( I,J,PFT ) = EcophyLAI       &
+            + LAI          * DBLE( IUSE ) / DBLE( IUSE_PFT )
       END IF
       IF ( State_Diag%Archive_EcophyBETA .AND. IUSE_PFT /= 0 ) THEN
-      EcophyBETA     = State_Diag%EcophyBETA   ( I,J,PFT )
-      State_Diag%EcophyBETA    ( I,J,PFT ) = EcophyBETA      &
-         + BETA         * DBLE( IUSE ) / DBLE( IUSE_PFT )
+         EcophyBETA     = State_Diag%EcophyBETA   ( I,J,PFT )
+         State_Diag%EcophyBETA    ( I,J,PFT ) = EcophyBETA      &
+            + BETA         * DBLE( IUSE ) / DBLE( IUSE_PFT )
       END IF
       ! IF ( State_Diag%Archive_EcophyFAC_O3 .AND. IUSE_PFT /= 0 ) THEN
-      ! EcophyFAC_O3   = State_Diag%EcophyFAC_O3 ( I,J,PFT )
-      ! State_Diag%EcophyFAC_O3  ( I,J,PFT ) = EcophyFAC_O3    &
-         ! + FACTOR_O3    * DBLE( IUSE ) / DBLE( IUSE_PFT )
+      !    EcophyFAC_O3   = State_Diag%EcophyFAC_O3 ( I,J,PFT )
+      !    State_Diag%EcophyFAC_O3  ( I,J,PFT ) = EcophyFAC_O3    &
+      !       + FACTOR_O3    * DBLE( IUSE ) / DBLE( IUSE_PFT )
       ! END IF
       IF ( State_Diag%Archive_EcophyFLUXO3 .AND. IUSE_PFT /= 0 ) THEN
-      EcophyFLUXO3   = State_Diag%EcophyFLUXO3 ( I,J,PFT )
-      State_Diag%EcophyFLUXO3  ( I,J,PFT ) = EcophyFLUXO3    &
-         + FLUXO3_CAN   * DBLE( IUSE ) / DBLE( IUSE_PFT )
+         EcophyFLUXO3   = State_Diag%EcophyFLUXO3 ( I,J,PFT )
+         State_Diag%EcophyFLUXO3  ( I,J,PFT ) = EcophyFLUXO3    &
+            + FLUXO3_CAN   * DBLE( IUSE ) / DBLE( IUSE_PFT )
       END IF
 #endif
 
