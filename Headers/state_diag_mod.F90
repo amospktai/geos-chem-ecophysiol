@@ -8557,97 +8557,97 @@ CONTAINS
        IF ( isRank    ) Rank  = 2
        IF ( isTagged  ) TagId = 'DRY'
 
-    ELSE IF ( TRIM( Name_AllCaps ) = 'ECOPHYG_CAN_OUT' ) THEN 
+    ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYG_CAN_OUT' ) THEN 
        IF ( isDesc    ) Desc  = 'Bulk canopy stomatal conductance'
        IF ( isUnits   ) Units = 'm s-1'
        IF ( isRank    ) Rank  = 2
        IF ( isTagged  ) TagID = 'PFT'
 
-    ELSE IF ( TRIM( Name_AllCaps ) = 'ECOPHYA_CAN_OUT' ) THEN 
+    ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYA_CAN_OUT' ) THEN 
        IF ( isDesc    ) Desc  = 'Bulk canopy photosynthesis'
        IF ( isUnits   ) Units = 'mol m-2 s-1'
        IF ( isRank    ) Rank  = 2
        IF ( isTagged  ) TagID = 'PFT'
 
-    ELSE IF ( TRIM( Name_AllCaps ) = 'ECOPHYRESP_CAN_OUT' ) THEN 
+    ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYRESP_CAN_OUT' ) THEN 
        IF ( isDesc    ) Desc  = 'Bulk canopy respiration'
        IF ( isUnits   ) Units = 'mol m-2 s-1'
        IF ( isRank    ) Rank  = 2
        IF ( isTagged  ) TagID = 'PFT'
 
-    ELSE IF ( TRIM( Name_AllCaps ) = 'ECOPHYG_LEAF_OUT' ) THEN 
+    ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYG_LEAF_OUT' ) THEN 
        IF ( isDesc    ) Desc  = 'Leaf level stomatal conductance'
        IF ( isUnits   ) Units = 'm s-1'
        IF ( isRank    ) Rank  = 2
        IF ( isTagged  ) TagID = 'PFT'
 
-    ELSE IF ( TRIM( Name_AllCaps ) = 'ECOPHYCO2_IN' ) THEN 
+    ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYCO2_IN' ) THEN 
        IF ( isDesc    ) Desc  = 'CO2 internal partial pressure'
        IF ( isUnits   ) Units = 'Pa'
        IF ( isRank    ) Rank  = 2
        IF ( isTagged  ) TagID = 'PFT'
 
-    ELSE IF ( TRIM( Name_AllCaps ) = 'ECOPHYA_NET_OUT' ) THEN 
+    ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYA_NET_OUT' ) THEN 
        IF ( isDesc    ) Desc  = 'Leaf level net photosynthesis'
        IF ( isUnits   ) Units = 'mol m-2 s-1'
        IF ( isRank    ) Rank  = 2
        IF ( isTagged  ) TagID = 'PFT'
 
-    ELSE IF ( TRIM( Name_AllCaps ) = 'ECOPHYRESP_OUT' ) THEN 
+    ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYRESP_OUT' ) THEN 
        IF ( isDesc    ) Desc  = 'Leaf level respiration'
        IF ( isUnits   ) Units = 'mol m-2 s-1'
        IF ( isRank    ) Rank  = 2
        IF ( isTagged  ) TagID = 'PFT'
 
-    ELSE IF ( TRIM( Name_AllCaps ) = 'ECOPHYFLUXO3_CAN' ) THEN 
+    ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYFLUXO3_CAN' ) THEN 
        IF ( isDesc    ) Desc  = 'Canopy ozone uptake flux'
        IF ( isUnits   ) Units = 'nmol m-2 s-1'
        IF ( isRank    ) Rank  = 2
        IF ( isTagged  ) TagID = 'PFT'
 
-    ELSE IF ( TRIM( Name_AllCaps ) = 'ECOPHYFLUXO3' ) THEN 
+    ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYFLUXO3' ) THEN 
        IF ( isDesc    ) Desc  = 'Stomatal ozone uptake flux'
        IF ( isUnits   ) Units = 'nmol m-2 s-1'
        IF ( isRank    ) Rank  = 2
        IF ( isTagged  ) TagID = 'PFT'
 
-    ELSE IF ( TRIM( Name_AllCaps ) = 'ECOPHYFACTOR_O3' ) THEN 
+    ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYFACTOR_O3' ) THEN 
        IF ( isDesc    ) Desc  = 'Ozone damage factor'
        IF ( isUnits   ) Units = '1'
        IF ( isRank    ) Rank  = 2
        IF ( isTagged  ) TagID = 'PFT'
 
-    ELSE IF ( TRIM( Name_AllCaps ) = 'ECOPHYBETA' ) THEN 
+    ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYBETA' ) THEN 
        IF ( isDesc    ) Desc  = 'Soil moisture stress factor'
        IF ( isUnits   ) Units = '1'
        IF ( isRank    ) Rank  = 2
        IF ( isTagged  ) TagID = 'PFT'
 
-    ELSE IF ( TRIM( Name_AllCaps ) = 'ECOPHYV_CMAX' ) THEN 
+    ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYV_CMAX' ) THEN 
        IF ( isDesc    ) Desc  = 'Maximum Rubisco Carboxylation rate'
        IF ( isUnits   ) Units = 'mol m-2 s-1'
        IF ( isRank    ) Rank  = 2
        IF ( isTagged  ) TagID = 'PFT'
 
-    ELSE IF ( TRIM( Name_AllCaps ) = 'ECOPHYRATE_LIGHT' ) THEN 
+    ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYRATE_LIGHT' ) THEN 
        IF ( isDesc    ) Desc  = 'Light-limited photosynthetic rate'
        IF ( isUnits   ) Units = 'mol m-2 s-1'
        IF ( isRank    ) Rank  = 2
        IF ( isTagged  ) TagID = 'PFT'
 
-    ELSE IF ( TRIM( Name_AllCaps ) = 'ECOPHYRATE_RUBISCO' ) THEN 
+    ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYRATE_RUBISCO' ) THEN 
        IF ( isDesc    ) Desc  = 'Rubisco-limited photosynthetic rate'
        IF ( isUnits   ) Units = 'mol m-2 s-1'
        IF ( isRank    ) Rank  = 2
        IF ( isTagged  ) TagID = 'PFT'
 
-    ELSE IF ( TRIM( Name_AllCaps ) = 'ECOPHYRATE_PRODUCT' ) THEN 
+    ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYRATE_PRODUCT' ) THEN 
        IF ( isDesc    ) Desc  = 'Product-limited photosynthetic rate'
        IF ( isUnits   ) Units = 'mol m-2 s-1'
        IF ( isRank    ) Rank  = 2
        IF ( isTagged  ) TagID = 'PFT'
 
-    ELSE IF ( TRIM( Name_AllCaps ) = 'ECOPHYA_GROSS' ) THEN 
+    ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYA_GROSS' ) THEN 
        IF ( isDesc    ) Desc  = 'Leaf level gross photosynthesis'
        IF ( isUnits   ) Units = 'mol m-2 s-1'
        IF ( isRank    ) Rank  = 2
