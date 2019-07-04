@@ -191,6 +191,11 @@
       REAL(fp)   :: FLUXO3
       REAL(fp)   :: FACTOR_O3
       REAL(fp)   :: BETA
+      REAL(fp)   :: V_CMAX
+      REAL(fp)   :: RATE_LIGHT
+      REAL(fp)   :: RATE_RUBISCO
+      REAL(fp)   :: RATE_PRODUCT
+      REAL(fp)   :: A_GROSS
       REAL(fp)   :: LAI
       INTEGER    :: IOLSON
       INTEGER    :: IUSE
@@ -935,7 +940,7 @@
 ! !LOCAL VARIABLES:
 !
       INTEGER                :: IOLSON
-
+      REAL(fp)               :: Tmp
       ! Strings
       CHARACTER(LEN=255)     :: Msg, ErrMsg, ThisLoc
 
