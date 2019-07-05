@@ -1032,7 +1032,7 @@
       IF ( State_Diag%Archive_EcophyLAI2         .AND. IUSE_PFT /= 0 ) THEN
          Tmp = State_Diag%EcophyLAI2         ( I,J,PFT )
          State_Diag%EcophyLAI2         ( I,J,PFT ) = Tmp    &
-            + LAI2         * DBLE( IUSE ) / DBLE( IUSE_PFT )
+            + LAI          * DBLE( IUSE ) / DBLE( IUSE_PFT )
       END IF
       IF ( State_Diag%Archive_EcophyG_CAN_OUT    .AND. SumLAI_PFT /= 0 ) THEN
          Tmp = State_Diag%EcophyG_CAN_OUT    ( I,J,PFT )
