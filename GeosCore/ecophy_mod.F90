@@ -128,7 +128,7 @@
       SUBROUTINE DO_ECOPHY ( am_I_Root, Input_Opt,  State_Met, &
                              State_Chm, State_Diag, RC,        &
                              I, J,      LDT, PFT,   RAB,       &
-                             RS,        SumLAI_PFT             )
+                             RS,        SumLAI_PFT, IUSE_PFT   )
 !
 ! !USES:
 !
@@ -150,7 +150,9 @@
       TYPE(MetState), INTENT(IN)    :: State_Met   ! Meteorology State object
       REAL(fp),       INTENT(IN)    :: RAB         ! Aerodynamic and 
                                                    ! boundary layer resistance
-      REAL(fp),       INTENT(IN)    :: SumLAI_PFT  ! grid box area-weighted LAI per PFT
+      REAL(fp),       INTENT(IN)    :: SumLAI_PFT  ! leaf area of the PFT
+      INTEGER,        INTENT(IN)    :: IUSE_PFT    ! fraction of grid box 
+                                                   ! occupied by the PFT
 !
 ! !INPUT/OUTPUT PARAMETERS:
 !
@@ -253,6 +255,7 @@
       ! Send output to State_Diag
       CALL Ecophy_Diagn( I, J,         LDT,        PFT,          &
                          IUSE,         LAI,        SumLAI_PFT,   &
+                         IUSE_PFT,                               &
                          G_CAN_OUT,    A_CAN_OUT,  RESP_CAN_OUT, &
                          G_LEAF_OUT,   CO2_IN,     A_NET_OUT,    &
                          RESP_OUT,     FLUXO3_CAN, FLUXO3,       &
@@ -921,6 +924,7 @@
 !
       SUBROUTINE Ecophy_Diagn( I, J,         LDT,        PFT,          &
                                IUSE,         LAI,        SumLAI_PFT,   &
+                               IUSE_PFT,                               &
                                G_CAN_OUT,    A_CAN_OUT,  RESP_CAN_OUT, &
                                G_LEAF_OUT,   CO2_IN,     A_NET_OUT,    &
                                RESP_OUT,     FLUXO3_CAN, FLUXO3,       &
@@ -942,6 +946,7 @@
       INTEGER,        INTENT(IN)    :: IUSE
       REAL(fp),       INTENT(IN)    :: LAI
       REAL(fp),       INTENT(IN)    :: SumLAI_PFT
+      INTEGER,        INTENT(IN)    :: IUSE_PFT
       REAL(fp),       INTENT(IN)    :: G_CAN_OUT
       REAL(fp),       INTENT(IN)    :: A_CAN_OUT
       REAL(fp),       INTENT(IN)    :: RESP_CAN_OUT
@@ -1019,6 +1024,16 @@
  ! 1000    FORMAT( 'WARNING: IUSE > SumLAI_PFT in subroutine DO_ECOPHY',4I4,2F8.4 )
  !      END IF
 
+      IF ( State_Diag%Archive_EcophyLAI          .AND. SumLAI_PFT /= 0 ) THEN
+         Tmp = State_Diag%EcophyLAI          ( I,J,PFT )
+         State_Diag%EcophyLAI          ( I,J,PFT ) = Tmp    &
+            + LAI          * DBLE( IUSE ) * LAI / SumLAI_PFT
+      END IF
+      IF ( State_Diag%Archive_EcophyLAI2         .AND. IUSE_PFT /= 0 ) THEN
+         Tmp = State_Diag%EcophyLAI2         ( I,J,PFT )
+         State_Diag%EcophyLAI2         ( I,J,PFT ) = Tmp    &
+            + LAI2         * DBLE( IUSE ) / DBLE( IUSE_PFT )
+      END IF
       IF ( State_Diag%Archive_EcophyG_CAN_OUT    .AND. SumLAI_PFT /= 0 ) THEN
          Tmp = State_Diag%EcophyG_CAN_OUT    ( I,J,PFT )
          State_Diag%EcophyG_CAN_OUT    ( I,J,PFT ) = Tmp    &

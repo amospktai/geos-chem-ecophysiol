@@ -1161,8 +1161,9 @@
       REAL(fp)          :: XMWO3    ! Molecular weight of O3 
       REAL(fp)          :: RB_O3    ! Boundary layer resistance for O3
       REAL(fp)          :: RAB      ! Aerodynamic and boundary layer resistance
-      REAL(fp)          :: SumLAI_PFT( MAXVAL(IPFT) ) ! grid box fraction-weighted
-                                                      ! leaf area index per PFT
+      REAL(fp)          :: SumLAI_PFT( MAXVAL(IPFT) ) ! leaf area index of the PFT
+      INTEGER           :: IUSE_PFT  ( MAXVAL(IPFT) ) ! fraction of grid box
+                                                      ! occupied by the PFT
 
       ! For the species database
       INTEGER                :: SpcId
@@ -1290,7 +1291,8 @@
 !$OMP+PRIVATE( DUMMY1, DUMMY2, DUMMY3, DUMMY4, DAIR,   RB     )
 !$OMP+PRIVATE( C1X,    VK,     I,      J,      IW             )
 !$OMP+PRIVATE( DIAM,   DEN,    XLAI_FP, SUNCOS_FP, CFRAC_FP   )
-!$OMP+PRIVATE( SumLAI_PFT, RS, PFT,    RAB,    id_O3,  RB_O3  )
+!$OMP+PRIVATE( SumLAI_PFT,     IUSE_PFT, RS,   PFT,    RAB    )
+!$OMP+PRIVATE( id_O3,  RB_O3                                  )
 #if defined( MODEL_GEOS )
 !$OMP+PRIVATE( RA2M,   Z0OBK2M, RA10M, Z0OBK10M               )
 #endif
@@ -1336,8 +1338,10 @@
 !*        RT = 1000.0*EXP(-(TEMPC-4.0))
          RT = 1000.0e+0_f8*EXP(-TEMPC-4.0e+0_f8)
 !*
-         ! Calculate fraction of grid occupied by each PFT (Joey Lam, 11 Jun 2019)
+         ! Calculate fraction of grid occupied by each PFT and its LAI
+         ! (Joey Lam, 11 Jun 2019)
          SumLAI_PFT( : ) = 0
+         IUSE_PFT  ( : ) = 0
          DO LDT = 1,NTYPE
             ! Skip if land type is absent
             IF ( IUSE(I,J,LDT) == 0 ) CYCLE
@@ -1345,7 +1349,8 @@
             PFT = IPFT(IOLSON)
             IF ( PFT /= 0 ) THEN
                SumLAI_PFT( PFT ) = SumLAI_PFT( PFT ) 
-     &                  + DBLE( IUSE( I,J,LDT ) ) * XLAI ( I,J,LDT ) 
+     &                  + DBLE( IUSE( I,J,LDT ) ) * XLAI ( I,J,LDT )
+               IUSE_PFT( PFT ) = IUSE_PFT( PFT ) + IUSE( I,J,LDT )
             END IF
          END DO
 C          IF ( MAXVAL(SumLAI_PFT) > 2.e+3_fp ) THEN 
@@ -1803,7 +1808,8 @@ C          END IF
                CALL DO_ECOPHY ( am_I_Root, Input_Opt,  State_Met, 
      &                          State_Chm, State_Diag, RC,         
      &                          I, J,      LDT, PFT,   RAB, 
-     &                          RS,        SumLAI_PFT(PFT)          )
+     &                          RS,        SumLAI_PFT(PFT),          
+     &                          IUSE_PFT(PFT)                     )
                RIX = RS
             ELSE
                RIX = RI(LDT)
