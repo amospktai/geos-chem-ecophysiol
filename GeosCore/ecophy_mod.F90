@@ -417,6 +417,41 @@
       ! REAL(fp)    :: ERR3
       REAL(fp)    :: DELTA
 
+      ! Initialize output variables
+      G_CAN_OUT      = 0.e+0_fp
+      A_CAN_OUT      = 0.e+0_fp
+      RESP_CAN_OUT   = 0.e+0_fp
+      G_LEAF_OUT     = 0.e+0_fp
+      CO2_IN         = 0.e+0_fp
+      A_NET_OUT      = 0.e+0_fp
+      RESP_OUT       = 0.e+0_fp
+      FLUXO3_CAN     = 0.e+0_fp
+      FLUXO3         = 0.e+0_fp
+      FACTOR_O3      = 0.e+0_fp
+      BETA           = 0.e+0_fp
+      V_CMAX         = 0.e+0_fp
+      RATE_LIGHT     = 0.e+0_fp
+      RATE_RUBISCO   = 0.e+0_fp
+      RATE_PRODUCT   = 0.e+0_fp
+      A_GROSS        = 0.e+0_fp
+
+      ! Initialize local variables
+      TEMPC          = 0.e+0_fp
+      SPHU_SAT       = 0.e+0_fp
+      DEFICIT_Q      = 0.e+0_fp
+      APAR           = 0.e+0_fp
+      CO2_AMBIENT    = 0.e+0_fp
+      O3_CONC        = 0.e+0_fp
+      BIGLEAFSCALE   = 0.e+0_fp
+      G_CAN          = 0.e+0_fp
+      G_LEAF         = 0.e+0_fp
+      A_NET          = 0.e+0_fp
+      RESP           = 0.e+0_fp 
+      CO2_GAMMA      = 0.e+0_fp
+      TAU            = 0.e+0_fp
+      DENOM          = 0.e+0_fp
+      DELTA          = 0.e+0_fp
+
       TEMPC          = TEMPK - 273.15e+0_fp
       ! Calculate V_CMAX and respiration which depends on V_CMAX only
       DENOM          = ( 1.e+0_fp + EXP( 0.3e+0_fp*( TEMPC - T_UPP(PFT) ) ) ) &
@@ -978,11 +1013,11 @@
 
 #ifdef NC_DIAG 
       ! send to diagnostics outputs
-      IOLSON = State_Met%ILAND( I,J,LDT ) + 1
-      IF ( IUSE > SumLAI_PFT ) THEN 
-         WRITE(6,1000) I,J,LDT,PFT,IUSE,SumLAI_PFT
- 1000    FORMAT( 'WARNING: IUSE > SumLAI_PFT in subroutine DO_ECOPHY',4I4,2I8 )
-      END IF
+ !      IOLSON = State_Met%ILAND( I,J,LDT ) + 1
+ !      IF ( DBLE( IUSE ) * LAI > SumLAI_PFT ) THEN 
+ !         WRITE(6,1000) I,J,LDT,PFT,DBLE( IUSE ) * LAI,SumLAI_PFT
+ ! 1000    FORMAT( 'WARNING: IUSE > SumLAI_PFT in subroutine DO_ECOPHY',4I4,2F8.4 )
+ !      END IF
 
       IF ( State_Diag%Archive_EcophyG_CAN_OUT    .AND. SumLAI_PFT /= 0 ) THEN
          Tmp = State_Diag%EcophyG_CAN_OUT    ( I,J,PFT )

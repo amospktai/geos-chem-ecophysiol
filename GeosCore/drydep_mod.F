@@ -1348,11 +1348,11 @@
      &                  + DBLE( IUSE( I,J,LDT ) ) * XLAI ( I,J,LDT ) 
             END IF
          END DO
-         IF ( MAXVAL(SumLAI_PFT) > 2.e+3_fp ) THEN 
-            WRITE (6,1234) I,J,SumLAI_PFT
- 1234       FORMAT( 'WARNING: SumLAI_PFT > 1000 IN SUBROUTINE DEPVEL; ',
-     &               'I,J=',2I4,1X,'SumLAI_PFT=',F8.4/)  
-         END IF
+C          IF ( MAXVAL(SumLAI_PFT) > 2.e+3_fp ) THEN 
+C             WRITE (6,1234) I,J,SumLAI_PFT
+C  1234       FORMAT( 'WARNING: SumLAI_PFT > 1000 IN SUBROUTINE DEPVEL; ',
+C      &               'I,J=',2I4,1X,'SumLAI_PFT=',F8.4/)  
+C          END IF
 !*                                 
 !*    Loop through the different landuse types present in the grid square     
 !*           
