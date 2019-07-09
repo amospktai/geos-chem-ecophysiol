@@ -121,24 +121,24 @@ MODULE State_Diag_Mod
      LOGICAL :: Archive_DryDepVel
 
      ! Ecophysiology: PFT-level diagnostics (Joey Lam 21 June 2019)
-     INTEGER,   POINTER :: EcophyIUSE_PFT     ( :,:,: ) ! fraction of grid box occupied by PFT 
-     REAL(f8),  POINTER :: EcophyLAI          ( :,:,: ) ! Leaf area index of PFT
-     REAL(f8),  POINTER :: EcophyG_CAN_OUT    ( :,:,: ) ! Bulk canopy stomatal resistance
-     REAL(f8),  POINTER :: EcophyA_CAN_OUT    ( :,:,: ) ! Bulk canopy photosynthesis
-     REAL(f8),  POINTER :: EcophyRESP_CAN_OUT ( :,:,: ) ! Bulk canopy respiration
-     REAL(f8),  POINTER :: EcophyG_LEAF_OUT   ( :,:,: ) ! Leaf level stomatal resistance
-     REAL(f8),  POINTER :: EcophyCO2_IN       ( :,:,: ) ! CO2 internal partial pressure
-     REAL(f8),  POINTER :: EcophyA_NET_OUT    ( :,:,: ) ! Leaf level net photosynthesis
-     REAL(f8),  POINTER :: EcophyRESP_OUT     ( :,:,: ) ! Leaf level respiration
-     REAL(f8),  POINTER :: EcophyFLUXO3_CAN   ( :,:,: ) ! Canopy ozone uptake flux
-     REAL(f8),  POINTER :: EcophyFLUXO3       ( :,:,: ) ! Stomatal ozone uptake flux
-     REAL(f8),  POINTER :: EcophyFACTOR_O3    ( :,:,: ) ! Ozone damage factor 
-     REAL(f8),  POINTER :: EcophyBETA         ( :,:,: ) ! Soil moisture stress factor
-     REAL(f8),  POINTER :: EcophyV_CMAX       ( :,:,: ) ! Maximum Rubisco Carboxylation rate
-     REAL(f8),  POINTER :: EcophyRATE_LIGHT   ( :,:,: ) ! Light-limited photosynthetic rate
-     REAL(f8),  POINTER :: EcophyRATE_RUBISCO ( :,:,: ) ! Rubisco-limited photosynthetic rate
-     REAL(f8),  POINTER :: EcophyRATE_PRODUCT ( :,:,: ) ! Product-limited photosynthetic rate
-     REAL(f8),  POINTER :: EcophyA_GROSS      ( :,:,: ) ! Gross photosynthesis
+     REAL(f4),  POINTER :: EcophyIUSE_PFT     ( :,:,: ) ! fraction of grid box occupied by PFT 
+     REAL(f4),  POINTER :: EcophyLAI          ( :,:,: ) ! Leaf area index of PFT
+     REAL(f4),  POINTER :: EcophyG_CAN_OUT    ( :,:,: ) ! Bulk canopy stomatal resistance
+     REAL(f4),  POINTER :: EcophyA_CAN_OUT    ( :,:,: ) ! Bulk canopy photosynthesis
+     REAL(f4),  POINTER :: EcophyRESP_CAN_OUT ( :,:,: ) ! Bulk canopy respiration
+     REAL(f4),  POINTER :: EcophyG_LEAF_OUT   ( :,:,: ) ! Leaf level stomatal resistance
+     REAL(f4),  POINTER :: EcophyCO2_IN       ( :,:,: ) ! CO2 internal partial pressure
+     REAL(f4),  POINTER :: EcophyA_NET_OUT    ( :,:,: ) ! Leaf level net photosynthesis
+     REAL(f4),  POINTER :: EcophyRESP_OUT     ( :,:,: ) ! Leaf level respiration
+     REAL(f4),  POINTER :: EcophyFLUXO3_CAN   ( :,:,: ) ! Canopy ozone uptake flux
+     REAL(f4),  POINTER :: EcophyFLUXO3       ( :,:,: ) ! Stomatal ozone uptake flux
+     REAL(f4),  POINTER :: EcophyFACTOR_O3    ( :,:,: ) ! Ozone damage factor 
+     REAL(f4),  POINTER :: EcophyBETA         ( :,:,: ) ! Soil moisture stress factor
+     REAL(f4),  POINTER :: EcophyV_CMAX       ( :,:,: ) ! Maximum Rubisco Carboxylation rate
+     REAL(f4),  POINTER :: EcophyRATE_LIGHT   ( :,:,: ) ! Light-limited photosynthetic rate
+     REAL(f4),  POINTER :: EcophyRATE_RUBISCO ( :,:,: ) ! Rubisco-limited photosynthetic rate
+     REAL(f4),  POINTER :: EcophyRATE_PRODUCT ( :,:,: ) ! Product-limited photosynthetic rate
+     REAL(f4),  POINTER :: EcophyA_GROSS      ( :,:,: ) ! Gross photosynthesis
      LOGICAL :: Archive_EcophyIUSE_PFT
      LOGICAL :: Archive_EcophyLAI
      LOGICAL :: Archive_EcophyG_CAN_OUT    
@@ -1840,7 +1840,7 @@ CONTAINS
        ALLOCATE( State_Diag%EcophyIUSE_PFT ( IM,JM,nPFT ), STAT=RC )
        CALL GC_CheckVar( arrayID, 0, RC )
        IF ( RC /= GC_SUCCESS ) RETURN
-       State_Diag%EcophyIUSE_PFT = 0
+       State_Diag%EcophyIUSE_PFT = 0.0_f4
        State_Diag%Archive_EcophyIUSE_PFT = .TRUE.
        CALL Register_DiagField( am_I_Root, diagID, State_Diag%EcophyIUSE_PFT, &
                                 State_Chm, State_Diag, RC                    )

@@ -1025,11 +1025,9 @@
  !      END IF
 
       IF ( State_Diag%Archive_EcophyIUSE_PFT     .AND. SumLAI_PFT /= 0 ) THEN
-         Tmp = State_Diag%EcophyIUSE_PFT     ( I,J,PFT )
-         State_Diag%EcophyIUSE_PFT     ( I,J,PFT ) = IUSE_PFT
+         State_Diag%EcophyIUSE_PFT     ( I,J,PFT ) = DBLE( IUSE_PFT ) 
       END IF
       IF ( State_Diag%Archive_EcophyLAI          .AND. IUSE_PFT /= 0 ) THEN
-         Tmp = State_Diag%EcophyLAI          ( I,J,PFT )
          State_Diag%EcophyLAI          ( I,J,PFT ) = SumLAI_PFT / DBLE( IUSE_PFT )
       END IF
       IF ( State_Diag%Archive_EcophyG_CAN_OUT    .AND. SumLAI_PFT /= 0 ) THEN
