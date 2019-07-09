@@ -1024,15 +1024,13 @@
  ! 1000    FORMAT( 'WARNING: IUSE > SumLAI_PFT in subroutine DO_ECOPHY',4I4,2F8.4 )
  !      END IF
 
-      IF ( State_Diag%Archive_EcophyLAI          .AND. SumLAI_PFT /= 0 ) THEN
-         Tmp = State_Diag%EcophyLAI          ( I,J,PFT )
-         State_Diag%EcophyLAI          ( I,J,PFT ) = Tmp    &
-            + LAI          * DBLE( IUSE ) * LAI / SumLAI_PFT
+      IF ( State_Diag%Archive_EcophyIUSE_PFT     .AND. SumLAI_PFT /= 0 ) THEN
+         Tmp = State_Diag%EcophyIUSE_PFT     ( I,J,PFT )
+         State_Diag%EcophyIUSE_PFT     ( I,J,PFT ) = IUSE_PFT
       END IF
-      IF ( State_Diag%Archive_EcophyLAI2         .AND. IUSE_PFT /= 0 ) THEN
-         Tmp = State_Diag%EcophyLAI2         ( I,J,PFT )
-         State_Diag%EcophyLAI2         ( I,J,PFT ) = Tmp    &
-            + LAI          * DBLE( IUSE ) / DBLE( IUSE_PFT )
+      IF ( State_Diag%Archive_EcophyLAI          .AND. IUSE_PFT /= 0 ) THEN
+         Tmp = State_Diag%EcophyLAI          ( I,J,PFT )
+         State_Diag%EcophyLAI          ( I,J,PFT ) = SumLAI_PFT / DBLE( IUSE_PFT )
       END IF
       IF ( State_Diag%Archive_EcophyG_CAN_OUT    .AND. SumLAI_PFT /= 0 ) THEN
          Tmp = State_Diag%EcophyG_CAN_OUT    ( I,J,PFT )

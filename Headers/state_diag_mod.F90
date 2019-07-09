@@ -121,8 +121,8 @@ MODULE State_Diag_Mod
      LOGICAL :: Archive_DryDepVel
 
      ! Ecophysiology: PFT-level diagnostics (Joey Lam 21 June 2019)
+     INTEGER,   POINTER :: EcophyIUSE_PFT     ( :,:,: ) ! fraction of grid box occupied by PFT 
      REAL(f8),  POINTER :: EcophyLAI          ( :,:,: ) ! Leaf area index of PFT
-     REAL(f8),  POINTER :: EcophyLAI2         ( :,:,: ) ! Leaf area index of PFT 
      REAL(f8),  POINTER :: EcophyG_CAN_OUT    ( :,:,: ) ! Bulk canopy stomatal resistance
      REAL(f8),  POINTER :: EcophyA_CAN_OUT    ( :,:,: ) ! Bulk canopy photosynthesis
      REAL(f8),  POINTER :: EcophyRESP_CAN_OUT ( :,:,: ) ! Bulk canopy respiration
@@ -139,8 +139,8 @@ MODULE State_Diag_Mod
      REAL(f8),  POINTER :: EcophyRATE_RUBISCO ( :,:,: ) ! Rubisco-limited photosynthetic rate
      REAL(f8),  POINTER :: EcophyRATE_PRODUCT ( :,:,: ) ! Product-limited photosynthetic rate
      REAL(f8),  POINTER :: EcophyA_GROSS      ( :,:,: ) ! Gross photosynthesis
+     LOGICAL :: Archive_EcophyIUSE_PFT
      LOGICAL :: Archive_EcophyLAI
-     LOGICAL :: Archive_EcophyLAI2
      LOGICAL :: Archive_EcophyG_CAN_OUT    
      LOGICAL :: Archive_EcophyA_CAN_OUT    
      LOGICAL :: Archive_EcophyRESP_CAN_OUT 
@@ -851,8 +851,8 @@ CONTAINS
     State_Diag%Archive_DryDepVel                   = .FALSE.
 
     ! Ecophy diagnostics (Joey Lam, 02 Apr 2019)
+    State_Diag%EcophyIUSE_PFT                      => NULL()
     State_Diag%EcophyLAI                           => NULL()
-    State_Diag%EcophyLAI2                          => NULL()
     State_Diag%EcophyG_CAN_OUT                     => NULL()
     State_Diag%EcophyA_CAN_OUT                     => NULL()
     State_Diag%EcophyRESP_CAN_OUT                  => NULL()
@@ -869,8 +869,8 @@ CONTAINS
     State_Diag%EcophyRATE_RUBISCO                  => NULL()
     State_Diag%EcophyRATE_PRODUCT                  => NULL()
     State_Diag%EcophyA_GROSS                       => NULL()
+    State_Diag%Archive_EcophyIUSE_PFT              = .FALSE.
     State_Diag%Archive_EcophyLAI                   = .FALSE.
-    State_Diag%Archive_EcophyLAI2                  = .FALSE.
     State_Diag%Archive_EcophyG_CAN_OUT             = .FALSE.
     State_Diag%Archive_EcophyA_CAN_OUT             = .FALSE.
     State_Diag%Archive_EcophyRESP_CAN_OUT          = .FALSE.
@@ -1830,6 +1830,24 @@ CONTAINS
     ENDIF
 
     !-----------------------------------------------------------------------
+    ! Fraction of grid box occupied by the PFT
+    !-----------------------------------------------------------------------
+    arrayID = 'State_Diag%EcophyIUSE_PFT'
+    diagID  = 'EcophyIUSE_PFT'
+    CALL Check_DiagList( am_I_Root, Diag_List, diagID, Found, RC )
+    IF ( Found ) THEN
+       IF ( am_I_Root ) WRITE(6,20) ADJUSTL( arrayID ), TRIM( diagID )
+       ALLOCATE( State_Diag%EcophyIUSE_PFT ( IM,JM,nPFT ), STAT=RC )
+       CALL GC_CheckVar( arrayID, 0, RC )
+       IF ( RC /= GC_SUCCESS ) RETURN
+       State_Diag%EcophyIUSE_PFT = 0
+       State_Diag%Archive_EcophyIUSE_PFT = .TRUE.
+       CALL Register_DiagField( am_I_Root, diagID, State_Diag%EcophyIUSE_PFT, &
+                                State_Chm, State_Diag, RC                    )
+       IF ( RC /= GC_SUCCESS ) RETURN
+    ENDIF
+
+    !-----------------------------------------------------------------------
     ! Leaf area index of the PFT
     !-----------------------------------------------------------------------
     arrayID = 'State_Diag%EcophyLAI'
@@ -1843,24 +1861,6 @@ CONTAINS
        State_Diag%EcophyLAI = 0.0_f4
        State_Diag%Archive_EcophyLAI = .TRUE.
        CALL Register_DiagField( am_I_Root, diagID, State_Diag%EcophyLAI, &
-                                State_Chm, State_Diag, RC                    )
-       IF ( RC /= GC_SUCCESS ) RETURN
-    ENDIF
-
-    !-----------------------------------------------------------------------
-    ! Leaf area index of the PFT
-    !-----------------------------------------------------------------------
-    arrayID = 'State_Diag%EcophyLAI2'
-    diagID  = 'EcophyLAI2'
-    CALL Check_DiagList( am_I_Root, Diag_List, diagID, Found, RC )
-    IF ( Found ) THEN
-       IF ( am_I_Root ) WRITE(6,20) ADJUSTL( arrayID ), TRIM( diagID )
-       ALLOCATE( State_Diag%EcophyLAI2 ( IM,JM,nPFT ), STAT=RC )
-       CALL GC_CheckVar( arrayID, 0, RC )
-       IF ( RC /= GC_SUCCESS ) RETURN
-       State_Diag%EcophyLAI2 = 0.0_f4
-       State_Diag%Archive_EcophyLAI2 = .TRUE.
-       CALL Register_DiagField( am_I_Root, diagID, State_Diag%EcophyLAI2, &
                                 State_Chm, State_Diag, RC                    )
        IF ( RC /= GC_SUCCESS ) RETURN
     ENDIF
@@ -6842,11 +6842,11 @@ CONTAINS
        State_Diag%EcophyLAI => NULL()
     ENDIF
 
-    IF ( ASSOCIATED( State_Diag%EcophyLAI2 ) ) THEN
-       DEALLOCATE( State_Diag%EcophyLAI2, STAT=RC )
-       CALL GC_CheckVar( 'EcophyLAI2', 2, RC )
+    IF ( ASSOCIATED( State_Diag%EcophyIUSE_PFT ) ) THEN
+       DEALLOCATE( State_Diag%EcophyIUSE_PFT, STAT=RC )
+       CALL GC_CheckVar( 'EcophyIUSE_PFT', 2, RC )
        IF ( RC /= GC_SUCCESS ) RETURN
-       State_Diag%EcophyLAI2 => NULL()
+       State_Diag%EcophyIUSE_PFT => NULL()
     ENDIF
 
     IF ( ASSOCIATED( State_Diag%EcophyG_CAN_OUT ) ) THEN
@@ -8615,13 +8615,13 @@ CONTAINS
        IF ( isRank    ) Rank  = 2
        IF ( isTagged  ) TagId = 'DRY'
 
-    ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYLAI' ) THEN 
-       IF ( isDesc    ) Desc  = 'Leaf area index of the PFT'
-       IF ( isUnits   ) Units = 'm2 m-2'
+    ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYIUSE_PFT' ) THEN 
+       IF ( isDesc    ) Desc  = 'Fraction of grid box occupied by the PFT'
+       IF ( isUnits   ) Units = '1000'
        IF ( isRank    ) Rank  = 2
        IF ( isTagged  ) TagID = 'PFT'
 
-    ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYLAI2' ) THEN 
+    ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYLAI' ) THEN 
        IF ( isDesc    ) Desc  = 'Leaf area index of the PFT'
        IF ( isUnits   ) Units = 'm2 m-2'
        IF ( isRank    ) Rank  = 2

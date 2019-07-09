@@ -1161,7 +1161,7 @@
       REAL(fp)          :: XMWO3    ! Molecular weight of O3 
       REAL(fp)          :: RB_O3    ! Boundary layer resistance for O3
       REAL(fp)          :: RAB      ! Aerodynamic and boundary layer resistance
-      REAL(fp)          :: SumLAI_PFT( MAXVAL(IPFT) ) ! leaf area index of the PFT
+      REAL(fp)          :: SumLAI_PFT( MAXVAL(IPFT) ) ! leaf area of the PFT 
       INTEGER           :: IUSE_PFT  ( MAXVAL(IPFT) ) ! fraction of grid box
                                                       ! occupied by the PFT
 
