@@ -741,7 +741,7 @@
       REAL(fp) :: TEMP2
       REAL(fp) :: F
       TEMP1       = 1.e+0_fp + PARAM_A(PFT) * FLUXO3_CRIT(PFT)
-      TEMP2       = 1.67e+0_fp / G_LEAF
+      TEMP2       = 1.61e+0_fp / G_LEAF
       ! Calculate coefficients for quadratic equation F^2 + B*F + C = 0
       IF ( ABS(RAB) < EPSILON(1.e+0_fp) ) THEN
 !        RAB        = 0.0
