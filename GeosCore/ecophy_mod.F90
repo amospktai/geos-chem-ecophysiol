@@ -569,8 +569,8 @@
                RESP_OUT    = RESP
                G_LEAF_OUT  = G_LEAF
             CASE DEFAULT 
-               ErrMsg = 'No ozone damage option chosen. Please choose ' &
-                        'from HI, LOW or OFF.'
+               ErrMsg = 'No ozone damage option chosen. Please ' // &
+                        'choose from HI, LOW or OFF.'
                CALL GC_Error( ErrMsg, RC, ThisLoc )
                RETURN               
             END SELECT   ! O3 damage
@@ -791,12 +791,12 @@
             PARAM_A = PARAM_A_LOW( PFT )
          CASE DEFAULT
             PARAM_A = 0
-            ErrMsg = 'Any O3dmg_opt other than "HI" or "LOW" should not' &
-                     ' have reached this subroutine.'
+            ErrMsg = 'Any O3dmg_opt other than "HI" or "LOW" should ' // &
+                     'not have reached this subroutine.'
             CALL GC_Error( ErrMsg, RC, ThisLoc )
             RETURN
       END SELECT
-      TEMP1       = 1.e+0_fp + PARAM_A(PFT) * FLUXO3_CRIT(PFT)
+      TEMP1       = 1.e+0_fp + PARAM_A * FLUXO3_CRIT(PFT)
       TEMP2       = 1.61e+0_fp / G_LEAF
       ! Calculate coefficients for quadratic equation F^2 + B*F + C = 0
       IF ( ABS(RAB) < EPSILON(1.e+0_fp) ) THEN
