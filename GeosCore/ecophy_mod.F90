@@ -53,7 +53,7 @@
       ! K_EXTINCT     : Light extinction coefficient                      []
       ! PARAM_A_LOW   : PFT-specific parameter for low sensitivity   
       !                 ozone damage scheme                               [m^2 s nmol^-1]
-      ! PARAM_A_HIGH  : PFT-specific parameter for high sensitivity 
+      ! PARAM_A_HI    : PFT-specific parameter for high sensitivity 
       !                 ozone damage scheme                               [m^2 s nmol^-1]
       ! FLUXO3_CRIT   : PFT-specific threshold for ozone uptake           [nmol m^-2 s^-1]
       ! THETA_WILT    : Volumetric soil moisture at wilting point         [m^3 water / m^3 soil]
@@ -75,7 +75,7 @@
       REAL(fp), PARAMETER   :: G_LEAF_MIN    (NUMPFT) = 1.0e-6
       REAL(fp), PARAMETER   :: K_EXTINCT     (NUMPFT) = 0.5
       REAL(fp), PARAMETER   :: PARAM_A_LOW   (NUMPFT) = (/ 0.04, 0.02, 0.25, 0.13, 0.03 /)    ! low sensitivity
-      REAL(fp), PARAMETER   :: PARAM_A_HIGH  (NUMPFT) = (/ 0.15, 0.075, 1.40, 0.735, 0.10 /)  ! high sensistivity
+      REAL(fp), PARAMETER   :: PARAM_A_HI    (NUMPFT) = (/ 0.15, 0.075, 1.40, 0.735, 0.10 /)  ! high sensistivity
       REAL(fp), PARAMETER   :: FLUXO3_CRIT   (NUMPFT) = (/ 1.6,  1.6,  5.0,  5.0,  1.6  /)
       REAL(fp), PARAMETER   :: THRESHOLD              = 1.0e-3
       ! Second set of optimized parameters (from Raoult et al. 2016)
@@ -301,6 +301,10 @@
                                     RATE_LIGHT,   RATE_RUBISCO,             &
                                     RATE_PRODUCT, A_GROSS,    RC            &
                                     )
+!
+! !USES:
+!
+      USE ErrCode_Mod
 ! Main driver of the photosynthesis-stomatal conductance model
 !
 !INPUT PARAMETERS:
@@ -743,6 +747,10 @@
                                 G_LEAF,    PFT,       &
                                 FLUXO3,    FACTOR_O3, &
                                 O3dmg_opt, RC         )
+!
+! !USES:
+!
+      USE ErrCode_Mod
 ! Calculate ozone damage factor based on Sitch et al. (2008)
       !---------------------------------------------------------------------------------------
       ! O3_CONC         : Ozone concentration in canopy layer                     [nmol m^-3]
