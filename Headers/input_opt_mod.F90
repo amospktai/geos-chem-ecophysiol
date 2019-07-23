@@ -231,7 +231,7 @@ MODULE Input_Opt_Mod
      REAL(fp)                    :: WETD_CONV_SCAL
      LOGICAL                     :: PBL_DRYDEP
      LOGICAL                     :: LECOPHY
-     LOGICAL                     :: LO3_DAMAGE
+     CHARACTER(LEN=3)            :: O3dmg_opt 
 
      !----------------------------------------
      ! GAMAP MENU fields
@@ -927,7 +927,7 @@ CONTAINS
     Input_Opt%WETD_CONV_SCAL         = 1.0_fp 
     Input_Opt%PBL_DRYDEP             = .FALSE.
     Input_Opt%LECOPHY                = .FALSE.
-    Input_Opt%LO3_DAMAGE             = .FALSE.
+    Input_Opt%O3dmg_opt              = 'OFF'
 
     !----------------------------------------
     ! GAMAP_MENU fields

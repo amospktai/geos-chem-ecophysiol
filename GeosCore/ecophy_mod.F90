@@ -51,7 +51,10 @@
       ! f0            : PFT-specific parameter for closure eq.            []
       ! G_LEAF_MIN    : PFT-specific min leaf conductance for closure eq. [m s^-1]
       ! K_EXTINCT     : Light extinction coefficient                      []
-      ! PARAM_A       : PFT-specific parameter for ozone damage scheme    [m^2 s nmol^-1]
+      ! PARAM_A_LOW   : PFT-specific parameter for low sensitivity   
+      !                 ozone damage scheme                               [m^2 s nmol^-1]
+      ! PARAM_A_HIGH  : PFT-specific parameter for high sensitivity 
+      !                 ozone damage scheme                               [m^2 s nmol^-1]
       ! FLUXO3_CRIT   : PFT-specific threshold for ozone uptake           [nmol m^-2 s^-1]
       ! THETA_WILT    : Volumetric soil moisture at wilting point         [m^3 water / m^3 soil]
       ! THETA_CRIT    : Critical value of volumetric soil moisture        [m^3 water / m^3 soil]
@@ -71,7 +74,8 @@
       REAL(fp), PARAMETER   :: f0            (NUMPFT) = (/ .875, .875, 0.9,  0.8,  0.9  /)
       REAL(fp), PARAMETER   :: G_LEAF_MIN    (NUMPFT) = 1.0e-6
       REAL(fp), PARAMETER   :: K_EXTINCT     (NUMPFT) = 0.5
-      REAL(fp), PARAMETER   :: PARAM_A       (NUMPFT) = (/ 0.04, 0.02, 0.25, 0.13, 0.03 /)
+      REAL(fp), PARAMETER   :: PARAM_A_LOW   (NUMPFT) = (/ 0.04, 0.02, 0.25, 0.13, 0.03 /)    ! low sensitivity
+      REAL(fp), PARAMETER   :: PARAM_A_HIGH  (NUMPFT) = (/ 0.15, 0.075, 1.40, 0.735, 0.10 /)  ! high sensistivity
       REAL(fp), PARAMETER   :: FLUXO3_CRIT   (NUMPFT) = (/ 1.6,  1.6,  5.0,  5.0,  1.6  /)
       REAL(fp), PARAMETER   :: THRESHOLD              = 1.0e-3
       ! Second set of optimized parameters (from Raoult et al. 2016)
@@ -96,13 +100,13 @@
       ! CRIT          : THETA_CRIT in a single grid box
       ! THETA_WILT    : Soil moisture at wilting point                    [mm]
       ! WILT          : THETA_WILT in a single grid box
-      ! LO3_DAMAGE    : Logical switch for ozone damage scheme            []
+      ! O3dmg_opt     : Control switch for ozone damage scheme            [hi/low/off]
       ! NUMPFT        : Total number of PFTs                              []
       !========================================================================
       REAL(fp)              :: SATU
       REAL(fp)              :: CRIT
       REAL(fp)              :: WILT
-      LOGICAL               :: LO3_DAMAGE
+      CHARACTER(len=3)      :: O3dmg_opt 
       ! INTEGER               :: NUMPFT
 
       !=================================================================
@@ -239,7 +243,7 @@
                               RESP_OUT,     FLUXO3_CAN, FLUXO3,       &
                               FACTOR_O3,    BETA,       V_CMAX,       &
                               RATE_LIGHT,   RATE_RUBISCO,             &
-                              RATE_PRODUCT, A_GROSS                   &
+                              RATE_PRODUCT, A_GROSS,    RC            &
                               )
 
       ! Trap potential errors
@@ -264,6 +268,12 @@
                          RATE_PRODUCT, A_GROSS,                  &
                          State_Met,    State_Diag, RC            &
                        )
+      ! Trap potential errors
+      IF ( RC /= GC_SUCCESS ) THEN
+         ErrMsg = 'Error encountered in call to "GET_ECOPHY_INPUTS!'
+         CALL GC_Error( ErrMsg, RC, ThisLoc )
+         RETURN
+      ENDIF
 
       END SUBROUTINE DO_ECOPHY
 !EOC
@@ -289,7 +299,7 @@
                                     RESP_OUT,     FLUXO3_CAN, FLUXO3,       &
                                     FACTOR_O3,    BETA,       V_CMAX,       &
                                     RATE_LIGHT,   RATE_RUBISCO,             &
-                                    RATE_PRODUCT, A_GROSS                   &
+                                    RATE_PRODUCT, A_GROSS,    RC            &
                                     )
 ! Main driver of the photosynthesis-stomatal conductance model
 !
@@ -308,7 +318,6 @@
       ! O2            : Ambient O2 mole fraction                          [mol/mol air]
       ! O3            : Ozone mole fraction in canopy layer               [mol/mol air]
       ! LAI           : Leaf area index for the PFT                       [m^2 m^-2]
-      ! LO3_DAMAGE    : Logical switch for ozone damage scheme            []
       ! SOIL_WETNESS  : Fraction of moisture in soil pores                []
       ! PFT           : Index for PFT                                     []
       !---------------------------------------------------------------------------------------
@@ -360,6 +369,7 @@
       REAL(fp), INTENT(OUT) :: RATE_RUBISCO
       REAL(fp), INTENT(OUT) :: RATE_PRODUCT
       REAL(fp), INTENT(OUT) :: A_GROSS
+      INTEGER,  INTENT(OUT) :: RC
 !
 !LOCAL VARIABLES:
 !
@@ -419,7 +429,8 @@
       ! REAL(fp)    :: ERR2
       ! REAL(fp)    :: ERR3
       REAL(fp)    :: DELTA
-
+      ! Strings
+      CHARACTER(LEN=255) :: ErrMsg, ThisLoc
       ! Initialize output variables
       G_CAN_OUT      = 0.e+0_fp
       A_CAN_OUT      = 0.e+0_fp
@@ -454,6 +465,11 @@
       TAU            = 0.e+0_fp
       DENOM          = 0.e+0_fp
       DELTA          = 0.e+0_fp
+
+      ! Initialize
+      RC         = GC_SUCCESS
+      ErrMsg     = ''
+      ThisLoc    = ' -> at DO_PHOTOSYNTHESIS (in GeosCore/ecophy_mod.F90)'
 
       TEMPC          = TEMPK - 273.15e+0_fp
       ! Calculate V_CMAX and respiration which depends on V_CMAX only
@@ -527,10 +543,12 @@
                EXIT
             END IF
             ! Apply ozone damage scheme by Sitch et al. (2007)
-            IF ( LO3_DAMAGE ) THEN
-               CALL OZONE_DAMAGE ( O3_CONC,  RAB,         &
-                                   G_LEAF,   PFT,         &
-                                   FLUXO3,   FACTOR_O3    )
+            SELECT CASE( O3dmg_opt )
+            CASE( 'LOW', 'HI' )
+               CALL OZONE_DAMAGE ( O3_CONC,   RAB,         &
+                                   G_LEAF,    PFT,         &
+                                   FLUXO3,    FACTOR_O3,   &
+                                   O3dmg_opt, RC           )
                A_NET_OUT   = FACTOR_O3 * A_NET
                RESP_OUT    = FACTOR_O3 * RESP
                G_LEAF_OUT  = FACTOR_O3 * G_LEAF
@@ -542,11 +560,16 @@
                      G_LEAF_OUT  = G_LEAF_MIN(PFT)
                      EXIT
                   END IF
-            ELSE
+            CASE( 'OFF' )
                A_NET_OUT   = A_NET
                RESP_OUT    = RESP
                G_LEAF_OUT  = G_LEAF
-            END IF   ! O3 damage
+            CASE DEFAULT 
+               ErrMsg = 'No ozone damage option chosen. Please choose ' &
+                        'from HI, LOW or OFF.'
+               CALL GC_Error( ErrMsg, RC, ThisLoc )
+               RETURN               
+            END SELECT   ! O3 damage
          END IF      ! Open or closed stomata
          ! IF ( ITER >= 2 ) THEN
          ! ! calculate error from step 2 onwards
@@ -716,9 +739,10 @@
              * A_NET / ( CO2_AMBIENT - CO2_IN )
       END SUBROUTINE LEAF_CONDUCTANCE
 
-      SUBROUTINE OZONE_DAMAGE ( O3_CONC, RAB,         &
-                                G_LEAF,  PFT,         &
-                                FLUXO3,  FACTOR_O3    )
+      SUBROUTINE OZONE_DAMAGE ( O3_CONC,   RAB,       &
+                                G_LEAF,    PFT,       &
+                                FLUXO3,    FACTOR_O3, &
+                                O3dmg_opt, RC         )
 ! Calculate ozone damage factor based on Sitch et al. (2008)
       !---------------------------------------------------------------------------------------
       ! O3_CONC         : Ozone concentration in canopy layer                     [nmol m^-3]
@@ -727,27 +751,51 @@
       ! PFT             : Index for PFT                                           []
       ! FLUXO3          : Leaf uptake of O3                                       [nmol m^-2 s^-1]
       ! FACTOR_O3       : Ozone damage factor                                     []
+      ! O3dmg_opt       : Control switch for ozone damage scheme                  [HI/LOW/OFF]
+      ! RC              : Return Code                                             []
       !---------------------------------------------------------------------------------------
-      REAL(fp), INTENT(IN)    :: O3_CONC
-      REAL(fp), INTENT(IN)    :: RAB
-      REAL(fp), INTENT(IN)    :: G_LEAF
-      INTEGER,  INTENT(IN)    :: PFT
-      REAL(fp), INTENT(OUT)   :: FLUXO3
-      REAL(fp), INTENT(OUT)   :: FACTOR_O3
+      REAL(fp),         INTENT(IN)  :: O3_CONC
+      REAL(fp),         INTENT(IN)  :: RAB
+      REAL(fp),         INTENT(IN)  :: G_LEAF
+      INTEGER,          INTENT(IN)  :: PFT
+      REAL(fp),         INTENT(OUT) :: FLUXO3
+      REAL(fp),         INTENT(OUT) :: FACTOR_O3
+      CHARACTER(LEN=3), INTENT(IN)  :: O3dmg_opt
+      INTEGER,          INTENT(OUT) :: RC          ! Return code
       ! Local variables
       REAL(fp) :: B       ! Second coefficient in quadratic equation
       REAL(fp) :: C       ! Constant in quadratic equation
       REAL(fp) :: TEMP1
       REAL(fp) :: TEMP2
       REAL(fp) :: F
+      REAL(fp) :: PARAM_A
+      ! Strings
+      CHARACTER(LEN=255) :: ErrMsg,    ThisLoc
+      ! Initialize
+      RC         = GC_SUCCESS
+      ErrMsg     = ''
+      ThisLoc    = ' -> at OZONE_DAMAGE (in GeosCore/ecophy_mod.F90)'
+      ! Choose ozone damage parameters based on sensistivity
+      SELECT CASE( O3dmg_opt )
+         CASE( 'HI' )
+            PARAM_A = PARAM_A_HI( PFT )
+         CASE( 'LOW' )
+            PARAM_A = PARAM_A_LOW( PFT )
+         CASE DEFAULT
+            PARAM_A = 0
+            ErrMsg = 'Any O3dmg_opt other than "HI" or "LOW" should not' &
+                     ' have reached this subroutine.'
+            CALL GC_Error( ErrMsg, RC, ThisLoc )
+            RETURN
+      END SELECT
       TEMP1       = 1.e+0_fp + PARAM_A(PFT) * FLUXO3_CRIT(PFT)
       TEMP2       = 1.61e+0_fp / G_LEAF
       ! Calculate coefficients for quadratic equation F^2 + B*F + C = 0
       IF ( ABS(RAB) < EPSILON(1.e+0_fp) ) THEN
 !        RAB        = 0.0
-        FACTOR_O3 = TEMP1 / ( 1.e+0_fp + PARAM_A(PFT) * O3_CONC / TEMP2 )
+        FACTOR_O3 = TEMP1 / ( 1.e+0_fp + PARAM_A * O3_CONC / TEMP2 )
       ELSE
-        B         = TEMP2 / RAB - TEMP1 + PARAM_A(PFT) * O3_CONC / RAB
+        B         = TEMP2 / RAB - TEMP1 + PARAM_A * O3_CONC / RAB
         C         = - TEMP1 * TEMP2 / RAB
         ! Note that C < 0, SQRT( B^2 - 4*C ) > ABS(B)
         ! Take positive root
@@ -1143,6 +1191,7 @@
 ! !USES:
 !
       USE ErrCode_Mod
+      USE Charpak_Mod,    ONLY : To_UpperCase
       USE Input_Opt_Mod,  ONLY : OptInput
       USE Species_Mod,    ONLY : Species
       USE State_Chm_Mod,  ONLY : ChmState
@@ -1178,7 +1227,7 @@
 
       ! Initialize
       RC        = GC_SUCCESS
-      LO3_DAMAGE= Input_Opt%LO3_DAMAGE
+      O3dmg_opt = To_Uppercase( TRIM( Input_Opt%O3dmg_opt ) )
       ErrMsg    = ''
       ThisLoc   = ' -> at Init_Ecophy (in module GeosCore/ecophysiology.F90)'
 
