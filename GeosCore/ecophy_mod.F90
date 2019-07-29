@@ -72,7 +72,7 @@
       REAL(fp), PARAMETER   :: F_DARKRESP    (NUMPFT) = (/ .015, .015, .015, .025, .015 /)
       REAL(fp), PARAMETER   :: D_STAR        (NUMPFT) = (/ 0.09, 0.06, 0.1,  .075, 0.1  /)
       REAL(fp), PARAMETER   :: f0            (NUMPFT) = (/ .875, .875, 0.9,  0.8,  0.9  /)
-      REAL(fp), PARAMETER   :: G_LEAF_MIN    (NUMPFT) = 1.0e-6
+      REAL(fp), PARAMETER   :: G_LEAF_MIN    (NUMPFT) = 1.0e-4                                ! gives RS ~ 9999
       REAL(fp), PARAMETER   :: K_EXTINCT     (NUMPFT) = 0.5
       REAL(fp), PARAMETER   :: PARAM_A_LOW   (NUMPFT) = (/ 0.04, 0.02, 0.25, 0.13, 0.03 /)    ! low sensitivity
       REAL(fp), PARAMETER   :: PARAM_A_HI    (NUMPFT) = (/ 0.15, 0.075, 1.40, 0.735, 0.10 /)  ! high sensistivity
