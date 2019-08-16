@@ -3448,6 +3448,14 @@
       ENDIF
       READ( SUBSTRS(1:N), * ) Input_Opt%O3dmg_opt 
 
+      ! CO2 concentration in ppmv for ecophysiology module
+      CALL SPLIT_ONE_LINE( SUBSTRS, N, 1, 'CO2_conc', RC )
+      IF ( RC /= GC_SUCCESS ) THEN
+         CALL GC_Error( ErrMsg, RC, ThisLoc )
+         RETURN
+      ENDIF
+      READ( SUBSTRS(1:N), * ) Input_Opt%CO2_conc
+
       ! Turn on wetdep?
       CALL SPLIT_ONE_LINE( SUBSTRS, N, 1, 'LWETD', RC )
       IF ( RC /= GC_SUCCESS ) THEN
@@ -3508,6 +3516,8 @@
      &                        Input_Opt%LECOPHY
          WRITE( 6, 100     ) ' => O3 damage (Sitch)?      : ', 
      &                        Input_Opt%O3dmg_opt 
+         WRITE( 6, 100     ) ' => CO2 conc. (ppmv)        : ', 
+     &                        Input_Opt%CO2_conc   
          WRITE( 6, 100     ) 'Dry dep over full PBL?      : ', 
      &                        Input_Opt%PBL_DRYDEP
          WRITE( 6, 100     ) 'Turn on wet deposition?     : ', 

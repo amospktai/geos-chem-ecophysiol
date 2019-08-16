@@ -232,6 +232,7 @@ MODULE Input_Opt_Mod
      LOGICAL                     :: PBL_DRYDEP
      LOGICAL                     :: LECOPHY
      CHARACTER(LEN=3)            :: O3dmg_opt 
+     REAL(fp)                    :: CO2_conc
 
      !----------------------------------------
      ! GAMAP MENU fields
@@ -928,6 +929,7 @@ CONTAINS
     Input_Opt%PBL_DRYDEP             = .FALSE.
     Input_Opt%LECOPHY                = .FALSE.
     Input_Opt%O3dmg_opt              = 'OFF'
+    Input_Opt%CO2_conc               = 370.0
 
     !----------------------------------------
     ! GAMAP_MENU fields

@@ -859,7 +859,8 @@
 !\\
 ! !INTERFACE:
 !
-      SUBROUTINE GET_ECOPHY_INPUTS( State_Met,    State_Chm, I, J, LDT,&
+      SUBROUTINE GET_ECOPHY_INPUTS( State_Met,    State_Chm, Input_Opt
+                                    I, J, LDT,                         &
                                     TEMPK,        QV2M,                &
                                     PAR_ABSORBED, PRESSURE,  CO2,      &
                                     O2,           LAI,       O3,       &
@@ -876,12 +877,14 @@
       !---------------------------------------------------------------------------------------
       ! State_Met     : Meteorology State Object
       ! State_Chm     : Chemistry State Object
+      ! Input_Opt.    : Input Options Object
       ! I             : Current lon index
       ! J             : Current lat index
       ! LDT           : Land type index
       !---------------------------------------------------------------------------------------
       Type(MetState), INTENT(IN)  :: State_Met
       Type(ChmState), INTENT(IN)  :: State_Chm
+      TYPE(OptInput), INTENT(IN)  :: Input_Opt 
       INTEGER,        INTENT(IN)  :: I
       INTEGER,        INTENT(IN)  :: J
       INTEGER,        INTENT(IN)  :: LDT
@@ -918,7 +921,7 @@
       INTEGER  :: id_CO2, id_O2, id_O3
 
       ! Find tracer indices with function the Ind_() function
-      id_CO2    = IND_( 'CO2' )
+      ! id_CO2    = IND_( 'CO2' )
       id_O2     = IND_( 'O2'  )
       id_O3     = IND_( 'O3'  )
 
@@ -939,7 +942,7 @@
       ! CO2 mole fraction [mol/mol]
       ! CO2           = State_Chm%Species( I,J,1,id_CO2 ) * AIRMW &
       !               / State_Chm%SpcData( id_CO2 )%Info%MW_g
-      CO2           = 3.7e-4_fp
+      CO2           = Input_Opt%CO2_conc * 1.e-6_fp
       ! O2 mole fraction [mol/mol]
       O2            = State_Chm%Species( I,J,1,id_O2  ) * AIRMW &
                     / State_Chm%SpcData( id_O2  )%Info%MW_g
