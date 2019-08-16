@@ -218,7 +218,8 @@
       ' -> at Do_ECOPHY (in module GeosCore/ecophysiology.F90)'
 
       ! get inputs for the module
-      CALL GET_ECOPHY_INPUTS( State_Met,    State_Chm, I, J, LDT,&
+      CALL GET_ECOPHY_INPUTS( State_Met,    State_Chm, Input_Opt,&
+                              I, J, LDT,                         &
                               TEMPK,        QV2M,                &
                               PAR_ABSORBED, PRESSURE,  CO2,      &
                               O2,           LAI,       O3,       &
@@ -859,7 +860,7 @@
 !\\
 ! !INTERFACE:
 !
-      SUBROUTINE GET_ECOPHY_INPUTS( State_Met,    State_Chm, Input_Opt
+      SUBROUTINE GET_ECOPHY_INPUTS( State_Met,    State_Chm, Input_Opt,&
                                     I, J, LDT,                         &
                                     TEMPK,        QV2M,                &
                                     PAR_ABSORBED, PRESSURE,  CO2,      &
