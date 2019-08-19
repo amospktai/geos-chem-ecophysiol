@@ -1797,7 +1797,7 @@ C          END IF
 !** cited on p. 16,476 of Jacob et al. [1992]
                DAIR  = 0.2e0_f8*1.e-4_f8
                id_O3 = IND_( 'O3' )
-               XMWO3 = State_Chm%SpcData( id_O3 )%Info%MW_g
+               XMWO3 = State_Chm%SpcData( id_O3 )%Info%MW_g*1.e-3_fp
                RB_O3 = (2.e+0_f8/CKUSTR)*
      &                 (DAIR/DIFFG(TEMPK,PRESSU(I,J),XMWO3))
      &                 **0.667e+0_f8
