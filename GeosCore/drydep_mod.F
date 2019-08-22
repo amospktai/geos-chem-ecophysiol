@@ -1871,7 +1871,7 @@ C          END IF
             !-----------------------------------------------------------------
             ! Use default Wesely scheme values for non-vegetated grid boxes
             ! or if ecophysiology module is turned off
-            IF ( LECOPHY .AND. IPFT(IOLSON) .NE. 0 ) THEN
+            IF ( LECOPHY .AND. PFT .NE. 0 ) THEN
 
                ! Get boundary layer resistance Rb for ozone in order to 
                ! implement ozone damage scheme in ecophysiology module
@@ -1916,12 +1916,17 @@ C                RAB   = RA + RB_O3
  150           CONTINUE
             ENDIF
 
-! Archive stomatal resistance for checking ecophysiology module (Joey Lam, 09 Apr 2019)
-C #ifdef NC_DIAG 
-C       IF ( State_Diag%Archive_EcophyRS ) THEN
-C          State_Diag%EcophyRS        ( I,J,IOLSON ) = RIX
-C       END IF
-C #endif
+! Archive stomatal conductance for checking ecophysiology module (Joey Lam, 09 Apr 2019)
+#ifdef NC_DIAG 
+            IF ( State_Diag%Archive_EcophyG_CAN_OUT 
+     &           .AND. PFT .NE. 0 
+     &           .AND. SumLAI_PFT /= 0 ) THEN
+               Tmp = State_Diag%EcophyG_CAN_OUT ( I,J,PFT )
+               State_Diag%EcophyG_CAN_OUT ( I,J,PFT ) = Tmp 
+     &             + DBLE( IUSE(I,J,LDT) ) * XLAI(I,J,LDT) / RIX 
+     &             / SumLAI_PFT(PFT)
+            END IF
+#endif
 
 !*                                 
 !*    Compute aerodynamic resistance to lower elements in lower part           

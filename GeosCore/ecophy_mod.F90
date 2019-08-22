@@ -448,8 +448,8 @@
       RESP_OUT       = 0.e+0_fp
       FLUXO3_CAN     = 0.e+0_fp
       FLUXO3         = 0.e+0_fp
-      FACTOR_O3      = 0.e+0_fp
-      BETA           = 0.e+0_fp
+      FACTOR_O3      = 1.e+0_fp
+      BETA           = 1.e+0_fp
       V_CMAX         = 0.e+0_fp
       RATE_LIGHT     = 0.e+0_fp
       RATE_RUBISCO   = 0.e+0_fp
@@ -1098,11 +1098,11 @@
       IF ( State_Diag%Archive_EcophyRB_O3        .AND. SumLAI_PFT /= 0 ) THEN
          State_Diag%EcophyRB_O3  ( I,J ) = RB_O3
       END IF
-      IF ( State_Diag%Archive_EcophyG_CAN_OUT    .AND. SumLAI_PFT /= 0 ) THEN
-         Tmp = State_Diag%EcophyG_CAN_OUT    ( I,J,PFT )
-         State_Diag%EcophyG_CAN_OUT    ( I,J,PFT ) = Tmp    &
-            + G_CAN_OUT    * DBLE( IUSE ) * LAI / SumLAI_PFT
-      END IF
+      ! IF ( State_Diag%Archive_EcophyG_CAN_OUT    .AND. SumLAI_PFT /= 0 ) THEN
+      !    Tmp = State_Diag%EcophyG_CAN_OUT    ( I,J,PFT )
+      !    State_Diag%EcophyG_CAN_OUT    ( I,J,PFT ) = Tmp    &
+      !       + G_CAN_OUT    * DBLE( IUSE ) * LAI / SumLAI_PFT
+      ! END IF
       IF ( State_Diag%Archive_EcophyA_CAN_OUT    .AND. SumLAI_PFT /= 0 ) THEN
          Tmp = State_Diag%EcophyA_CAN_OUT    ( I,J,PFT )
          State_Diag%EcophyA_CAN_OUT    ( I,J,PFT ) = Tmp    &
