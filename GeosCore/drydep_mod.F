@@ -1801,13 +1801,13 @@ C          END IF
                RB_O3 = (2.e+0_f8/CKUSTR)*
      &                 (DAIR/DIFFG(TEMPK,PRESSU(I,J),XMWO3))
      &                 **0.667e+0_f8
-               RAB   = RA + RB_O3
+C                RAB   = RA + RB_O3
 
                PFT = IPFT(IOLSON)
                ! Call from ecophysiology module to get RIX 
                CALL DO_ECOPHY ( am_I_Root, Input_Opt,  State_Met, 
      &                          State_Chm, State_Diag, RC,         
-     &                          I, J,      LDT, PFT,   RAB, 
+     &                          I, J,      LDT, PFT,   RA, RB_O3,
      &                          RS,        SumLAI_PFT(PFT),          
      &                          IUSE_PFT(PFT)                     )
                RIX = RS

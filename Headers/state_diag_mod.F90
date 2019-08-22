@@ -123,10 +123,12 @@ MODULE State_Diag_Mod
      ! Ecophysiology: PFT-level diagnostics (Joey Lam 21 June 2019)
      REAL(f4),  POINTER :: EcophyIUSE_PFT     ( :,:,: ) ! fraction of grid box occupied by PFT 
      REAL(f4),  POINTER :: EcophyLAI          ( :,:,: ) ! Leaf area index of PFT
-     REAL(f4),  POINTER :: EcophyG_CAN_OUT    ( :,:,: ) ! Bulk canopy stomatal resistance
+     REAL(f4),  POINTER :: EcophyRA           ( :,:   ) ! Aerodynamic resistance
+     REAL(f4),  POINTER :: EcophyRB_O3        ( :,:   ) ! Boundary layer resistance
+     REAL(f4),  POINTER :: EcophyG_CAN_OUT    ( :,:,: ) ! Bulk canopy stomatal conductance
      REAL(f4),  POINTER :: EcophyA_CAN_OUT    ( :,:,: ) ! Bulk canopy photosynthesis
      REAL(f4),  POINTER :: EcophyRESP_CAN_OUT ( :,:,: ) ! Bulk canopy respiration
-     REAL(f4),  POINTER :: EcophyG_LEAF_OUT   ( :,:,: ) ! Leaf level stomatal resistance
+     REAL(f4),  POINTER :: EcophyG_LEAF_OUT   ( :,:,: ) ! Leaf level stomatal conductance
      REAL(f4),  POINTER :: EcophyCO2_IN       ( :,:,: ) ! CO2 internal partial pressure
      REAL(f4),  POINTER :: EcophyA_NET_OUT    ( :,:,: ) ! Leaf level net photosynthesis
      REAL(f4),  POINTER :: EcophyRESP_OUT     ( :,:,: ) ! Leaf level respiration
@@ -141,6 +143,8 @@ MODULE State_Diag_Mod
      REAL(f4),  POINTER :: EcophyA_GROSS      ( :,:,: ) ! Gross photosynthesis
      LOGICAL :: Archive_EcophyIUSE_PFT
      LOGICAL :: Archive_EcophyLAI
+     LOGICAL :: Archive_EcophyRA
+     LOGICAL :: Archive_EcophyRB_O3
      LOGICAL :: Archive_EcophyG_CAN_OUT    
      LOGICAL :: Archive_EcophyA_CAN_OUT    
      LOGICAL :: Archive_EcophyRESP_CAN_OUT 
@@ -853,6 +857,8 @@ CONTAINS
     ! Ecophy diagnostics (Joey Lam, 02 Apr 2019)
     State_Diag%EcophyIUSE_PFT                      => NULL()
     State_Diag%EcophyLAI                           => NULL()
+    State_Diag%EcophyRA                            => NULL()
+    State_Diag%EcophyRB_O3                         => NULL()
     State_Diag%EcophyG_CAN_OUT                     => NULL()
     State_Diag%EcophyA_CAN_OUT                     => NULL()
     State_Diag%EcophyRESP_CAN_OUT                  => NULL()
@@ -871,6 +877,8 @@ CONTAINS
     State_Diag%EcophyA_GROSS                       => NULL()
     State_Diag%Archive_EcophyIUSE_PFT              = .FALSE.
     State_Diag%Archive_EcophyLAI                   = .FALSE.
+    State_Diag%Archive_EcophyRA                    = .FALSE.
+    State_Diag%Archive_EcophyRB_O3                 = .FALSE.
     State_Diag%Archive_EcophyG_CAN_OUT             = .FALSE.
     State_Diag%Archive_EcophyA_CAN_OUT             = .FALSE.
     State_Diag%Archive_EcophyRESP_CAN_OUT          = .FALSE.
@@ -1864,6 +1872,42 @@ CONTAINS
                                 State_Chm, State_Diag, RC                    )
        IF ( RC /= GC_SUCCESS ) RETURN
     ENDIF
+
+     !-----------------------------------------------------------------------
+     ! Aerodynamic resistance
+     !-----------------------------------------------------------------------
+     arrayID = 'State_Diag%EcophyRA'
+     diagID  = 'EcophyRA'
+     CALL Check_DiagList( am_I_Root, Diag_List, diagID, Found, RC )
+     IF ( Found ) THEN
+        IF ( am_I_Root ) WRITE(6,20) ADJUSTL( arrayID ), TRIM( diagID )
+        ALLOCATE( State_Diag%EcophyRA ( IM,JM ), STAT=RC )
+        CALL GC_CheckVar( arrayID, 0, RC )
+        IF ( RC /= GC_SUCCESS ) RETURN
+        State_Diag%EcophyRA = 0.0_f4
+        State_Diag%Archive_EcophyRA = .TRUE.
+        CALL Register_DiagField( am_I_Root, diagID, State_Diag%EcophyRA, &
+                                 State_Chm, State_Diag, RC                    )
+        IF ( RC /= GC_SUCCESS ) RETURN
+     ENDIF
+ 
+     !-----------------------------------------------------------------------
+     ! Boundary layer resistance
+     !-----------------------------------------------------------------------
+     arrayID = 'State_Diag%EcophyRB_O3'
+     diagID  = 'EcophyRB_O3'
+     CALL Check_DiagList( am_I_Root, Diag_List, diagID, Found, RC )
+     IF ( Found ) THEN
+        IF ( am_I_Root ) WRITE(6,20) ADJUSTL( arrayID ), TRIM( diagID )
+        ALLOCATE( State_Diag%EcophyRB_O3 ( IM,JM ), STAT=RC )
+        CALL GC_CheckVar( arrayID, 0, RC )
+        IF ( RC /= GC_SUCCESS ) RETURN
+        State_Diag%EcophyRB_O3 = 0.0_f4
+        State_Diag%Archive_EcophyRB_O3 = .TRUE.
+        CALL Register_DiagField( am_I_Root, diagID, State_Diag%EcophyRB_O3, &
+                                 State_Chm, State_Diag, RC                    )
+        IF ( RC /= GC_SUCCESS ) RETURN
+     ENDIF
 
     !-----------------------------------------------------------------------
     ! Bulk canopy stomatal conductance
@@ -6842,6 +6886,20 @@ CONTAINS
        State_Diag%EcophyLAI => NULL()
     ENDIF
 
+    IF ( ASSOCIATED( State_Diag%EcophyRA ) ) THEN
+       DEALLOCATE( State_Diag%EcophyRA, STAT=RC )
+       CALL GC_CheckVar( 'EcophyRA', 2, RC )
+       IF ( RC /= GC_SUCCESS ) RETURN
+       State_Diag%EcophyRA => NULL()
+    ENDIF
+
+    IF ( ASSOCIATED( State_Diag%EcophyRB_O3 ) ) THEN
+       DEALLOCATE( State_Diag%EcophyRB_O3, STAT=RC )
+       CALL GC_CheckVar( 'EcophyRB_O3', 2, RC )
+       IF ( RC /= GC_SUCCESS ) RETURN
+       State_Diag%EcophyRB_O3 => NULL()
+    ENDIF
+
     IF ( ASSOCIATED( State_Diag%EcophyIUSE_PFT ) ) THEN
        DEALLOCATE( State_Diag%EcophyIUSE_PFT, STAT=RC )
        CALL GC_CheckVar( 'EcophyIUSE_PFT', 2, RC )
@@ -8626,6 +8684,16 @@ CONTAINS
        IF ( isUnits   ) Units = 'm2 m-2'
        IF ( isRank    ) Rank  = 2
        IF ( isTagged  ) TagID = 'PFT'
+
+    ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYRA' ) THEN 
+       IF ( isDesc    ) Desc  = 'Aerodynamic resistance'
+       IF ( isUnits   ) Units = 's m-1'
+       IF ( isRank    ) Rank  = 2
+
+    ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYRB_O3' ) THEN 
+       IF ( isDesc    ) Desc  = 'Boundary layer resistance'
+       IF ( isUnits   ) Units = 's m-1'
+       IF ( isRank    ) Rank  = 2
 
     ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYG_CAN_OUT' ) THEN 
        IF ( isDesc    ) Desc  = 'Bulk canopy stomatal conductance'

@@ -131,7 +131,7 @@
 !
       SUBROUTINE DO_ECOPHY ( am_I_Root, Input_Opt,  State_Met, &
                              State_Chm, State_Diag, RC,        &
-                             I, J,      LDT, PFT,   RAB,       &
+                             I, J,      LDT, PFT,   RA, RB_O3, &
                              RS,        SumLAI_PFT, IUSE_PFT   )
 !
 ! !USES:
@@ -152,8 +152,8 @@
       INTEGER,        INTENT(IN)    :: LDT         ! Land type index (for archiving)
       TYPE(OptInput), INTENT(IN)    :: Input_Opt   ! Input Options object
       TYPE(MetState), INTENT(IN)    :: State_Met   ! Meteorology State object
-      REAL(fp),       INTENT(IN)    :: RAB         ! Aerodynamic and 
-                                                   ! boundary layer resistance
+      REAL(fp),       INTENT(IN)    :: RA          ! Aerodynamic resistance 
+      REAL(fp),       INTENT(IN)    :: RB_O3       ! Boundary layer resistance
       REAL(fp),       INTENT(IN)    :: SumLAI_PFT  ! leaf area of the PFT
       INTEGER,        INTENT(IN)    :: IUSE_PFT    ! fraction of grid box 
                                                    ! occupied by the PFT
@@ -235,7 +235,7 @@
       ENDIF
 
       ! simulate plant processes
-      CALL DO_PHOTOSYNTHESIS( TEMPK,        QV2M,       RAB,          &
+      CALL DO_PHOTOSYNTHESIS( TEMPK,        QV2M,       RA, RB_O3,    &
                               PAR_ABSORBED, PRESSURE,   CO2,          &
                               O2,           LAI,        O3,           &
                               SOIL_WETNESS, PFT,                      &
@@ -260,10 +260,9 @@
       ! Send output to State_Diag
       CALL Ecophy_Diagn( I, J,         LDT,        PFT,          &
                          IUSE,         LAI,        SumLAI_PFT,   &
-                         IUSE_PFT,                               &
+                         IUSE_PFT,     RA,         RB_O3,        &
                          G_CAN_OUT,    A_CAN_OUT,  RESP_CAN_OUT, &
-                         G_LEAF_OUT,   CO2_IN,     A_NET_OUT,    &
-                         RESP_OUT,     FLUXO3_CAN, FLUXO3,       &
+                         CO2_IN,       FLUXO3_CAN,               &
                          FACTOR_O3,    BETA,       V_CMAX,       &
                          RATE_LIGHT,   RATE_RUBISCO,             &
                          RATE_PRODUCT, A_GROSS,                  &
@@ -291,7 +290,7 @@
 !\\
 ! !INTERFACE:
 !
-      SUBROUTINE DO_PHOTOSYNTHESIS( TEMPK,        QV2M,       RAB,          &
+      SUBROUTINE DO_PHOTOSYNTHESIS( TEMPK,        QV2M,       RA, RB_O3,    &
                                     PAR_ABSORBED, PRESSURE,   CO2,          &
                                     O2,           LAI,        O3,           &
                                     SOIL_WETNESS, PFT,                      &
@@ -316,7 +315,8 @@
       !---------------------------------------------------------------------------------------
       ! TEMPK         : Leaf temperature in Kelvin                        [K]
       ! QV2M          : Specific humidity in canopy layer                 [kg H2O / kg air]
-      ! RAB           : Aerodynamic and boundary layer resistance         [s m^-1]
+      ! RA            : Aerodynamic resistance                            [s m^-1]
+      ! RB_O3         : Boundary layer resistance                         [s m^-1]
       ! PAR_ABSORBED  : Absorbed PAR                                      [W m^-2]
       ! PRESSURE      : Atmospheric Pressure in canopy layer              [Pa]
       ! CO2           : Ambient CO2 mole fraction                         [mol/mol air]
@@ -328,7 +328,8 @@
       !---------------------------------------------------------------------------------------
       REAL(fp), INTENT(IN)  :: TEMPK
       REAL(fp), INTENT(IN)  :: QV2M
-      REAL(fp), INTENT(IN)  :: RAB
+      REAL(fp), INTENT(IN)  :: RA
+      REAL(fp), INTENT(IN)  :: RB_O3
       REAL(fp), INTENT(IN)  :: PAR_ABSORBED
       REAL(fp), INTENT(IN)  :: PRESSURE
       REAL(fp), INTENT(IN)  :: CO2
@@ -434,6 +435,7 @@
       ! REAL(fp)    :: ERR2
       ! REAL(fp)    :: ERR3
       REAL(fp)    :: DELTA
+      REAL(fp)    :: RAB
       ! Strings
       CHARACTER(LEN=255) :: ErrMsg, ThisLoc
       ! Initialize output variables
@@ -494,6 +496,8 @@
       CO2_AMBIENT    = PRESSURE * CO2
       ! Calculate O3 molar concentration in canopy layer
       O3_CONC        = O3 * PRESSURE / RSTARG / TEMPK * 1.e+9_fp
+      ! Calculate aerodynamic and boundary layer resistance for ozone damage 
+      RAB            = RA + RB_O3
 
       ! To modify net photosynthesis rate by soil moisture stress later
       ! Not needed to be inside the loop
@@ -985,10 +989,9 @@
 !
       SUBROUTINE Ecophy_Diagn( I, J,         LDT,        PFT,          &
                                IUSE,         LAI,        SumLAI_PFT,   &
-                               IUSE_PFT,                               &
+                               IUSE_PFT,     RA,         RB_O3,        &
                                G_CAN_OUT,    A_CAN_OUT,  RESP_CAN_OUT, &
-                               G_LEAF_OUT,   CO2_IN,     A_NET_OUT,    &
-                               RESP_OUT,     FLUXO3_CAN, FLUXO3,       &
+                               CO2_IN,       FLUXO3_CAN,               &
                                FACTOR_O3,    BETA,       V_CMAX,       &
                                RATE_LIGHT,   RATE_RUBISCO,             &
                                RATE_PRODUCT, A_GROSS,                  &
@@ -1008,15 +1011,13 @@
       REAL(fp),       INTENT(IN)    :: LAI
       REAL(fp),       INTENT(IN)    :: SumLAI_PFT
       INTEGER,        INTENT(IN)    :: IUSE_PFT
+      REAL(fp),       INTENT(IN)    :: RA
+      REAL(fp),       INTENT(IN)    :: RB_O3
       REAL(fp),       INTENT(IN)    :: G_CAN_OUT
       REAL(fp),       INTENT(IN)    :: A_CAN_OUT
       REAL(fp),       INTENT(IN)    :: RESP_CAN_OUT
-      REAL(fp),       INTENT(IN)    :: G_LEAF_OUT
       REAL(fp),       INTENT(IN)    :: CO2_IN
-      REAL(fp),       INTENT(IN)    :: A_NET_OUT
-      REAL(fp),       INTENT(IN)    :: RESP_OUT
       REAL(fp),       INTENT(IN)    :: FLUXO3_CAN 
-      REAL(fp),       INTENT(IN)    :: FLUXO3
       REAL(fp),       INTENT(IN)    :: FACTOR_O3
       REAL(fp),       INTENT(IN)    :: BETA
       REAL(fp),       INTENT(IN)    :: V_CMAX
@@ -1091,6 +1092,12 @@
       IF ( State_Diag%Archive_EcophyLAI          .AND. IUSE_PFT /= 0 ) THEN
          State_Diag%EcophyLAI          ( I,J,PFT ) = SumLAI_PFT / DBLE( IUSE_PFT )
       END IF
+      IF ( State_Diag%Archive_EcophyRA           .AND. SumLAI_PFT /= 0 ) THEN
+         State_Diag%EcophyRA     ( I,J ) = RA
+      END IF
+      IF ( State_Diag%Archive_EcophyRB_O3        .AND. SumLAI_PFT /= 0 ) THEN
+         State_Diag%EcophyRB_O3  ( I,J ) = RB_O3
+      END IF
       IF ( State_Diag%Archive_EcophyG_CAN_OUT    .AND. SumLAI_PFT /= 0 ) THEN
          Tmp = State_Diag%EcophyG_CAN_OUT    ( I,J,PFT )
          State_Diag%EcophyG_CAN_OUT    ( I,J,PFT ) = Tmp    &
@@ -1106,35 +1113,15 @@
          State_Diag%EcophyRESP_CAN_OUT ( I,J,PFT ) = Tmp    &
             + RESP_CAN_OUT * DBLE( IUSE ) * LAI / SumLAI_PFT
       END IF
-      IF ( State_Diag%Archive_EcophyG_LEAF_OUT   .AND. SumLAI_PFT /= 0 ) THEN
-         Tmp = State_Diag%EcophyG_LEAF_OUT   ( I,J,PFT )
-         State_Diag%EcophyG_LEAF_OUT   ( I,J,PFT ) = Tmp    &
-            + G_LEAF_OUT   * DBLE( IUSE ) * LAI / SumLAI_PFT
-      END IF
       IF ( State_Diag%Archive_EcophyCO2_IN       .AND. SumLAI_PFT /= 0 ) THEN
          Tmp = State_Diag%EcophyCO2_IN       ( I,J,PFT )
          State_Diag%EcophyCO2_IN       ( I,J,PFT ) = Tmp    &
             + CO2_IN       * DBLE( IUSE ) * LAI / SumLAI_PFT
       END IF
-      IF ( State_Diag%Archive_EcophyA_NET_OUT    .AND. SumLAI_PFT /= 0 ) THEN
-         Tmp = State_Diag%EcophyA_NET_OUT    ( I,J,PFT )
-         State_Diag%EcophyA_NET_OUT    ( I,J,PFT ) = Tmp    &
-            + A_NET_OUT    * DBLE( IUSE ) * LAI / SumLAI_PFT
-      END IF
-      IF ( State_Diag%Archive_EcophyRESP_OUT     .AND. SumLAI_PFT /= 0 ) THEN
-         Tmp = State_Diag%EcophyRESP_OUT     ( I,J,PFT )
-         State_Diag%EcophyRESP_OUT     ( I,J,PFT ) = Tmp    &
-            + RESP_OUT     * DBLE( IUSE ) * LAI / SumLAI_PFT
-      END IF
       IF ( State_Diag%Archive_EcophyFLUXO3_CAN   .AND. SumLAI_PFT /= 0 ) THEN
          Tmp = State_Diag%EcophyFLUXO3_CAN   ( I,J,PFT )
          State_Diag%EcophyFLUXO3_CAN   ( I,J,PFT ) = Tmp    &
             + FLUXO3_CAN   * DBLE( IUSE ) * LAI / SumLAI_PFT
-      END IF
-      IF ( State_Diag%Archive_EcophyFLUXO3       .AND. SumLAI_PFT /= 0 ) THEN
-         Tmp = State_Diag%EcophyFLUXO3       ( I,J,PFT )
-         State_Diag%EcophyFLUXO3       ( I,J,PFT ) = Tmp    &
-            + FLUXO3       * DBLE( IUSE ) * LAI / SumLAI_PFT
       END IF
       IF ( State_Diag%Archive_EcophyFACTOR_O3    .AND. SumLAI_PFT /= 0 ) THEN
          Tmp = State_Diag%EcophyFACTOR_O3    ( I,J,PFT )
