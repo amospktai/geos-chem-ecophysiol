@@ -454,6 +454,7 @@
                                                   !  current chemistry timestep
       ! PFT-specific diagnostics (Joey Lam, 22 Aug 2019)
       REAL(f8)      :: DVEL_PFT  (IIPAR,JJPAR,NUMDEP,MAXVAL(IPFT)) ! drydep velocities [m/s]
+      INTEGER       :: PFT
 
       ! Pointers
       REAL(fp), POINTER :: DEPSAV (:,:,:   )      ! Dry deposition frequencies [s-1]
@@ -1313,6 +1314,12 @@
 
       ! Initialize DVEL
       DVEL = 0.0e+0_f8
+      ! Initialize if PFT-specific dry dep velocity is enabled 
+      ! (Joey Lam, 28 Aug 2019)
+      IF ( State_Diag%Archive_DryDepVel_anyPFT ) THEN
+         DVEL_PFT = 0.e+0_fp
+         VD_PFT = 0.e+0_fp
+      ENDIF
 
 !***********************************************************************
 !*                                 
@@ -2160,7 +2167,8 @@ C #endif
                VK(K) = VD(K)
                VD(K) = VK(K) +.001D0* DBLE( IUSE(I,J,LDT) )/C1X(K)
                ! PFT-specific dry deposition velocity (Joey Lam, 22 Aug 2019)
-               IF ( PFT .NE. 0 ) THEN
+               IF ( State_Diag%Archive_DryDepVel_anyPFT 
+     &              .and. PFT .NE. 0 ) THEN
                   VK(K) = VD_PFT(K,PFT) 
                   VD_PFT(K,PFT) = VK(K) + DBLE( IUSE(I,J,LDT) )/C1X(K)
      &                                    / IUSE_PFT(PFT)
@@ -2192,8 +2200,12 @@ C #endif
             IF (.NOT.LDEP(K)) GOTO 550
             DVEL(I,J,K) = VD(K)
             ! PFT-specific dry deposition velocity (Joey Lam, 22 Aug 2019)
-            DVEL(I,J,K,PFT) = VD_PFT(K,PFT)
-            
+            IF ( State_Diag%Archive_DryDepVel_anyPFT ) THEN
+               DO PFT = 1,MAXVAL(IPFT)
+                  DVEL_PFT(I,J,K,PFT) = VD_PFT(K,PFT)
+               ENDDO
+            ENDIF
+
             ! Now check for negative deposition velocity 
             ! before returning to calling program (bmy, 4/16/00)
             ! Also call CLEANUP to deallocate arrays (bmy, 10/15/02)
