@@ -1231,6 +1231,7 @@
                                                       ! occupied by the PFT
       ! PFT-specific diagnostics (Joey Lam, 22 Aug 2019)
       REAL(fp)          :: VD_PFT( NUMDEP, MAXVAL(IPFT) )
+      REAL(fp)          :: Tmp
 
       ! For the species database
       INTEGER                :: SpcId
@@ -1920,7 +1921,7 @@ C                RAB   = RA + RB_O3
 #ifdef NC_DIAG 
             IF ( State_Diag%Archive_EcophyG_CAN_OUT 
      &           .AND. PFT .NE. 0 
-     &           .AND. SumLAI_PFT /= 0 ) THEN
+     &           .AND. SumLAI_PFT(PFT) /= 0 ) THEN
                Tmp = State_Diag%EcophyG_CAN_OUT ( I,J,PFT )
                State_Diag%EcophyG_CAN_OUT ( I,J,PFT ) = Tmp 
      &             + DBLE( IUSE(I,J,LDT) ) * XLAI(I,J,LDT) / RIX 
