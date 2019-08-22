@@ -1318,7 +1318,6 @@
       ! (Joey Lam, 28 Aug 2019)
       IF ( State_Diag%Archive_DryDepVel_anyPFT ) THEN
          DVEL_PFT = 0.e+0_fp
-         VD_PFT = 0.e+0_fp
       ENDIF
 
 !***********************************************************************
@@ -1389,6 +1388,15 @@
                RSURFC(K,LDT) = 0.e+0_f8
             END DO
          END DO
+         ! Initialize if PFT-specific dry dep velocity is enabled 
+         ! (Joey Lam, 28 Aug 2019)
+         IF ( State_Diag%Archive_DryDepVel_anyPFT ) THEN
+            DO K = 1,NUMDEP
+               DO PFT = 1,MAXVAL(IPFT)
+                  VD_PFT(K,PFT) = 0.e+0_fp
+               ENDDO
+            ENDDO
+         ENDIF
 
 !** Calculate the kinematic viscosity XNU (m2 s-1) of air
 !** as a function of temperature.
