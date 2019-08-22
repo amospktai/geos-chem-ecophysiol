@@ -452,6 +452,8 @@
       REAL(f8)      :: AZO   (IIPAR,JJPAR)        ! Z0, per (I,J) square
       REAL(f8)      :: SUNCOS_MID(IIPAR,JJPAR)    ! COS(SZA) @ midpoint of the
                                                   !  current chemistry timestep
+      ! PFT-specific diagnostics (Joey Lam, 22 Aug 2019)
+      REAL(f8)      :: DVEL_PFT  (IIPAR,JJPAR,NUMDEP,MAXVAL(IPFT)) ! drydep velocities [m/s]
 
       ! Pointers
       REAL(fp), POINTER :: DEPSAV (:,:,:   )      ! Dry deposition frequencies [s-1]
@@ -495,7 +497,8 @@
      &             State_Diag, RADIAT,   TC0,        SUNCOS_MID,
      &             F0,        HSTAR,     XMW,        AIROSOL,           
      &             USTAR,     CZ1,       OBK,        CFRAC,
-     &             ZH,        LSNOW,     DVEL,       AZO,              
+     &             ZH,        LSNOW,     DVEL,       AZO,            
+     &             DVEL_PFT,  
      &             RHB,       PRESSU,    W10,        RC            )
 
       ! Trap potential errors
@@ -651,6 +654,62 @@
             ! Archive dry dep velocity [cm/s]
             IF ( State_Diag%Archive_DryDepVel ) THEN
                State_Diag%DryDepVel(I,J,D) = DVZ
+            ENDIF
+
+            ! PFT-specific diagnostics (Joey Lam, 22 Aug 2019)
+            IF ( State_Diag%Archive_DryDepVel_anyPFT ) THEN
+            DO PFT = 1, MAXVAL(IPFT)
+
+               ! Dry deposition velocity [cm/s]
+               DVZ = DVEL_PFT(I,J,NDVZ,PFT) * 100.e+0_fp
+
+               ! Scale relative to specified species (krt, 3/1/15)
+               IF ( FLAG(D) .eq. 1 )  THEN
+
+                  ! Scale species to HNO3 
+                  DVZ = DVZ * sqrt(State_Chm%SpcData(id_HNO3)%Info%MW_g)
+     &                      / sqrt(SpcInfo%MW_g)
+
+               ELSE IF ( FLAG(D) .eq. 2 ) THEN
+
+                  ! Scale species to PAN
+                  DVZ = DVZ * sqrt(State_Chm%SpcData(id_PAN)%Info%MW_g)
+     &                      / sqrt(SpcInfo%MW_g)         
+
+               ELSE IF ( FLAG(D) .eq. 3 ) THEN
+
+                  ! Scale species to ISOPN
+                  DVZ = DVZ 
+     &                    * sqrt(State_Chm%SpcData(id_ISOPND)%Info%MW_g)
+     &                    / sqrt(SpcInfo%MW_g)            
+
+               ENDIF
+
+               SELECT CASE ( PFT )
+               CASE( 1 )
+                  IF ( State_Diag%Archive_DryDepVel_PFT1 ) THEN
+                     State_Diag%DryDepVel_PFT1(I,J,D) = DVZ
+                  ENDIF
+               CASE( 2 )
+                  IF ( State_Diag%Archive_DryDepVel_PFT2 ) THEN
+                     State_Diag%DryDepVel_PFT2(I,J,D) = DVZ
+                  ENDIF
+               CASE( 3 )
+                  IF ( State_Diag%Archive_DryDepVel_PFT3 ) THEN
+                     State_Diag%DryDepVel_PFT3(I,J,D) = DVZ
+                  ENDIF
+               CASE( 4 )
+                  IF ( State_Diag%Archive_DryDepVel_PFT4 ) THEN
+                     State_Diag%DryDepVel_PFT4(I,J,D) = DVZ
+                  ENDIF
+               CASE( 5 )
+                  IF ( State_Diag%Archive_DryDepVel_PFT5 ) THEN
+                     State_Diag%DryDepVel_PFT5(I,J,D) = DVZ
+                  ENDIF
+               CASE DEFAULT
+                  ! Do nothing
+               END SELECT 
+            ENDDO
             ENDIF
 #endif
 
@@ -863,6 +922,7 @@
      &                   F0,        HSTAR,     XMW,       AIROSOL,     
      &                   USTAR,     CZ1,       OBK,       CFRAC,           
      &                   ZH,        LSNOW,     DVEL,      ZO,            
+     &                   DVEL_PFT,
      &                   RHB,       PRESSU,    W10,       RC          )
 !
 ! !USES:
@@ -911,6 +971,8 @@
 ! 
       INTEGER,  INTENT(OUT) :: RC                  ! Success or failure?
       REAL(f8), INTENT(OUT) :: DVEL(IIPAR,JJPAR,NUMDEP) ! Drydep velocity [m/s]
+      ! PFT-specific diagnostics (Joey Lam, 22 Aug 2019)
+      REAL(fp), INTENT(OUT) :: DVEL_PFT(IIPAR,JJPAR,NUMDEP,MAXVAL(IPFT))
 !
 ! !REMARKS:
 !  Need as landtype input for each grid square (I,J); see CMN_DEP_mod.F
@@ -973,6 +1035,8 @@
 !                                                                             .
 !  Returned:
 !     DVEL(I,J,K) - Deposition velocity (m s-1) of species K
+!     DVEL_PFT(I,J,K,PFT) - Deposition velocity (m s-1) of species K 
+!                           for each plant functional type (PFT)                    
 !                                                                             .
 !  References:
 !  ============================================================================
@@ -1164,6 +1228,8 @@
       REAL(fp)          :: SumLAI_PFT( MAXVAL(IPFT) ) ! leaf area of the PFT 
       INTEGER           :: IUSE_PFT  ( MAXVAL(IPFT) ) ! fraction of grid box
                                                       ! occupied by the PFT
+      ! PFT-specific diagnostics (Joey Lam, 22 Aug 2019)
+      REAL(fp)          :: VD_PFT( NUMDEP, MAXVAL(IPFT) )
 
       ! For the species database
       INTEGER                :: SpcId
@@ -1292,7 +1358,7 @@
 !$OMP+PRIVATE( C1X,    VK,     I,      J,      IW             )
 !$OMP+PRIVATE( DIAM,   DEN,    XLAI_FP, SUNCOS_FP, CFRAC_FP   )
 !$OMP+PRIVATE( SumLAI_PFT,     IUSE_PFT, RS,   PFT,    RAB    )
-!$OMP+PRIVATE( id_O3,  RB_O3                                  )
+!$OMP+PRIVATE( id_O3,  RB_O3,  VD_PFT                         )
 #if defined( MODEL_GEOS )
 !$OMP+PRIVATE( RA2M,   Z0OBK2M, RA10M, Z0OBK10M               )
 #endif
@@ -1364,6 +1430,8 @@ C          END IF
          DO 500 LDT = 1, IREG(I,J)
             IF ( IUSE(I,J,LDT) == 0 ) GOTO 500
             IOLSON = ILAND(I,J,LDT) + 1
+            PFT    = IPFT(IOLSON)   ! for ecophysiology and PFT-specific outputs
+                                    ! (Joey Lam, 22 Aug 2019)
 
 !***** Get aerodynamic resistances Ra and Rb. ***********************
 !   The aerodynamic resistance Ra is integrated from altitude z0+d up to the
@@ -1803,7 +1871,6 @@ C          END IF
      &                 **0.667e+0_f8
 C                RAB   = RA + RB_O3
 
-               PFT = IPFT(IOLSON)
                ! Call from ecophysiology module to get RIX 
                CALL DO_ECOPHY ( am_I_Root, Input_Opt,  State_Met, 
      &                          State_Chm, State_Diag, RC,         
@@ -2092,6 +2159,12 @@ C #endif
                IF (.NOT.LDEP(K)) GOTO 400
                VK(K) = VD(K)
                VD(K) = VK(K) +.001D0* DBLE( IUSE(I,J,LDT) )/C1X(K)
+               ! PFT-specific dry deposition velocity (Joey Lam, 22 Aug 2019)
+               IF ( PFT .NE. 0 ) THEN
+                  VK(K) = VD_PFT(K,PFT) 
+                  VD_PFT(K,PFT) = VK(K) + DBLE( IUSE(I,J,LDT) )/C1X(K)
+     &                                    / IUSE_PFT(PFT)
+               ENDIF
  400        CONTINUE
 
 #if defined( MODEL_GEOS )
@@ -2118,6 +2191,8 @@ C #endif
          DO 550 K=1,NUMDEP
             IF (.NOT.LDEP(K)) GOTO 550
             DVEL(I,J,K) = VD(K)
+            ! PFT-specific dry deposition velocity (Joey Lam, 22 Aug 2019)
+            DVEL(I,J,K,PFT) = VD_PFT(K,PFT)
             
             ! Now check for negative deposition velocity 
             ! before returning to calling program (bmy, 4/16/00)

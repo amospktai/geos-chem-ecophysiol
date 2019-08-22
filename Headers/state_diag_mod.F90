@@ -115,10 +115,21 @@ MODULE State_Diag_Mod
      REAL(f4),  POINTER :: DryDepMix       (:,:,:  ) ! Drydep flux in mixing
      REAL(f4),  POINTER :: DryDep          (:,:,:  ) ! Total drydep flux
      REAL(f4),  POINTER :: DryDepVel       (:,:,:  ) ! Dry deposition velocity
+     REAL(f4),  POINTER :: DryDepVel_PFT1  (:,:,:  ) ! Dry deposition velocity for broadleaf tree
+     REAL(f4),  POINTER :: DryDepVel_PFT2  (:,:,:  ) ! Dry deposition velocity for needleleaf tree
+     REAL(f4),  POINTER :: DryDepVel_PFT3  (:,:,:  ) ! Dry deposition velocity for C3 grass
+     REAL(f4),  POINTER :: DryDepVel_PFT4  (:,:,:  ) ! Dry deposition velocity for C4 grass
+     REAL(f4),  POINTER :: DryDepVel_PFT5  (:,:,:  ) ! Dry deposition velocity for shrub
      LOGICAL :: Archive_DryDepChm
      LOGICAL :: Archive_DryDepMix
      LOGICAL :: Archive_DryDep   
      LOGICAL :: Archive_DryDepVel
+     LOGICAL :: Archive_DryDepVel_anyPFT
+     LOGICAL :: Archive_DryDepVel_PFT1
+     LOGICAL :: Archive_DryDepVel_PFT2
+     LOGICAL :: Archive_DryDepVel_PFT3
+     LOGICAL :: Archive_DryDepVel_PFT4
+     LOGICAL :: Archive_DryDepVel_PFT5
 
      ! Ecophysiology: PFT-level diagnostics (Joey Lam 21 June 2019)
      REAL(f4),  POINTER :: EcophyIUSE_PFT     ( :,:,: ) ! fraction of grid box occupied by PFT 
@@ -849,10 +860,21 @@ CONTAINS
     State_Diag%DryDepChm                           => NULL()
     State_Diag%DryDepMix                           => NULL()
     State_Diag%DryDepVel                           => NULL()
+    State_Diag%DryDepVel_PFT1                      => NULL()
+    State_Diag%DryDepVel_PFT2                      => NULL()
+    State_Diag%DryDepVel_PFT3                      => NULL()
+    State_Diag%DryDepVel_PFT4                      => NULL()
+    State_Diag%DryDepVel_PFT5                      => NULL()
     State_Diag%Archive_DryDep                      = .FALSE.
     State_Diag%Archive_DryDepChm                   = .FALSE.
     State_Diag%Archive_DryDepMix                   = .FALSE.
     State_Diag%Archive_DryDepVel                   = .FALSE.
+    State_Diag%Archive_DryDepVel_anyPFT            = .FALSE.
+    State_Diag%Archive_DryDepVel_PFT1              = .FALSE.
+    State_Diag%Archive_DryDepVel_PFT2              = .FALSE.
+    State_Diag%Archive_DryDepVel_PFT3              = .FALSE.
+    State_Diag%Archive_DryDepVel_PFT4              = .FALSE.
+    State_Diag%Archive_DryDepVel_PFT5              = .FALSE.
 
     ! Ecophy diagnostics (Joey Lam, 02 Apr 2019)
     State_Diag%EcophyIUSE_PFT                      => NULL()
@@ -1835,6 +1857,105 @@ CONTAINS
        CALL Register_DiagField( am_I_Root, diagID, State_Diag%DryDepVel,     &
                                 State_Chm, State_Diag, RC                   )
        IF ( RC /= GC_SUCCESS ) RETURN
+    ENDIF
+
+    !-----------------------------------------------------------------------
+    ! Dry deposition velocity for broadleaf tree
+    !-----------------------------------------------------------------------
+    arrayID = 'State_Diag%DryDepVel_PFT1'
+    diagID  = 'DryDepVel_PFT1'
+    CALL Check_DiagList( am_I_Root, Diag_List, diagID, Found, RC )
+    IF ( Found ) THEN
+       IF ( am_I_Root ) WRITE(6,20) ADJUSTL( arrayID ), TRIM( diagID )
+       ALLOCATE( State_Diag%DryDepVel_PFT1( IM, JM, nDryDep ), STAT=RC )
+       CALL GC_CheckVar( arrayID, 0, RC )
+       IF ( RC /= GC_SUCCESS ) RETURN
+       State_Diag%DryDepVel_PFT1 = 0.0_f4
+       State_Diag%Archive_DryDepVel_PFT1 = .TRUE.
+       CALL Register_DiagField( am_I_Root, diagID, State_Diag%DryDepVel_PFT1,     &
+                                State_Chm, State_Diag, RC                   )
+       IF ( RC /= GC_SUCCESS ) RETURN
+    ENDIF
+
+    !-----------------------------------------------------------------------
+    ! Dry deposition velocity for needleleaf tree
+    !-----------------------------------------------------------------------
+    arrayID = 'State_Diag%DryDepVel_PFT2'
+    diagID  = 'DryDepVel_PFT2'
+    CALL Check_DiagList( am_I_Root, Diag_List, diagID, Found, RC )
+    IF ( Found ) THEN
+       IF ( am_I_Root ) WRITE(6,20) ADJUSTL( arrayID ), TRIM( diagID )
+       ALLOCATE( State_Diag%DryDepVel_PFT2( IM, JM, nDryDep ), STAT=RC )
+       CALL GC_CheckVar( arrayID, 0, RC )
+       IF ( RC /= GC_SUCCESS ) RETURN
+       State_Diag%DryDepVel_PFT2 = 0.0_f4
+       State_Diag%Archive_DryDepVel_PFT2 = .TRUE.
+       CALL Register_DiagField( am_I_Root, diagID, State_Diag%DryDepVel_PFT2,     &
+                                State_Chm, State_Diag, RC                   )
+       IF ( RC /= GC_SUCCESS ) RETURN
+    ENDIF
+
+    !-----------------------------------------------------------------------
+    ! Dry deposition velocity for C3 grass
+    !-----------------------------------------------------------------------
+    arrayID = 'State_Diag%DryDepVel_PFT3'
+    diagID  = 'DryDepVel_PFT3'
+    CALL Check_DiagList( am_I_Root, Diag_List, diagID, Found, RC )
+    IF ( Found ) THEN
+       IF ( am_I_Root ) WRITE(6,20) ADJUSTL( arrayID ), TRIM( diagID )
+       ALLOCATE( State_Diag%DryDepVel_PFT3( IM, JM, nDryDep ), STAT=RC )
+       CALL GC_CheckVar( arrayID, 0, RC )
+       IF ( RC /= GC_SUCCESS ) RETURN
+       State_Diag%DryDepVel_PFT3 = 0.0_f4
+       State_Diag%Archive_DryDepVel_PFT3 = .TRUE.
+       CALL Register_DiagField( am_I_Root, diagID, State_Diag%DryDepVel_PFT3,     &
+                                State_Chm, State_Diag, RC                   )
+       IF ( RC /= GC_SUCCESS ) RETURN
+    ENDIF
+
+    !-----------------------------------------------------------------------
+    ! Dry deposition velocity for C4 grass
+    !-----------------------------------------------------------------------
+    arrayID = 'State_Diag%DryDepVel_PFT4'
+    diagID  = 'DryDepVel_PFT4'
+    CALL Check_DiagList( am_I_Root, Diag_List, diagID, Found, RC )
+    IF ( Found ) THEN
+       IF ( am_I_Root ) WRITE(6,20) ADJUSTL( arrayID ), TRIM( diagID )
+       ALLOCATE( State_Diag%DryDepVel_PFT4( IM, JM, nDryDep ), STAT=RC )
+       CALL GC_CheckVar( arrayID, 0, RC )
+       IF ( RC /= GC_SUCCESS ) RETURN
+       State_Diag%DryDepVel_PFT4 = 0.0_f4
+       State_Diag%Archive_DryDepVel_PFT4 = .TRUE.
+       CALL Register_DiagField( am_I_Root, diagID, State_Diag%DryDepVel_PFT4,     &
+                                State_Chm, State_Diag, RC                   )
+       IF ( RC /= GC_SUCCESS ) RETURN
+    ENDIF
+
+    !-----------------------------------------------------------------------
+    ! Dry deposition velocity for shrub
+    !-----------------------------------------------------------------------
+    arrayID = 'State_Diag%DryDepVel_PFT5'
+    diagID  = 'DryDepVel_PFT5'
+    CALL Check_DiagList( am_I_Root, Diag_List, diagID, Found, RC )
+    IF ( Found ) THEN
+       IF ( am_I_Root ) WRITE(6,20) ADJUSTL( arrayID ), TRIM( diagID )
+       ALLOCATE( State_Diag%DryDepVel_PFT5( IM, JM, nDryDep ), STAT=RC )
+       CALL GC_CheckVar( arrayID, 0, RC )
+       IF ( RC /= GC_SUCCESS ) RETURN
+       State_Diag%DryDepVel_PFT5 = 0.0_f4
+       State_Diag%Archive_DryDepVel_PFT5 = .TRUE.
+       CALL Register_DiagField( am_I_Root, diagID, State_Diag%DryDepVel_PFT5,     &
+                                State_Chm, State_Diag, RC                   )
+       IF ( RC /= GC_SUCCESS ) RETURN
+    ENDIF
+
+    ! High-level logical for PFT-specific dry deposition velocity
+    IF ( State_Diag%Archive_DryDepVel_PFT1 .OR. &
+         State_Diag%Archive_DryDepVel_PFT2 .OR. &
+         State_Diag%Archive_DryDepVel_PFT3 .OR. &
+         State_Diag%Archive_DryDepVel_PFT4 .OR. &
+         State_Diag%Archive_DryDepVel_PFT5 ) THEN
+       State_Diag%Archive_DryDepVel_anyPFT = .TRUE.
     ENDIF
 
     !-----------------------------------------------------------------------
@@ -6879,6 +7000,41 @@ CONTAINS
        State_Diag%DryDepVel => NULL()
     ENDIF
 
+    IF ( ASSOCIATED( State_Diag%DryDepVel_PFT1 ) ) THEN
+       DEALLOCATE( State_Diag%DryDepVel_PFT1, STAT=RC )
+       CALL GC_CheckVar( 'State_Diag%DryDepVel_PFT1', 2, RC )
+       IF ( RC /= GC_SUCCESS ) RETURN
+       State_Diag%DryDepVel_PFT1 => NULL()
+    ENDIF
+
+    IF ( ASSOCIATED( State_Diag%DryDepVel_PFT2 ) ) THEN
+       DEALLOCATE( State_Diag%DryDepVel_PFT2, STAT=RC )
+       CALL GC_CheckVar( 'State_Diag%DryDepVel_PFT2', 2, RC )
+       IF ( RC /= GC_SUCCESS ) RETURN
+       State_Diag%DryDepVel_PFT2 => NULL()
+    ENDIF
+
+    IF ( ASSOCIATED( State_Diag%DryDepVel_PFT3 ) ) THEN
+       DEALLOCATE( State_Diag%DryDepVel_PFT3, STAT=RC )
+       CALL GC_CheckVar( 'State_Diag%DryDepVel_PFT3', 2, RC )
+       IF ( RC /= GC_SUCCESS ) RETURN
+       State_Diag%DryDepVel_PFT3 => NULL()
+    ENDIF
+
+    IF ( ASSOCIATED( State_Diag%DryDepVel_PFT4 ) ) THEN
+       DEALLOCATE( State_Diag%DryDepVel_PFT4, STAT=RC )
+       CALL GC_CheckVar( 'State_Diag%DryDepVel_PFT4', 2, RC )
+       IF ( RC /= GC_SUCCESS ) RETURN
+       State_Diag%DryDepVel_PFT4 => NULL()
+    ENDIF
+
+    IF ( ASSOCIATED( State_Diag%DryDepVel_PFT5 ) ) THEN
+       DEALLOCATE( State_Diag%DryDepVel_PFT5, STAT=RC )
+       CALL GC_CheckVar( 'State_Diag%DryDepVel_PFT5', 2, RC )
+       IF ( RC /= GC_SUCCESS ) RETURN
+       State_Diag%DryDepVel_PFT5 => NULL()
+    ENDIF
+
     IF ( ASSOCIATED( State_Diag%EcophyLAI ) ) THEN
        DEALLOCATE( State_Diag%EcophyLAI, STAT=RC )
        CALL GC_CheckVar( 'EcophyLAI', 2, RC )
@@ -8669,6 +8825,41 @@ CONTAINS
 
     ELSE IF ( TRIM( Name_AllCaps ) == 'DRYDEPVEL' ) THEN
        IF ( isDesc    ) Desc  = 'Dry deposition velocity of species'
+       IF ( isUnits   ) Units = 'cm s-1'
+       IF ( isRank    ) Rank  = 2
+       IF ( isTagged  ) TagId = 'DRY'
+
+    ELSE IF ( TRIM( Name_AllCaps ) == 'DRYDEPVEL_PFT1' ) THEN
+       IF ( isDesc    ) Desc  = 'Dry deposition velocity of species' // &
+                                ' for broadleaf tree'
+       IF ( isUnits   ) Units = 'cm s-1'
+       IF ( isRank    ) Rank  = 2
+       IF ( isTagged  ) TagId = 'DRY'
+
+    ELSE IF ( TRIM( Name_AllCaps ) == 'DRYDEPVEL_PFT2' ) THEN
+       IF ( isDesc    ) Desc  = 'Dry deposition velocity of species' // &
+                                ' for needleleaf tree'
+       IF ( isUnits   ) Units = 'cm s-1'
+       IF ( isRank    ) Rank  = 2
+       IF ( isTagged  ) TagId = 'DRY'
+
+    ELSE IF ( TRIM( Name_AllCaps ) == 'DRYDEPVEL_PFT3' ) THEN
+       IF ( isDesc    ) Desc  = 'Dry deposition velocity of species' // &
+                                ' for C3 grass'
+       IF ( isUnits   ) Units = 'cm s-1'
+       IF ( isRank    ) Rank  = 2
+       IF ( isTagged  ) TagId = 'DRY'
+
+    ELSE IF ( TRIM( Name_AllCaps ) == 'DRYDEPVEL_PFT4' ) THEN
+       IF ( isDesc    ) Desc  = 'Dry deposition velocity of species' // &
+                                ' for C4 grass'
+       IF ( isUnits   ) Units = 'cm s-1'
+       IF ( isRank    ) Rank  = 2
+       IF ( isTagged  ) TagId = 'DRY'
+
+    ELSE IF ( TRIM( Name_AllCaps ) == 'DRYDEPVEL_PFT5' ) THEN
+       IF ( isDesc    ) Desc  = 'Dry deposition velocity of species' // &
+                                ' for shrub'
        IF ( isUnits   ) Units = 'cm s-1'
        IF ( isRank    ) Rank  = 2
        IF ( isTagged  ) TagId = 'DRY'
