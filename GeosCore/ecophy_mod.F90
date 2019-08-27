@@ -29,6 +29,8 @@
       PUBLIC :: INIT_ECOPHY
       PUBLIC :: CLEANUP_ECOPHY
 !
+! !REVISION HISTORY:
+!
 ! !REMARKS:
 !  References:
 !  ============================================================================
@@ -36,14 +38,14 @@
 !------------------------------------------------------------------------------
 !BOC
 !
-!DEFINED PARAMETERS:
+! !PRIVATE DATA MEMBERS:
 !
       !---------------------------------------------------------------------------------------
       ! NUMPFT        : Total number of PFTs                              []
       ! MAX_ITER      : Maximum number of iterations                      []
       ! IS_C3_PLANT   : IS_C3_PLANT = 1 for C3 plants, else 0             []
-      ! V_CMAX25      : V_CMAX at 25 deg C                                [mol CO2 m^-2 s^-1]
       ! ALPHA         : Quantum efficiency of photosynthesis              [mol CO2 mol^-1 PAR]
+      ! V_CMAX25      : V_CMAX at 25 deg C                                [mol CO2 m^-2 s^-1]
       ! T_UPP         : PFT-specific parameter for V_CMAX                 [deg C]
       ! T_LOW         : PFT-specific parameter for V_CMAX                 [deg C]
       ! F_DARKRESP    : Dark respiration coefficient                      []
@@ -56,10 +58,8 @@
       ! PARAM_A_HI    : PFT-specific parameter for high sensitivity 
       !                 ozone damage scheme                               [m^2 s nmol^-1]
       ! FLUXO3_CRIT   : PFT-specific threshold for ozone uptake           [nmol m^-2 s^-1]
-      ! THETA_WILT    : Volumetric soil moisture at wilting point         [m^3 water / m^3 soil]
-      ! THETA_CRIT    : Critical value of volumetric soil moisture        [m^3 water / m^3 soil]
-      !                 at which photosynthesis is not limited by it
       ! THRESHOLD     : Threshold of relative error                       []
+      ! CO2_O2_RATIO  : Ratio of diffusivity of CO2 compared to H2O       []
       !---------------------------------------------------------------------------------------
       INTEGER,  PARAMETER   :: NUMPFT                 = 5 ! Switch to call CMN_SIZE_MOD.F later
       INTEGER,  PARAMETER   :: MAX_ITER               = 1
@@ -86,28 +86,20 @@
       ! REAL(fp), PARAMETER   :: T_LOW         (NUMPFT) = (/ 1.203, -8.698, -1.985, 11.37, -5.208 /)
       ! REAL(fp), PARAMETER   :: D_STAR        (NUMPFT) = (/ 0.048, 0.036, 0.086, 0.046, 0.077 /)
       ! REAL(fp), PARAMETER   :: f0            (NUMPFT) = (/ 0.765, 0.737, 0.817, 0.765, 0.782 /)  
-      ! Constants
-      ! REAL(fp), PARAMETER   :: RSTARG = 8.31446        ! Switch to call physconstant.F later (in Headers)
       REAL(fp), PARAMETER   :: CO2_O2_RATIO = 1.6
 !
-! PRIVATE TYPES:
+! MODULE VARIABLES:
 !
       !========================================================================
-      ! MODULE VARIABLES:
-      ! THETA_SATU    : Soil moisture at saturation point                 [mm]
-      ! SATU          : THETA_SATU in a single grid box
-      ! THETA_CRIT    : Soil moisture at critical point                   [mm]
-      ! CRIT          : THETA_CRIT in a single grid box
-      ! THETA_WILT    : Soil moisture at wilting point                    [mm]
-      ! WILT          : THETA_WILT in a single grid box
+      ! SATU          : Soil moisture at saturation point                 [m^3 water / m^3 soil]
+      ! CRIT          : Soil moisture at critical point                   [m^3 water / m^3 soil]
+      ! WILT          : Soil moisture at wilting point                    [m^3 water / m^3 soil]
       ! O3dmg_opt     : Control switch for ozone damage scheme            [hi/low/off]
-      ! NUMPFT        : Total number of PFTs                              []
       !========================================================================
       REAL(fp)              :: SATU
       REAL(fp)              :: CRIT
       REAL(fp)              :: WILT
       CHARACTER(len=3)      :: O3dmg_opt 
-      ! INTEGER               :: NUMPFT
 
       !=================================================================
       ! MODULE ROUTINES -- follow below the "CONTAINS" statement
@@ -168,6 +160,8 @@
       INTEGER,        INTENT(OUT)   :: RC          ! Success or failure
       REAL(fp),       INTENT(OUT)   :: RS          ! Bulk canopy stomatal resistance
 !
+! !REVISION HISTORY:
+!
 !EOP
 !------------------------------------------------------------------------------
 !BOC
@@ -177,7 +171,7 @@
       ! Scalars
       CHARACTER(LEN=255) :: ErrMsg, ThisLoc
 
-      !  Note: Read subroutine DO_PHOTOSYNTHESIS for descriptions.
+      !  Note: Read subroutine DO_PHOTOSYNTHESIS for descriptions of variables.
       REAL(fp)   :: TEMPK
       REAL(fp)   :: QV2M
       REAL(fp)   :: PAR_ABSORBED
@@ -227,13 +221,6 @@
                               ! WILT, CRIT,   SATU                 &
                               )
 
-      ! Trap potential errors
-      IF ( RC /= GC_SUCCESS ) THEN
-         ErrMsg = 'Error encountered in call to "GET_ECOPHY_INPUTS!'
-         CALL GC_Error( ErrMsg, RC, ThisLoc )
-         RETURN
-      ENDIF
-
       ! simulate plant processes
       CALL DO_PHOTOSYNTHESIS( TEMPK,        QV2M,       RA, RB_O3,    &
                               PAR_ABSORBED, PRESSURE,   CO2,          &
@@ -254,7 +241,7 @@
          RETURN
       ENDIF
 
-      ! Output RS to dry deposition module
+      ! Output bulk stomatal resistance to dry deposition module
       RS = 1.0 / G_CAN_OUT
 
       ! Send output to State_Diag
@@ -275,6 +262,7 @@
          RETURN
       ENDIF
 
+      ! Return to calling program
       END SUBROUTINE DO_ECOPHY
 !EOC
 !------------------------------------------------------------------------------
@@ -305,10 +293,6 @@
 ! !USES:
 !
       USE ErrCode_Mod
-! Main driver of the photosynthesis-stomatal conductance model
-!
-!INPUT PARAMETERS:
-!
 !
 !INPUT PARAMETERS:
 !
@@ -377,6 +361,12 @@
       REAL(fp), INTENT(OUT) :: A_GROSS
       INTEGER,  INTENT(OUT) :: RC
 !
+! !REVISION HISTORY:
+!
+!EOP
+!------------------------------------------------------------------------------
+!BOC
+!
 !LOCAL VARIABLES:
 !
       !---------------------------------------------------------------------------------------
@@ -407,6 +397,7 @@
       ! ERR2          : Relative change for CO2_IN between iterations     []
       ! ERR3          : Relative change for A_NET between iterations      []
       ! DELTA         : Maximum of the 3 relative changes                 []
+      ! RAB           : Aerodynamic and boundary layer resistance         [s m^-1]
       !---------------------------------------------------------------------------------------
       REAL(fp)    :: TEMPC
       REAL(fp)    :: SPHU_SAT
@@ -438,6 +429,10 @@
       REAL(fp)    :: RAB
       ! Strings
       CHARACTER(LEN=255) :: ErrMsg, ThisLoc
+
+      !=================================================================
+      ! DO_PHOTOSYNTHESIS begins here!
+      !=================================================================
       ! Initialize output variables
       G_CAN_OUT      = 0.e+0_fp
       A_CAN_OUT      = 0.e+0_fp
@@ -517,7 +512,8 @@
       ! ERR3           = 1.e+0_fp
       DELTA          = 1.e+0_fp
       DO WHILE ( DELTA >= THRESHOLD .AND. ITER <= MAX_ITER )
-         ! Step 1: Closure condition by Jacobs (1994)
+         ! Step 1: Calculate internal CO2 partial pressure from 
+         !         the closure condition by Jacobs (1994)
          SPHU_SAT    = 0.622e+0_fp * E_SAT( TEMPC ) / PRESSURE
          G_CAN       = G_LEAF * BIGLEAFSCALE
          DEFICIT_Q   = MAX( SPHU_SAT - QV2M, 0.e+0_fp )
@@ -531,7 +527,8 @@
             G_LEAF_OUT  = G_LEAF_MIN(PFT)
             EXIT
          ELSE
-            ! Step 2: Photosynthesis model
+            ! Step 2: Photosynthesis model by Collatz et al. (1991) and
+            !         Collatz et al. (1992)
             CALL PHOTOSYNTHESIS_LIMITS( CO2_IN,       CO2_GAMMA,    &
                                         O2, APAR,     PRESSURE,     &
                                         TEMPC,        V_CMAX,       &
@@ -539,8 +536,11 @@
                                         RATE_PRODUCT, RATE_RUBISCO  )
             CALL SOLVE_COLIMIT( RATE_LIGHT,   RATE_PRODUCT, &
                                 RATE_RUBISCO, A_GROSS      )
+            ! Calculate net photosynthesis
             A_NET    = ( A_GROSS - RESP ) * BETA
-            ! Step 3: Diffusive CO2 flux thru open stomata
+
+            ! Step 3: Calculate leaf-level stomatal conductance by 
+            !         considering diffusive CO2 flux thru open stomata
             CALL LEAF_CONDUCTANCE( A_NET, CO2_AMBIENT, CO2_IN,  &
                                    TEMPK, G_LEAF                )
             ! Close stomata if net photosynthesis <= 0 or
@@ -593,33 +593,48 @@
          ITER = ITER + 1
       END DO  ! Do while loop
 
-      ! Canopy scaling
+      ! Canopy scaling: scale leaf-level net photosynthesis, 
+      !                 bulk stomatal conductance, repiration and 
+      !                 stomatal ozone flux to canopy-level
       A_CAN_OUT      = BIGLEAFSCALE * A_NET_OUT
       G_CAN_OUT      = BIGLEAFSCALE * G_LEAF_OUT
       RESP_CAN_OUT   = BIGLEAFSCALE * RESP_OUT
       FLUXO3_CAN     = BIGLEAFSCALE * FLUXO3
 
+      ! Return to calling program
       END SUBROUTINE DO_PHOTOSYNTHESIS
-
+!EOC
+!------------------------------------------------------------------------------
+!                  GEOS-Chem Global Chemical Transport Model                  !
+!------------------------------------------------------------------------------
+!BOP
+!
+! !IROUTINE: photosynthesis_limits
+!
+! !DESCRIPTION: Subroutine PHOTOSYNTHESIS\_LIMITES determines potential 
+!  leaf-level photosynthesis, according to C3 and C4 photosynthesis
+!  model from Collatz et al. (1991) and Collatz et al. (1992)
+!\\
+!\\
+! !INTERFACE:
+!
       SUBROUTINE PHOTOSYNTHESIS_LIMITS( CO2_IN,       CO2_GAMMA,    &
                                         O2, APAR,     PRESSURE,     &
                                         TEMPC,        V_CMAX,       &
                                         PFT,          RATE_LIGHT,   &
                                         RATE_PRODUCT, RATE_RUBISCO  )
-! Determine potential leaf-level photosynthesis, according to C3 and C4
-! photosynthesis model from Collatz et al. (1991) and Collatz et al. (1992)
 !
 ! !INPUT PARAMETERS:
 !
       !---------------------------------------------------------------------------------------
-      ! CO2_IN        : Leaf internal partial pressure of CO2 [Pa]
-      ! CO2_GAMMA     : CO2 Compensation point [Pa]
-      ! O2            : Ambient O2 mole fraction                          [mol/mol air]
+      ! CO2_IN        : Leaf internal partial pressure of CO2              [Pa]
+      ! CO2_GAMMA     : CO2 Compensation point                             [Pa]
+      ! O2            : Ambient O2 mole fraction                           [mol/mol air]
       ! APAR          : Absorbed photosynthetically active radiation (PAR) [mol photon m^-2 s^-1]
-      ! PRESSURE      : Surface air pressure [Pa]
-      ! TEMPC         : Temperature [deg C]
-      ! V_CMAX        : Maximum rate of carboxylation of Rubisco [mol CO2 m^-2 s^-1]
-      ! PFT           : Index for PFT                                     []
+      ! PRESSURE      : Surface air pressure                               [Pa]
+      ! TEMPC         : Temperature                                        [deg C]
+      ! V_CMAX        : Maximum rate of carboxylation of Rubisco           [mol CO2 m^-2 s^-1]
+      ! PFT           : Index for PFT                                      []
       !---------------------------------------------------------------------------------------
       REAL(fp), INTENT(IN)  :: CO2_IN
       REAL(fp), INTENT(IN)  :: CO2_GAMMA
@@ -633,15 +648,19 @@
 ! !OUTPUT PARAMETERS:
 !
       !---------------------------------------------------------------------------------------
-      ! RATE_LIGHT         : Light-limited rate [mol CO2 m^-2 s^-1]
-      ! RATE_PRODUCT       : Product-limited rate [mol CO2 m^-2 s^-1]
-      ! RATE_RUBISCO       : Rubisco-limited rate [mol CO2 m^-2 s^-1]
+      ! RATE_LIGHT         : Light-limited rate                            [mol CO2 m^-2 s^-1]
+      ! RATE_PRODUCT       : Product-limited rate                          [mol CO2 m^-2 s^-1]
+      ! RATE_RUBISCO       : Rubisco-limited rate                          [mol CO2 m^-2 s^-1]
       !---------------------------------------------------------------------------------------
       REAL(fp), INTENT(OUT) :: RATE_LIGHT
       REAL(fp), INTENT(OUT) :: RATE_PRODUCT
       REAL(fp), INTENT(OUT) :: RATE_RUBISCO
-      ! Success or failure flag
-!      INTEGER,  INTENT(OUT) :: RC
+!
+! !REVISION HISTORY:
+!
+!EOP
+!------------------------------------------------------------------------------
+!BOC
 !
 ! !LOCAL VARIABLES:
 !
@@ -652,8 +671,6 @@
       !=================================================================
       ! PHOTOSYNTHESIS_LIMITS begins here!
       !=================================================================
-      ! Assume success
-      ! RC                = GC_SUCCESS
       K_C               = 3.e+1_fp * FACTOR_Q10( 2.1e+0_fp, TEMPC )
       K_O               = 3.e+4_fp * FACTOR_Q10( 1.2e+0_fp, TEMPC )
       ! For C4 plants
@@ -671,28 +688,63 @@
          RATE_LIGHT     = MAX( RATE_LIGHT, 0.e+0_fp )
          RATE_PRODUCT   = 0.5e+0_fp * V_CMAX
       END IF
-      END SUBROUTINE PHOTOSYNTHESIS_LIMITS
 
+      ! Return to calling program
+      END SUBROUTINE PHOTOSYNTHESIS_LIMITS
+!EOC
+!------------------------------------------------------------------------------
+!                  GEOS-Chem Global Chemical Transport Model                  !
+!------------------------------------------------------------------------------
+!BOP
+!
+! !IROUTINE: solve_colimit
+!
+! !DESCRIPTION: Subroutine SOLVE\_COLIMIT determines gross leaf-level 
+!  photosynthesis from the three unstressed photosynthesis rates, 
+!  according to the co-limiting regime in C3 and C4 photosynthesis
+!  model from Collatz et al. (1991) and Collatz et al. (1992)
+!\\
+!\\
+! !INTERFACE:
+!
       SUBROUTINE SOLVE_COLIMIT( RATE_LIGHT,   RATE_PRODUCT, &
                                 RATE_RUBISCO, A_GROSS       )
+!
+! !INPUT PARAMETERS:
+!
       !---------------------------------------------------------------------------------------
       ! RATE_LIGHT         : Light-limited rate [mol CO2 m^-2 s^-1]
       ! RATE_PRODUCT       : Product-limited rate [mol CO2 m^-2 s^-1]
       ! RATE_RUBISCO       : Rubisco-limited rate [mol CO2 m^-2 s^-1]
-      ! A_GROSS            : Gross rate of photosynthesis [mol CO2 m^-2 s^-1]
       !---------------------------------------------------------------------------------------
       REAL(fp), INTENT(IN)  :: RATE_LIGHT
       REAL(fp), INTENT(IN)  :: RATE_PRODUCT
       REAL(fp), INTENT(IN)  :: RATE_RUBISCO
+!
+! !OUTPUT PARAMETERS:
+!
+      !---------------------------------------------------------------------------------------
+      ! A_GROSS            : Gross rate of photosynthesis [mol CO2 m^-2 s^-1]
+      !---------------------------------------------------------------------------------------
       REAL(fp), INTENT(OUT) :: A_GROSS
-
-      ! Parameters
+!
+! !REVISION HISTORY:
+!
+!EOP
+!------------------------------------------------------------------------------
+!BOC
+!
+! !LOCAL VARIABLES:
+!
       REAL(fp), PARAMETER   :: BETA1 = 0.83e+0_fp
       REAL(fp), PARAMETER   :: BETA2 = 0.93e+0_fp
-      ! Local parameter
       REAL(fp)              :: TEMP
       REAL(fp)              :: B
       REAL(fp)              :: C
+
+      !=================================================================
+      ! SOLVE_COLIMIT begins here!
+      !=================================================================
       ! 1st quadratic
       B = -( RATE_RUBISCO + RATE_LIGHT ) / BETA1
       C = RATE_RUBISCO * RATE_LIGHT / BETA1
@@ -706,48 +758,131 @@
       ! Note that C > 0, SQRT( B^2 - 4*C ) < ABS(B)
       ! Take smaller root
       A_GROSS  = 0.5e+0_fp * ( - B - SQRT( B * B - 4.e+0_fp * C ) )
+
+      ! Return to calling program
       END SUBROUTINE SOLVE_COLIMIT
-
+!EOC
+!------------------------------------------------------------------------------
+!                  GEOS-Chem Global Chemical Transport Model                  !
+!------------------------------------------------------------------------------
+!BOP
+!
+! !IROUTINE: moist_stress
+!
+! !DESCRIPTION: Subroutine MOIST\_STRESS determines a soil moisutre 
+!  stress factor that reduces photosynthesis rate and stomatal 
+!  conductance. It is currently a linear function of soil moisture.
+!\\
+!\\
+! !INTERFACE:
+!
       SUBROUTINE MOIST_STRESS( SOIL_WETNESS, BETA )
-! Calculate the moisture stress factor BETA
-
+!
+! !INPUT PARAMETERS:
+!
       !---------------------------------------------------------------------------------------
       ! SOIL_WETNESS    : Volumetric mean moisture concentration in root zone divided by porosity
+      !---------------------------------------------------------------------------------------
+      REAL(fp), INTENT(IN)  :: SOIL_WETNESS
+!
+! !OUTPUT PARAMETERS:
+!
+      !---------------------------------------------------------------------------------------
+      ! BETA            : Moisture stress factor
+      !---------------------------------------------------------------------------------------
+      REAL(fp), INTENT(OUT) :: BETA
+!
+! !REVISION HISTORY:
+!
+!EOP
+!------------------------------------------------------------------------------
+!BOC
+!
+! !LOCAL VARIABLES: (Declared as module variables)
+!
+      !---------------------------------------------------------------------------------------
       ! SATU            : Volumetric soil moisture at saturation (= porosity)
       ! CRIT            : Volumetric soil moisture at critical point (above which
       !                   plants are no longer stressed by soil moisture)
       ! WILT            : Volumetric soil moisture at wilting point (below which
       !                   photosynthesis is stopped by limited soil moisture)
-      ! BETA            : Moisture stress factor
       !---------------------------------------------------------------------------------------
-      REAL(fp), INTENT(IN)  :: SOIL_WETNESS
-      REAL(fp), INTENT(OUT) :: BETA
 
+      !=================================================================
+      ! MOIST_STRESS begins here!
+      !=================================================================
       BETA =  ( SOIL_WETNESS*SATU - WILT ) / ( CRIT - WILT )
-      BETA = MIN( MAX( 0.e+0_fp, BETA ), 1.e+0_fp )
-      END SUBROUTINE MOIST_STRESS
+      BETA = MIN( MAX( 0.e+0_fp, BETA ), 1.e+0_fp ) 
 
+      ! Return to calling program
+      END SUBROUTINE MOIST_STRESS
+!EOC
+!------------------------------------------------------------------------------
+!                  GEOS-Chem Global Chemical Transport Model                  !
+!------------------------------------------------------------------------------
+!BOP
+!
+! !IROUTINE: leaf_conductance
+!
+! !DESCRIPTION: Subroutine LEAF_CONDUCTANCE determines leaf-level stomatal 
+!  conductance by considering the diffusive CO2 exchange through stomatal 
+!  exchange.
+!\\
+!\\
+! !INTERFACE:
+!
       SUBROUTINE LEAF_CONDUCTANCE( A_NET, CO2_AMBIENT, CO2_IN,  &
                                    TEMPK, G_LEAF                )
-! Calculate the leaf conductance based on net photosynthesis and CO2 partial pressure deficit
+!
+! !INPUT PARAMETERS:
+!
       !---------------------------------------------------------------------------------------
       ! A_NET             : Net photosynthesis                      [mol CO2 m^-2 s^-1]
       ! CO2_AMBIENT       : Ambient CO2 partial pressure            [Pa]
       ! CO2_IN            : Leaf internal CO2 partial pressure      [Pa]
       ! TEMPK             : Leaf temperature                        [K]
-      ! G_LEAF            : Leaf conductance for H2O                [m s^-1]
-      ! RSTARG            : Universal Gas Constant                  [J K^-1 mol^-1]
-      ! CO2_O2_RATIO      : Ratio of leaf resistance for CO2 to H2O
       !---------------------------------------------------------------------------------------
       REAL(fp), INTENT(IN)    :: A_NET
       REAL(fp), INTENT(IN)    :: CO2_AMBIENT
       REAL(fp), INTENT(IN)    :: CO2_IN
       REAL(fp), INTENT(IN)    :: TEMPK
+!
+! !OUTPUT PARAMETERS:
+!
+      !---------------------------------------------------------------------------------------
+      ! G_LEAF            : Leaf conductance for H2O                [m s^-1]
+      !---------------------------------------------------------------------------------------
       REAL(fp), INTENT(OUT)   :: G_LEAF
+!
+! !REVISION HISTORY:
+!
+!EOP
+!------------------------------------------------------------------------------
+!BOC     
+
+      !=================================================================
+      ! LEAF_CONDUCTANCE begins here!
+      !=================================================================
       G_LEAF = CO2_O2_RATIO * RSTARG * TEMPK  &
              * A_NET / ( CO2_AMBIENT - CO2_IN )
-      END SUBROUTINE LEAF_CONDUCTANCE
 
+      ! Return to calling program
+      END SUBROUTINE LEAF_CONDUCTANCE
+!EOC
+!------------------------------------------------------------------------------
+!                  GEOS-Chem Global Chemical Transport Model                  !
+!------------------------------------------------------------------------------
+!BOP
+!
+! !IROUTINE: ozone_damage
+!
+! !DESCRIPTION: Subroutine MOIST\_STRESS determines an ozone damage 
+!  factor that reduces photosynthesis rate and stomatal conductance, 
+!  based on Sitch et al. (2007).
+!\\
+!\\
+! !INTERFACE:
+!
       SUBROUTINE OZONE_DAMAGE ( O3_CONC,   RAB,       &
                                 G_LEAF,    PFT,       &
                                 FLUXO3,    FACTOR_O3, &
@@ -756,26 +891,41 @@
 ! !USES:
 !
       USE ErrCode_Mod
-! Calculate ozone damage factor based on Sitch et al. (2008)
+!
+! !INPUT PARAMETERS:
+!
       !---------------------------------------------------------------------------------------
       ! O3_CONC         : Ozone concentration in canopy layer                     [nmol m^-3]
       ! RAB             : Aerodynamic and boundary resistance                     [s m^-1]
       ! G_LEAF          : Leaf conductance for H2O in the absence of O3 effects   [m s^-1]
       ! PFT             : Index for PFT                                           []
-      ! FLUXO3          : Leaf uptake of O3                                       [nmol m^-2 s^-1]
-      ! FACTOR_O3       : Ozone damage factor                                     []
       ! O3dmg_opt       : Control switch for ozone damage scheme                  [HI/LOW/OFF]
-      ! RC              : Return Code                                             []
       !---------------------------------------------------------------------------------------
       REAL(fp),         INTENT(IN)  :: O3_CONC
       REAL(fp),         INTENT(IN)  :: RAB
       REAL(fp),         INTENT(IN)  :: G_LEAF
       INTEGER,          INTENT(IN)  :: PFT
+      CHARACTER(LEN=3), INTENT(IN)  :: O3dmg_opt
+!
+! !OUTPUT PARAMETERS:
+!  
+      !---------------------------------------------------------------------------------------
+      ! FLUXO3          : Leaf uptake of O3                                       [nmol m^-2 s^-1]
+      ! FACTOR_O3       : Ozone damage factor                                     []
+      ! RC              : Return Code                                             []
+      !---------------------------------------------------------------------------------------
       REAL(fp),         INTENT(OUT) :: FLUXO3
       REAL(fp),         INTENT(OUT) :: FACTOR_O3
-      CHARACTER(LEN=3), INTENT(IN)  :: O3dmg_opt
-      INTEGER,          INTENT(OUT) :: RC          ! Return code
-      ! Local variables
+      INTEGER,          INTENT(OUT) :: RC
+!
+! !REVISION HISTORY:
+!
+!EOP
+!------------------------------------------------------------------------------
+!BOC
+!
+! !LOCAL VARIABLES:
+!    
       REAL(fp) :: B       ! Second coefficient in quadratic equation
       REAL(fp) :: C       ! Constant in quadratic equation
       REAL(fp) :: TEMP1
@@ -784,6 +934,10 @@
       REAL(fp) :: PARAM_A
       ! Strings
       CHARACTER(LEN=255) :: ErrMsg,    ThisLoc
+
+      !=================================================================
+      ! OZONE_DAMAGE begins here!
+      !=================================================================
       ! Initialize
       RC         = GC_SUCCESS
       ErrMsg     = ''
@@ -803,42 +957,136 @@
       END SELECT
       TEMP1       = 1.e+0_fp + PARAM_A * FLUXO3_CRIT(PFT)
       TEMP2       = 1.61e+0_fp / G_LEAF
+
+      ! Solve for ozone damage factor
       ! Calculate coefficients for quadratic equation F^2 + B*F + C = 0
       IF ( ABS(RAB) < EPSILON(1.e+0_fp) ) THEN
-!        RAB        = 0.0
-        FACTOR_O3 = TEMP1 / ( 1.e+0_fp + PARAM_A * O3_CONC / TEMP2 )
+         ! RAB        = 0.0
+         FACTOR_O3 = TEMP1 / ( 1.e+0_fp + PARAM_A * O3_CONC / TEMP2 )
       ELSE
-        B         = TEMP2 / RAB - TEMP1 + PARAM_A * O3_CONC / RAB
-        C         = - TEMP1 * TEMP2 / RAB
-        ! Note that C < 0, SQRT( B^2 - 4*C ) > ABS(B)
-        ! Take positive root
-        F         = 0.5e+0_fp * ( SQRT( B * B - 4.e+0_fp * C ) - B )
-        FACTOR_O3 = MIN( MAX( F, 0.e+0_fp ), 1.e+0_fp )
+         B         = TEMP2 / RAB - TEMP1 + PARAM_A * O3_CONC / RAB
+         C         = - TEMP1 * TEMP2 / RAB
+         ! Note that C < 0, SQRT( B^2 - 4*C ) > ABS(B)
+         ! Take positive root
+         F         = 0.5e+0_fp * ( SQRT( B * B - 4.e+0_fp * C ) - B )
+         FACTOR_O3 = MIN( MAX( F, 0.e+0_fp ), 1.e+0_fp )
       END IF
-      FLUXO3      = O3_CONC / ( RAB + TEMP2 / FACTOR_O3 )      ! MAYBE NOT NEEDED?
+
+      ! Calculate stomatal ozone flux
+      FLUXO3      = O3_CONC / ( RAB + TEMP2 / FACTOR_O3 )
+
+      ! Return to calling program
       END SUBROUTINE OZONE_DAMAGE
-
+!EOC
+!------------------------------------------------------------------------------
+!                  GEOS-Chem Global Chemical Transport Model                  !
+!------------------------------------------------------------------------------
+!BOP
+!
+! !IROUTINE: factor_q10
+!
+! !DESCRIPTION: Function FACTOR\_Q10 determines the q10 temperature 
+!  sensitivity factor that scales the maximum rubisco carboxylation rate
+!  at 25 degree Celsius to other temperatures.
+!\\
+!\\
+! !INTERFACE:
+!
       FUNCTION FACTOR_Q10( Q10, TEMPC ) RESULT( FACTOR )
-! Calculate the standard Q10 temperature dependence
-      REAL(fp), INTENT(IN)    :: Q10
-      REAL(fp), INTENT(IN)    :: TEMPC              ! Temperature [deg C]
+!
+! !INPUT PARAMETERS:
+!
+      REAL(fp), INTENT(IN)    :: Q10         ! Coefficient
+      REAL(fp), INTENT(IN)    :: TEMPC       ! Temperature [deg C]
+!
+! !RETURN VALUE:
+!   
       REAL(fp)                :: FACTOR
-      FACTOR = Q10**( 0.1e+0_fp * ( TEMPC - 25.e+0_fp ) )
-      END FUNCTION FACTOR_Q10
+!
+! !REVISION HISTORY:
+!
+!EOP
+!------------------------------------------------------------------------------
+!BOC
+      
 
+      !=================================================================
+      ! FACTOR_Q10 begins here!
+      !=================================================================
+      FACTOR = Q10**( 0.1e+0_fp * ( TEMPC - 25.e+0_fp ) )
+
+      ! Return to calling program
+      END FUNCTION FACTOR_Q10
+!EOC
+!------------------------------------------------------------------------------
+!                  GEOS-Chem Global Chemical Transport Model                  !
+!------------------------------------------------------------------------------
+!BOP
+!
+! !IROUTINE: rel_err
+!
+! !DESCRIPTION: Function REL\_ERR calculates the relative error of a 
+!  quantity between two iterations.
+!\\
+!\\
+! !INTERFACE:
+!
       FUNCTION REL_ERR( ITEM, ITEM_PREV ) RESULT( ERROR )
-! Calculate the relative error of a quantity between two iterations
+!
+! !INPUT PARAMETERS:
+!
       REAL(fp), INTENT(IN)    :: ITEM
       REAL(fp), INTENT(IN)    :: ITEM_PREV
+!
+! !RETURN VALUE:
+!
       REAL(fp)                :: ERROR
-      ERROR = ABS( ITEM - ITEM_PREV ) / ABS( ITEM_PREV )
-      END FUNCTION REL_ERR
+!
+! !REVISION HISTORY:
+!
+!EOP
+!------------------------------------------------------------------------------
+!BOC
 
+      !=================================================================
+      ! REL_ERR begins here!
+      !=================================================================
+      ERROR = ABS( ITEM - ITEM_PREV ) / ABS( ITEM_PREV )
+
+      !Return to calling program
+      END FUNCTION REL_ERR
+!EOC
+!------------------------------------------------------------------------------
+!                  GEOS-Chem Global Chemical Transport Model                  !
+!------------------------------------------------------------------------------
+!BOP
+!
+! !IROUTINE: e_sat
+!
+! !DESCRIPTION: Function E\_SAT calculates the saturation vapour 
+!  pressure (in Pa) using the empirical formula by Lowe and Ficke (1974)
+!\\
+!\\
+! !INTERFACE:
+!
       FUNCTION E_SAT( TEMPC ) RESULT ( Esat )
-! Calculate the saturation vapour pressure (Pa) using the empirical formula by Lowe and Ficke (1974)
+!
+! !INPUT PARAMETERS:
+!
       REAL(fp), INTENT(IN)  :: TEMPC
+!
+! !RETURN VALUE:
+!
       REAL(fp)              :: Esat
-      ! Local parameters
+!
+! !REVISION HISTORY:
+!
+!EOP
+!------------------------------------------------------------------------------
+!BOC
+!
+! !LOCAL VARIABLES:
+!
       REAL(fp), PARAMETER   :: a0 = 6.107799961e+0_fp
       REAL(fp), PARAMETER   :: a1 = 4.436518521e-1_fp
       REAL(fp), PARAMETER   :: a2 = 1.428945805e-2_fp
@@ -846,11 +1094,16 @@
       REAL(fp), PARAMETER   :: a4 = 3.031240396e-6_fp
       REAL(fp), PARAMETER   :: a5 = 2.034080948e-8_fp
       REAL(fp), PARAMETER   :: a6 = 6.136820929e-11_fp
+
+      !=================================================================
+      ! E_SAT begins here!
+      !=================================================================
       Esat = 1.e+2_fp * ( a0 + TEMPC * ( a1 + TEMPC * ( a2 + TEMPC   &
                       * ( a3 + TEMPC * ( a4 + TEMPC * ( a5 + TEMPC * a6 ) ) ) ) ) )
+
+      ! Return to calling program
       END FUNCTION E_SAT
-
-
+!EOC
 !------------------------------------------------------------------------------
 !                  GEOS-Chem Global Chemical Transport Model                  !
 !------------------------------------------------------------------------------
@@ -920,12 +1173,21 @@
       REAL(fp), INTENT(OUT) :: SOIL_WETNESS
       INTEGER,  INTENT(OUT) :: IUSE
 !
+! !REVISION HISTORY:
+!
+!EOP
+!------------------------------------------------------------------------------
+!BOC
+!
 ! !LOCAL VARIABLES:
 !
       REAL(fp) :: PARDR, PARDF, ALBD
       ! INTEGER :: I, J
       INTEGER  :: id_CO2, id_O2, id_O3
 
+      !=================================================================
+      ! get_ecophy_inputs begins here!
+      !=================================================================
       ! Find tracer indices with function the Ind_() function
       ! id_CO2    = IND_( 'CO2' )
       id_O2     = IND_( 'O2'  )
@@ -972,6 +1234,8 @@
       IUSE          = State_Met%IUSE( I,J,LDT )
        ! END DO
        ! END DO
+
+      ! Return to calling program
       END SUBROUTINE GET_ECOPHY_INPUTS
 !EOC
 !------------------------------------------------------------------------------
@@ -1035,6 +1299,8 @@
 !
       INTEGER,        INTENT(OUT)   :: RC          ! Success or failure
 !
+! !REVISION HISTORY:
+!
 !EOP
 !------------------------------------------------------------------------------
 !BOC
@@ -1046,46 +1312,16 @@
       ! Strings
       CHARACTER(LEN=255)     :: Msg, ErrMsg, ThisLoc
 
-! #ifdef NC_DIAG 
-!       REAL(fp) :: EcophyG_CAN     
-!       REAL(fp) :: EcophyA_CAN  
-!       REAL(fp) :: EcophyRESP   
-!       REAL(fp) :: EcophyCO2_IN 
-!       REAL(fp) :: EcophyLAI    
-!       REAL(fp) :: EcophyBETA   
-!       ! REAL(fp) :: EcophyFAC_O3 
-!       REAL(fp) :: EcophyFLUXO3     
-! #endif
-
       !=================================================================
       ! Ecophy_Diagn begins here!
       !=================================================================
-
       ! Initialize
       RC        = GC_SUCCESS
       ErrMsg    = ''
       ThisLoc   = ' -> at Ecophy_Diagn (in module GeosCore/ecophysiology.F90)'
 
-! #ifdef NC_DIAG 
-!       ! Point to columns of derived-type object fields
-!       EcophyRS       => State_Diag%EcophyRS    
-!       EcophyA_CAN    => State_Diag%EcophyA_CAN 
-!       EcophyRESP     => State_Diag%EcophyRESP  
-!       EcophyCO2_IN   => State_Diag%EcophyCO2_IN
-!       EcophyLAI      => State_Diag%EcophyLAI   
-!       EcophyBETA     => State_Diag%EcophyBETA  
-!       ! EcophyFAC_O3   => State_Diag%EcophyFAC_O3
-!       EcophyFLUXO3   => State_Diag%EcophyFLUXO3    
-! #endif
-
 #ifdef NC_DIAG 
       ! send to diagnostics outputs
- !      IOLSON = State_Met%ILAND( I,J,LDT ) + 1
- !      IF ( DBLE( IUSE ) * LAI > SumLAI_PFT ) THEN 
- !         WRITE(6,1000) I,J,LDT,PFT,DBLE( IUSE ) * LAI,SumLAI_PFT
- ! 1000    FORMAT( 'WARNING: IUSE > SumLAI_PFT in subroutine DO_ECOPHY',4I4,2F8.4 )
- !      END IF
-
       IF ( State_Diag%Archive_EcophyIUSE_PFT     .AND. SumLAI_PFT /= 0 ) THEN
          State_Diag%EcophyIUSE_PFT     ( I,J,PFT ) = DBLE( IUSE_PFT ) 
       END IF
@@ -1160,16 +1396,7 @@
       END IF
 #endif
 
-      ! Nullify pointers
-      ! NULLIFY( EcophyG_CAN  )
-      ! NULLIFY( EcophyA_CAN  )
-      ! NULLIFY( EcophyRESP   )
-      ! NULLIFY( EcophyCO2_IN )
-      ! NULLIFY( EcophyLAI    )
-      ! NULLIFY( EcophyBETA   )
-      ! NULLIFY( EcophyFAC_O3 )
-      ! NULLIFY( EcophyFLUXO3 )
-
+      ! Return to calling program 
       END SUBROUTINE Ecophy_Diagn
 !EOC
 !------------------------------------------------------------------------------
@@ -1211,6 +1438,8 @@
 ! !OUTPUT PARAMETERS:
 !
       INTEGER,        INTENT(OUT)   :: RC          ! Success or failure
+!
+! !REVISION HISTORY:
 !
 !EOP
 !------------------------------------------------------------------------------
