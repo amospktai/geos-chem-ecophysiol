@@ -34,6 +34,23 @@
 ! !REMARKS:
 !  References:
 !  ============================================================================
+!  (1 ) Clark, D. B., et al., "The Joint UK Land Environment Simulator (JULES), 
+!        model description – Part 2: Carbon fluxes and vegetation dynamics", 
+!        Geosci. Model Dev., 4, 701–722, 
+!        https://doi.org/10.5194/gmd-4-701-2011, 2011.
+!  (2 ) Best, M. J., et al. "The Joint UK Land Environment Simulator (JULES), 
+!        model description – Part 1: Energy and water fluxes", 
+!        Geosci. Model Dev., 4, 677–699, 
+!        https://doi.org/10.5194/gmd-4-677-2011, 2011.
+!  (3 ) P.M Cox, C Huntingford, R.J Harding, "A canopy conductance and 
+!        photosynthesis model for use in a GCM land surface scheme",
+!        Journal of Hydrology, Volumes 212–213, Pages 79-94, ISSN 0022-1694,
+!        https://doi.org/10.1016/S0022-1694(98)00203-0, 1998.
+!  (4 ) Raoult, N. M., "Land-surface parameter optimisation using data 
+!        assimilation techniques: the adJULES system V1.0",
+!        Geosci. Model Dev., 9, 2833–2852, 
+!        https://doi.org/10.5194/gmd-9-2833-2016, 2016.
+!  ============================================================================
 !EOP
 !------------------------------------------------------------------------------
 !BOC
