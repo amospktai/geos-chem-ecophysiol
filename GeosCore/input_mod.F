@@ -168,8 +168,7 @@
       INTEGER            :: IU_GEOS
       INTEGER, PARAMETER :: FIRSTCOL = 26
       INTEGER            :: CT1      = 0
-!      CHARACTER(LEN=255) :: FILENAME = 'input.geos'
-      CHARACTER(LEN=255) :: FILENAME = 'new_input.geos'
+      CHARACTER(LEN=255) :: FILENAME = 'input.geos'
 
       CONTAINS
 !EOC
