@@ -1351,7 +1351,9 @@
       IF ( State_Diag%Archive_EcophyRB_O3        .AND. SumLAI_PFT /= 0 ) THEN
          State_Diag%EcophyRB_O3  ( I,J ) = RB_O3
       END IF
-      ! Canopy-level diagnostics: scale by PFT area
+      !-----------------------------------------------------------------
+      ! Canopy-level diagnostics: weight by land area occupied by the PFT
+      !-----------------------------------------------------------------
       ! IF ( State_Diag%Archive_EcophyG_CAN_OUT    .AND. SumLAI_PFT /= 0 ) THEN
       !    Tmp = State_Diag%EcophyG_CAN_OUT    ( I,J,PFT )
       !    State_Diag%EcophyG_CAN_OUT    ( I,J,PFT ) = Tmp    &
@@ -1372,6 +1374,9 @@
          State_Diag%EcophyFLUXO3_CAN   ( I,J,PFT ) = Tmp    &
             + FLUXO3_CAN   * DBLE( IUSE ) / DBLE( IUSE_PFT )
       END IF
+      !-----------------------------------------------------------------
+      ! Leaf-level diagnostics: weight by leaf area
+      !-----------------------------------------------------------------
       IF ( State_Diag%Archive_EcophyCO2_IN       .AND. SumLAI_PFT /= 0 ) THEN
          Tmp = State_Diag%EcophyCO2_IN       ( I,J,PFT )
          State_Diag%EcophyCO2_IN       ( I,J,PFT ) = Tmp    &
