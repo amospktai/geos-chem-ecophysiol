@@ -1891,6 +1891,7 @@ C                RAB   = RA + RB_O3
                CALL DO_ECOPHY ( am_I_Root, Input_Opt,  State_Met, 
      &                          State_Chm, State_Diag, RC,         
      &                          I, J,      LDT, PFT,   RA, RB_O3,
+     &                          PRESSU(I,J),
      &                          RS,        SumLAI_PFT(PFT),          
      &                          IUSE_PFT(PFT)                     )
                RIX = RS

@@ -141,6 +141,7 @@
       SUBROUTINE DO_ECOPHY ( am_I_Root, Input_Opt,  State_Met, &
                              State_Chm, State_Diag, RC,        &
                              I, J,      LDT, PFT,   RA, RB_O3, &
+                             PRESSU,                           &
                              RS,        SumLAI_PFT, IUSE_PFT   )
 !
 ! !USES:
@@ -163,6 +164,7 @@
       TYPE(MetState), INTENT(IN)    :: State_Met   ! Meteorology State object
       REAL(fp),       INTENT(IN)    :: RA          ! Aerodynamic resistance 
       REAL(fp),       INTENT(IN)    :: RB_O3       ! Boundary layer resistance
+      REAL(fp),       INTENT(IN)    :: PRESSU      ! Surface Pressure (Pa)
       REAL(fp),       INTENT(IN)    :: SumLAI_PFT  ! leaf area of the PFT
       INTEGER,        INTENT(IN)    :: IUSE_PFT    ! fraction of grid box 
                                                    ! occupied by the PFT
@@ -192,7 +194,7 @@
       REAL(fp)   :: TEMPK
       REAL(fp)   :: QV2M
       REAL(fp)   :: PAR_ABSORBED
-      REAL(fp)   :: PRESSURE
+      ! REAL(fp)   :: PRESSURE
       REAL(fp)   :: CO2
       REAL(fp)   :: O2
       REAL(fp)   :: O3
@@ -232,7 +234,7 @@
       CALL GET_ECOPHY_INPUTS( State_Met,    State_Chm, Input_Opt,&
                               I, J, LDT,                         &
                               TEMPK,        QV2M,                &
-                              PAR_ABSORBED, PRESSURE,  CO2,      &
+                              PAR_ABSORBED, CO2,                 &
                               O2,           LAI,       O3,       &
                               SOIL_WETNESS, IUSE                 &
                               ! WILT, CRIT,   SATU                 &
@@ -240,7 +242,7 @@
 
       ! simulate plant processes
       CALL DO_PHOTOSYNTHESIS( TEMPK,        QV2M,       RA, RB_O3,    &
-                              PAR_ABSORBED, PRESSURE,   CO2,          &
+                              PAR_ABSORBED, PRESSU,     CO2,          &
                               O2,           LAI,        O3,           &
                               SOIL_WETNESS, PFT,                      &
                               G_CAN_OUT,    A_CAN_OUT,  RESP_CAN_OUT, &
@@ -1137,7 +1139,7 @@
       SUBROUTINE GET_ECOPHY_INPUTS( State_Met,    State_Chm, Input_Opt,&
                                     I, J, LDT,                         &
                                     TEMPK,        QV2M,                &
-                                    PAR_ABSORBED, PRESSURE,  CO2,      &
+                                    PAR_ABSORBED, CO2,                 &
                                     O2,           LAI,       O3,       &
                                     SOIL_WETNESS, IUSE                 &
                                     )
@@ -1182,7 +1184,7 @@
       REAL(fp), INTENT(OUT) :: TEMPK
       REAL(fp), INTENT(OUT) :: QV2M
       REAL(fp), INTENT(OUT) :: PAR_ABSORBED
-      REAL(fp), INTENT(OUT) :: PRESSURE
+      ! REAL(fp), INTENT(OUT) :: PRESSURE
       REAL(fp), INTENT(OUT) :: CO2
       REAL(fp), INTENT(OUT) :: O2
       REAL(fp), INTENT(OUT) :: O3
@@ -1222,8 +1224,8 @@
       PARDF         = State_Met%PARDF( I,J )
       ALBD          = State_Met%ALBD ( I,J )
       PAR_ABSORBED  = ( 1 - ALBD ) * ( PARDR + PARDF ) 
-      ! Pressure [Pa]
-      PRESSURE      = State_Met%SLP( I,J ) * 1.e+2_fp
+      ! ! Pressure [Pa]
+      ! PRESSURE      = State_Met%SLP( I,J ) * 1.e+2_fp
       ! CO2 mole fraction [mol/mol]
       ! CO2           = State_Chm%Species( I,J,1,id_CO2 ) * AIRMW &
       !               / State_Chm%SpcData( id_CO2 )%Info%MW_g
