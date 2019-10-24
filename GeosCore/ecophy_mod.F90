@@ -1351,30 +1351,31 @@
       IF ( State_Diag%Archive_EcophyRB_O3        .AND. SumLAI_PFT /= 0 ) THEN
          State_Diag%EcophyRB_O3  ( I,J ) = RB_O3
       END IF
+      ! Canopy-level diagnostics: scale by PFT area
       ! IF ( State_Diag%Archive_EcophyG_CAN_OUT    .AND. SumLAI_PFT /= 0 ) THEN
       !    Tmp = State_Diag%EcophyG_CAN_OUT    ( I,J,PFT )
       !    State_Diag%EcophyG_CAN_OUT    ( I,J,PFT ) = Tmp    &
-      !       + G_CAN_OUT    * DBLE( IUSE ) * LAI / SumLAI_PFT
+      !       + G_CAN_OUT    * DBLE( IUSE ) / DBLE( IUSE_PFT )
       ! END IF
       IF ( State_Diag%Archive_EcophyA_CAN_OUT    .AND. SumLAI_PFT /= 0 ) THEN
          Tmp = State_Diag%EcophyA_CAN_OUT    ( I,J,PFT )
          State_Diag%EcophyA_CAN_OUT    ( I,J,PFT ) = Tmp    &
-            + A_CAN_OUT    * DBLE( IUSE ) * LAI / SumLAI_PFT
+            + A_CAN_OUT    * DBLE( IUSE ) / DBLE( IUSE_PFT )
       END IF
       IF ( State_Diag%Archive_EcophyRESP_CAN_OUT .AND. SumLAI_PFT /= 0 ) THEN
          Tmp = State_Diag%EcophyRESP_CAN_OUT ( I,J,PFT )
          State_Diag%EcophyRESP_CAN_OUT ( I,J,PFT ) = Tmp    &
-            + RESP_CAN_OUT * DBLE( IUSE ) * LAI / SumLAI_PFT
+            + RESP_CAN_OUT * DBLE( IUSE ) / DBLE( IUSE_PFT )
+      END IF
+      IF ( State_Diag%Archive_EcophyFLUXO3_CAN   .AND. SumLAI_PFT /= 0 ) THEN
+         Tmp = State_Diag%EcophyFLUXO3_CAN   ( I,J,PFT )
+         State_Diag%EcophyFLUXO3_CAN   ( I,J,PFT ) = Tmp    &
+            + FLUXO3_CAN   * DBLE( IUSE ) / DBLE( IUSE_PFT )
       END IF
       IF ( State_Diag%Archive_EcophyCO2_IN       .AND. SumLAI_PFT /= 0 ) THEN
          Tmp = State_Diag%EcophyCO2_IN       ( I,J,PFT )
          State_Diag%EcophyCO2_IN       ( I,J,PFT ) = Tmp    &
             + CO2_IN       * DBLE( IUSE ) * LAI / SumLAI_PFT
-      END IF
-      IF ( State_Diag%Archive_EcophyFLUXO3_CAN   .AND. SumLAI_PFT /= 0 ) THEN
-         Tmp = State_Diag%EcophyFLUXO3_CAN   ( I,J,PFT )
-         State_Diag%EcophyFLUXO3_CAN   ( I,J,PFT ) = Tmp    &
-            + FLUXO3_CAN   * DBLE( IUSE ) * LAI / SumLAI_PFT
       END IF
       IF ( State_Diag%Archive_EcophyFACTOR_O3    .AND. SumLAI_PFT /= 0 ) THEN
          Tmp = State_Diag%EcophyFACTOR_O3    ( I,J,PFT )

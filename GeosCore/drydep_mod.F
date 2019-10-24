@@ -1921,11 +1921,11 @@ C                RAB   = RA + RB_O3
 #ifdef NC_DIAG 
             IF ( State_Diag%Archive_EcophyG_CAN_OUT 
      &           .AND. PFT .NE. 0 
-     &           .AND. SumLAI_PFT(PFT) /= 0 ) THEN
+     &           .AND. IUSE_PFT(PFT) /= 0 ) THEN
                Tmp = State_Diag%EcophyG_CAN_OUT ( I,J,PFT )
                State_Diag%EcophyG_CAN_OUT ( I,J,PFT ) = Tmp 
-     &             + DBLE( IUSE(I,J,LDT) ) * XLAI(I,J,LDT) / RIX 
-     &             / SumLAI_PFT(PFT)
+     &             + DBLE( IUSE(I,J,LDT) ) / RIX 
+     &             / IUSE_PFT(PFT)
             END IF
 #endif
 
