@@ -81,14 +81,14 @@
       INTEGER,  PARAMETER   :: NUMPFT                 = 5 ! Switch to call CMN_SIZE_MOD.F later
       INTEGER,  PARAMETER   :: MAX_ITER               = 1
       INTEGER,  PARAMETER   :: IS_C3_PLANT   (NUMPFT) = (/ 1,1,1,0,1 /)
-      REAL(fp), PARAMETER   :: ALPHA         (NUMPFT) = (/ 0.08, 0.08, 0.12, 0.06, 0.08 /)
-      REAL(fp), PARAMETER   :: V_CMAX25      (NUMPFT) = (/ 0.046, 0.033, 0.073, 0.060, 0.060 /) * &
-                                                        (/ 0.0008, 0.0008, 0.0008, 0.0004, 0.0008 /)
-      REAL(fp), PARAMETER   :: T_UPP         (NUMPFT) = (/ 36.0, 26.0, 36.0, 45.0, 36.0 /)
-      REAL(fp), PARAMETER   :: T_LOW         (NUMPFT) = (/ 0.0, -10.0, 0.0,  13.0, 0.0  /)
+      ! REAL(fp), PARAMETER   :: ALPHA         (NUMPFT) = (/ 0.08, 0.08, 0.12, 0.06, 0.08 /)
+      ! REAL(fp), PARAMETER   :: V_CMAX25      (NUMPFT) = (/ 0.046, 0.033, 0.073, 0.060, 0.060 /) * &
+      !                                                   (/ 0.0008, 0.0008, 0.0008, 0.0004, 0.0008 /)
+      ! REAL(fp), PARAMETER   :: T_UPP         (NUMPFT) = (/ 36.0, 26.0, 36.0, 45.0, 36.0 /)
+      ! REAL(fp), PARAMETER   :: T_LOW         (NUMPFT) = (/ 0.0, -10.0, 0.0,  13.0, 0.0  /)
       REAL(fp), PARAMETER   :: F_DARKRESP    (NUMPFT) = (/ .015, .015, .015, .025, .015 /)
-      REAL(fp), PARAMETER   :: D_STAR        (NUMPFT) = (/ 0.09, 0.06, 0.1,  .075, 0.1  /)
-      REAL(fp), PARAMETER   :: f0            (NUMPFT) = (/ .875, .875, 0.9,  0.8,  0.9  /)
+      ! REAL(fp), PARAMETER   :: D_STAR        (NUMPFT) = (/ 0.09, 0.06, 0.1,  .075, 0.1  /)
+      ! REAL(fp), PARAMETER   :: f0            (NUMPFT) = (/ .875, .875, 0.9,  0.8,  0.9  /)
       REAL(fp), PARAMETER   :: G_LEAF_MIN    (NUMPFT) = 1.0e-4                                ! gives RS ~ 9999
       REAL(fp), PARAMETER   :: K_EXTINCT     (NUMPFT) = 0.5
       REAL(fp), PARAMETER   :: PARAM_A_LOW   (NUMPFT) = (/ 0.04, 0.02, 0.25, 0.13, 0.03 /)    ! low sensitivity
@@ -96,13 +96,13 @@
       REAL(fp), PARAMETER   :: FLUXO3_CRIT   (NUMPFT) = (/ 1.6,  1.6,  5.0,  5.0,  1.6  /)
       REAL(fp), PARAMETER   :: THRESHOLD              = 1.0e-3
       ! Second set of optimized parameters (from Raoult et al. 2016)
-      ! REAL(fp), PARAMETER   :: ALPHA         (NUMPFT) = (/ 0.131, 0.096, 0.179, 0.118, 0.102 /)
-      ! REAL(fp), PARAMETER   :: V_CMAX25      (NUMPFT) = (/ 0.061, 0.065, 0.007, 0.051, 0.041 /) * &
-      !                                                   (/ 0.0008, 0.0008, 0.0008, 0.0004, 0.0008 /)
-      ! REAL(fp), PARAMETER   :: T_UPP         (NUMPFT) = (/ 38.578, 34.721, 36.242, 44.897, 35.385 /)
-      ! REAL(fp), PARAMETER   :: T_LOW         (NUMPFT) = (/ 1.203, -8.698, -1.985, 11.37, -5.208 /)
-      ! REAL(fp), PARAMETER   :: D_STAR        (NUMPFT) = (/ 0.048, 0.036, 0.086, 0.046, 0.077 /)
-      ! REAL(fp), PARAMETER   :: f0            (NUMPFT) = (/ 0.765, 0.737, 0.817, 0.765, 0.782 /)  
+      REAL(fp), PARAMETER   :: ALPHA         (NUMPFT) = (/ 0.131, 0.096, 0.179, 0.118, 0.102 /)
+      REAL(fp), PARAMETER   :: V_CMAX25      (NUMPFT) = (/ 0.061, 0.065, 0.007, 0.051, 0.041 /) * &
+                                                        (/ 0.0008, 0.0008, 0.0008, 0.0004, 0.0008 /)
+      REAL(fp), PARAMETER   :: T_UPP         (NUMPFT) = (/ 38.578, 34.721, 36.242, 44.897, 35.385 /)
+      REAL(fp), PARAMETER   :: T_LOW         (NUMPFT) = (/ 1.203, -8.698, -1.985, 11.37, -5.208 /)
+      REAL(fp), PARAMETER   :: D_STAR        (NUMPFT) = (/ 0.048, 0.036, 0.086, 0.046, 0.077 /)
+      REAL(fp), PARAMETER   :: f0            (NUMPFT) = (/ 0.765, 0.737, 0.817, 0.765, 0.782 /)  
       REAL(fp), PARAMETER   :: CO2_O2_RATIO = 1.6
 !
 ! MODULE VARIABLES:
