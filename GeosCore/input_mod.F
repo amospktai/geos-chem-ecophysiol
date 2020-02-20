@@ -3549,9 +3549,9 @@
      &                        Input_Opt%LDRYD
          WRITE( 6, 100     ) 'Turn on ecophysiology?      : ', 
      &                        Input_Opt%LECOPHY
-         WRITE( 6, 100     ) ' => O3 damage (Sitch)?      : ', 
+         WRITE( 6, 130     ) ' => O3 damage (Sitch)?      : ', 
      &                        Input_Opt%O3dmg_opt 
-         WRITE( 6, 100     ) ' => CO2 conc. (ppmv)        : ', 
+         WRITE( 6, 110     ) ' => CO2 conc. (ppmv)        : ', 
      &                        Input_Opt%CO2_conc   
          WRITE( 6, 100     ) 'Dry dep over full PBL?      : ', 
      &                        Input_Opt%PBL_DRYDEP
@@ -3571,6 +3571,7 @@
       ! FORMAT statements
  100  FORMAT( A, L5 )
  110  FORMAT( A, f6.2 )
+ 130  FORMAT( A, A   )
 
       END SUBROUTINE READ_DEPOSITION_MENU
 !EOC
