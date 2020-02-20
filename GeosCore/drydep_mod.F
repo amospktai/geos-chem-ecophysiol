@@ -1915,6 +1915,12 @@ C                RAB   = RA + RB_O3
                ENDIF
                
                RIX = RIX*GFACT*GFACI
+
+               ! Apply scaling factor to RIX when CO2 effect is turned on:
+               IF (Input_Opt%CO2_EFFECT) THEN
+                  RIX = RIX*Input_Opt%RS_SCALE
+               ENDIF
+
  150           CONTINUE
             ENDIF
 

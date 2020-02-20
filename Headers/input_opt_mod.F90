@@ -233,6 +233,9 @@ MODULE Input_Opt_Mod
      LOGICAL                     :: LECOPHY
      CHARACTER(LEN=3)            :: O3dmg_opt 
      REAL(fp)                    :: CO2_conc
+     LOGICAL                     :: CO2_EFFECT
+     REAL(fp)                    :: CO2_LEVEL, CO2_REF
+     REAL(fp)                    :: RS_SCALE
 
      !----------------------------------------
      ! GAMAP MENU fields
@@ -702,6 +705,7 @@ CONTAINS
 !  02 Nov 2017 - R. Yantosca - LWINDO_CU should be .FALSE., not 0
 !  07 Nov 2017 - R. Yantosca - Remove LVARTROP; it's not needed
 !  08 Mar 2018 - R. Yantosca - Bug fix, remove reference to TINDEX here
+!  24 Jun 2019 - A. Wong     - Add CO2_LEVEL and CO2_REF 
 !EOP
 !------------------------------------------------------------------------------
 !BOC
@@ -930,6 +934,10 @@ CONTAINS
     Input_Opt%LECOPHY                = .FALSE.
     Input_Opt%O3dmg_opt              = 'OFF'
     Input_Opt%CO2_conc               = 370.0
+    Input_Opt%CO2_LEVEL              = 390.0_fp
+    Input_Opt%CO2_REF                = 390.0_fp
+    Input_Opt%CO2_EFFECT             = .FALSE.
+    Input_Opt%RS_SCALE               = 1.0_fp
 
     !----------------------------------------
     ! GAMAP_MENU fields
