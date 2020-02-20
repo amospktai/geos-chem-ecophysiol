@@ -2514,7 +2514,7 @@ C                RAB   = RA + RB_O3
 
       ! Input file for Olson 2001
       ! nc_file = 'Olson_2001_Drydep_Inputs.nc'
-      nc_file = 'Olson_2001_Drydep_Inputs_edited_20200130.nc' 
+      nc_file = 'Olson_2001_Drydep_Inputs_edited_20191104.nc' 
 
       ! Open file for reading (construct full data path)
       nc_dir  = TRIM( Input_Opt%CHEM_INPUTS_DIR ) // 
