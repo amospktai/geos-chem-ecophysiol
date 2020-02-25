@@ -97,7 +97,7 @@
       REAL(fp), PARAMETER   :: THRESHOLD              = 1.0e-3
       ! Second set of optimized parameters (from Raoult et al. 2016)
       REAL(fp), PARAMETER   :: ALPHA         (NUMPFT) = (/ 0.131, 0.096, 0.179, 0.118, 0.102 /)
-      REAL(fp), PARAMETER   :: V_CMAX25      (NUMPFT) = (/ 0.061, 0.065, 0.007, 0.051, 0.041 /) * &
+      REAL(fp), PARAMETER   :: V_CMAX25      (NUMPFT) = (/ 0.061, 0.065, 0.070, 0.051, 0.041 /) * &
                                                         (/ 0.0008, 0.0008, 0.0008, 0.0004, 0.0008 /)
       REAL(fp), PARAMETER   :: T_UPP         (NUMPFT) = (/ 38.578, 34.721, 36.242, 44.897, 35.385 /)
       REAL(fp), PARAMETER   :: T_LOW         (NUMPFT) = (/ 1.203, -8.698, -1.985, 11.37, -5.208 /)
