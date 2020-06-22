@@ -77,6 +77,7 @@
       !-----------------------------------------------------------------
       USE DEPO_MERCURY_MOD      ! Deposition for offline Hg simulation
       USE DRYDEP_MOD            ! For dry deposition
+      USE ECOPHY_MOD            ! For ecophysiology
       USE WETSCAV_MOD           ! For wet deposition (rainout & washout)
 
       !-----------------------------------------------------------------
@@ -371,6 +372,7 @@
       LOGICAL                  :: LCONV
       LOGICAL                  :: LDRYD
       LOGICAL                  :: LDYNOCEAN
+      LOGICAL                  :: LECOPHY
       LOGICAL                  :: LEMIS
       LOGICAL                  :: LGTMM
       LOGICAL                  :: LLINOZ
@@ -515,6 +517,7 @@
       LCONV               =  Input_Opt%LCONV
       LDRYD               =  Input_Opt%LDRYD
       LDYNOCEAN           =  Input_Opt%LDYNOCEAN
+      LECOPHY             =  Input_Opt%LECOPHY
       LEMIS               =  Input_Opt%LEMIS
       LGTMM               =  Input_Opt%LGTMM
       LLINOZ              =  Input_Opt%LLINOZ
@@ -1031,6 +1034,8 @@
                CALL Error_Stop( ErrMsg, ThisLoc )
             ENDIF
          ENDIF
+         CALL Zero_Diagnostics_StartofTimestep( am_I_Root,  State_Chm,
+     &                                          State_Diag, RC )
 
 #if defined( USE_TIMERS )
          CALL GEOS_Timer_End( "All diagnostics",           RC )

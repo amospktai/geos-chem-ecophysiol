@@ -35,6 +35,7 @@
       USE DIAG_OH_MOD,             ONLY : CLEANUP_DIAG_OH
       USE DRYDEP_MOD,              ONLY : CLEANUP_DRYDEP
       USE DUST_MOD,                ONLY : CLEANUP_DUST
+      USE ECOPHY_MOD,              ONLY : CLEANUP_ECOPHY
       USE ErrCode_Mod
       USE ERROR_MOD,               ONLY : DEBUG_MSG
       USE FLEXCHEM_MOD,            ONLY : CLEANUP_FLEXCHEM
@@ -325,6 +326,7 @@
       CALL CLEANUP_DIAG_OH()
       CALL CLEANUP_DRYDEP()
       CALL CLEANUP_DUST()
+      CALL CLEANUP_ECOPHY()
 
       CALL Cleanup_FlexChem( am_I_Root, RC )
       IF ( RC /= GC_SUCCESS ) THEN

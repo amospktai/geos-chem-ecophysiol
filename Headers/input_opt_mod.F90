@@ -229,7 +229,13 @@ MODULE Input_Opt_Mod
      LOGICAL                     :: LDRYD
      LOGICAL                     :: LWETD
      REAL(fp)                    :: WETD_CONV_SCAL
-     LOGICAL                     :: PBL_DRYDEP      
+     LOGICAL                     :: PBL_DRYDEP
+     LOGICAL                     :: LECOPHY
+     CHARACTER(LEN=3)            :: O3dmg_opt 
+     REAL(fp)                    :: CO2_conc
+     LOGICAL                     :: CO2_EFFECT
+     REAL(fp)                    :: CO2_LEVEL, CO2_REF
+     REAL(fp)                    :: RS_SCALE
 
      !----------------------------------------
      ! GAMAP MENU fields
@@ -699,6 +705,8 @@ CONTAINS
 !  02 Nov 2017 - R. Yantosca - LWINDO_CU should be .FALSE., not 0
 !  07 Nov 2017 - R. Yantosca - Remove LVARTROP; it's not needed
 !  08 Mar 2018 - R. Yantosca - Bug fix, remove reference to TINDEX here
+!  26 Feb 2019 - Joey Lam    - Add options for ecophysiology module
+!  24 Jun 2019 - A. Wong     - Add CO2_LEVEL and CO2_REF 
 !EOP
 !------------------------------------------------------------------------------
 !BOC
@@ -924,6 +932,13 @@ CONTAINS
     Input_Opt%LWETD                  = .FALSE.
     Input_Opt%WETD_CONV_SCAL         = 1.0_fp 
     Input_Opt%PBL_DRYDEP             = .FALSE.
+    Input_Opt%LECOPHY                = .FALSE.
+    Input_Opt%O3dmg_opt              = 'OFF'
+    Input_Opt%CO2_conc               = 390.0
+    Input_Opt%CO2_LEVEL              = 390.0_fp
+    Input_Opt%CO2_REF                = 390.0_fp
+    Input_Opt%CO2_EFFECT             = .FALSE.
+    Input_Opt%RS_SCALE               = 1.0_fp
 
     !----------------------------------------
     ! GAMAP_MENU fields

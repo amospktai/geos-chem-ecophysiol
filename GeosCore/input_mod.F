@@ -3390,6 +3390,7 @@
 !  13 Sep 2017 - M. Sulprizio- Remove Input_Opt%USE_OLSON_2001. Olson 2001 is
 !                              now the default.
 !  08 Nov 2017 - R. Yantosca - Return error condition to calling program
+!  26 Feb 2019 - Joey Lam    - Add controls for ecophysiology module
 !EOP
 !------------------------------------------------------------------------------
 !BOC
@@ -3431,6 +3432,30 @@
       ENDIF
       READ( SUBSTRS(1:N), * ) Input_Opt%LDRYD
 
+      ! Turn on ecophysiology?
+      CALL SPLIT_ONE_LINE( SUBSTRS, N, 1, 'LECOPHY', RC )
+      IF ( RC /= GC_SUCCESS ) THEN
+         CALL GC_Error( ErrMsg, RC, ThisLoc )
+         RETURN
+      ENDIF
+      READ( SUBSTRS(1:N), * ) Input_Opt%LECOPHY
+
+      ! Sitch ozone damage scheme option (HI/LOW/OFF)
+      CALL SPLIT_ONE_LINE( SUBSTRS, N, 1, 'O3dmg_opt', RC )
+      IF ( RC /= GC_SUCCESS ) THEN
+         CALL GC_Error( ErrMsg, RC, ThisLoc )
+         RETURN
+      ENDIF
+      READ( SUBSTRS(1:N), * ) Input_Opt%O3dmg_opt 
+
+      ! CO2 concentration in ppmv for ecophysiology module
+      CALL SPLIT_ONE_LINE( SUBSTRS, N, 1, 'CO2_conc', RC )
+      IF ( RC /= GC_SUCCESS ) THEN
+         CALL GC_Error( ErrMsg, RC, ThisLoc )
+         RETURN
+      ENDIF
+      READ( SUBSTRS(1:N), * ) Input_Opt%CO2_conc
+
       ! Turn on wetdep?
       CALL SPLIT_ONE_LINE( SUBSTRS, N, 1, 'LWETD', RC )
       IF ( RC /= GC_SUCCESS ) THEN
@@ -3438,6 +3463,30 @@
          RETURN
       ENDIF
       READ( SUBSTRS(1:N), * ) Input_OPt%LWETD
+
+      ! Turn on CO2 effect on drydep?
+      CALL SPLIT_ONE_LINE( SUBSTRS, N, 1, 'CO2_EFFECT', RC )
+      IF ( RC /= GC_SUCCESS ) THEN
+         CALL GC_Error( ErrMsg, RC, ThisLoc )
+         RETURN
+      ENDIF
+      READ( SUBSTRS(1:N), * ) Input_Opt%CO2_EFFECT
+      
+      ! CO2 level at simulation
+      CALL SPLIT_ONE_LINE( SUBSTRS, N, 1, 'CO2_LEVEL', RC )
+      IF ( RC /= GC_SUCCESS ) THEN
+         CALL GC_Error( ErrMsg, RC, ThisLoc )
+         RETURN
+      ENDIF
+      READ( SUBSTRS(1:N), * ) Input_Opt%CO2_LEVEL
+
+      ! Reference CO2 level
+      CALL SPLIT_ONE_LINE( SUBSTRS, N, 1, 'CO2_REF', RC )
+      IF ( RC /= GC_SUCCESS ) THEN
+         CALL GC_Error( ErrMsg, RC, ThisLoc )
+         RETURN
+      ENDIF
+      READ( SUBSTRS(1:N), * ) Input_Opt%CO2_REF
 
       ! Separator line
       CALL SPLIT_ONE_LINE( SUBSTRS, N, 1, 'separator', RC )
@@ -3462,6 +3511,12 @@
       IF ( Input_Opt%ITS_A_C2H6_SIM    ) Input_Opt%LWETD = .FALSE.
       IF ( Input_Opt%ITS_A_CH4_SIM     ) Input_Opt%LWETD = .FALSE.
 
+      ! Turn off ecophysiology for simulations that don't need it
+      IF ( .NOT. Input_Opt%LDRYD     ) Input_Opt%LECOPHY = .FALSE.
+
+      ! Turn off ozone damage scheme for simulations that don't need it
+      IF ( .NOT. Input_Opt%LECOPHY ) Input_Opt%O3dmg_opt = 'OFF'
+
       ! Set the PBL drydep flag. This determines if dry deposition is 
       ! applied (and drydep frequencies are calculated) over the entire 
       ! PBL or the first model layer only. For now, set this value 
@@ -3473,6 +3528,17 @@
          Input_Opt%PBL_DRYDEP = .TRUE.
       ENDIF 
 
+      ! If CO2 effect on RS in turned on, calculate the scaling factor 
+      ! on Rs based on Franks et al. (2013) (ayhwong, 6/24/2019)
+      
+      If (Input_Opt%CO2_EFFECT) THEN
+         Input_Opt%RS_SCALE = Input_Opt%CO2_LEVEL / Input_Opt%CO2_REF * 
+     &                       (Input_Opt%CO2_LEVEL + 80.0_fp) * 
+     &                       (Input_Opt%CO2_REF - 40.0_fp) /
+     &                       (Input_Opt%CO2_LEVEL - 40.0_fp) / 
+     &                       (Input_Opt%CO2_REF + 80.0_fp)
+      ENDIF
+
       !=================================================================
       ! Print to screen
       !=================================================================
@@ -3481,14 +3547,31 @@
          WRITE( 6, '(  a)' ) '---------------'
          WRITE( 6, 100     ) 'Turn on dry deposition?     : ', 
      &                        Input_Opt%LDRYD
+         WRITE( 6, 100     ) 'Turn on ecophysiology?      : ', 
+     &                        Input_Opt%LECOPHY
+         WRITE( 6, 130     ) ' => O3 damage (Sitch)?      : ', 
+     &                        Input_Opt%O3dmg_opt 
+         WRITE( 6, 110     ) ' => CO2 conc. (ppmv)        : ', 
+     &                        Input_Opt%CO2_conc   
          WRITE( 6, 100     ) 'Dry dep over full PBL?      : ', 
      &                        Input_Opt%PBL_DRYDEP
          WRITE( 6, 100     ) 'Turn on wet deposition?     : ', 
      &                        Input_Opt%LWETD
+         WRITE( 6, 100     ) 'Turn on CO2 effect?         : ', 
+     &                        Input_Opt%CO2_EFFECT
+         WRITE( 6, 110     ) 'CO2 level                   : ', 
+     &                        Input_Opt%CO2_LEVEL         
+         WRITE( 6, 110     ) 'CO2 reference level         : ', 
+     &                        Input_Opt%CO2_REF         
+         WRITE( 6, 110     ) 'RIX scaling factor          : ', 
+     &                        Input_Opt%RS_SCALE
+
       ENDIF
 
       ! FORMAT statements
  100  FORMAT( A, L5 )
+ 110  FORMAT( A, f6.2 )
+ 130  FORMAT( A, A   )
 
       END SUBROUTINE READ_DEPOSITION_MENU
 !EOC

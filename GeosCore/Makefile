@@ -507,7 +507,8 @@ cleanup.o                   : cleanup.F                                      \
                               tpcore_window_mod.o     flexchem_mod.o         \
                               toms_mod.o              emissions_mod.o        \
                               set_global_ch4_mod.o    pops_mod.o             \
-                              rrtmg_rad_transfer_mod.o
+                              rrtmg_rad_transfer_mod.o 						 \
+                              ecophy_mod.o
 
 cldice_HBrHOBr_rxn.o        : cldice_HBrHOBr_rxn.F
 
@@ -586,11 +587,14 @@ drydep_mod.o                : drydep_mod.F                                   \
                               dao_mod.o                                      \
                               diag_mod.o              get_ndep_mod.o         \
                               pbl_mix_mod.o           tomas_mod.o            \
-                              hco_interface_mod.o     diagnostics_mod.o
+                              hco_interface_mod.o     diagnostics_mod.o 	 \
+                              ecophy_mod.o
 
 dust_mod.o                  : dust_mod.F                                     \
                               diag_mod.o              drydep_mod.o           \
                               hco_interface_mod.o     tomas_mod.o             
+
+ecophy_mod.o 				: ecophy_mod.F90
 
 emissions_mod.o             : emissions_mod.F90                              \
                               bromocarb_mod.o         carbon_mod.o           \
@@ -725,7 +729,7 @@ main.o                      : main.F                                         \
                               rrtmg_rad_transfer_mod.o                       \
                               gosat_ch4_mod.o         tccon_ch4_mod.o        \
                               aerosol_mod.o           flexgrid_read_mod.o    \
-                              gc_classic_version.H
+                              gc_classic_version.H    ecophy_mod.o
 
 mapping_mod.o               : mapping_mod.F90                              
 
