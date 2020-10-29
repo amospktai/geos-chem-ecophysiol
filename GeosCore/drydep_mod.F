@@ -1240,6 +1240,11 @@
       REAL(fp)          :: VD_PFT( NUMDEP, MAXVAL(IPFT) )
       REAL(fp)          :: Tmp
 
+      ! Turn on photosynthesis-dependent isoprene emission? (Joey Lam, 28 Oct 2020)
+      LOGICAL           :: LIsop_from_Ecophy       ! Turn on online isoprene emission
+      REAL(fp), POINTER :: Isop_from_Ecophy(:,:)   ! Pointer to StateChm
+      REAL(fp)          :: Isop_PFT                ! temporary variable 
+
       ! For the species database
       INTEGER                :: SpcId
       TYPE(Species), POINTER :: SpcInfo
@@ -1282,6 +1287,12 @@
 
       ! Turn on ecophysiology module? (Joey Lam, 2/26/2019)
       LECOPHY = Input_Opt%LECOPHY
+
+      ! Turn on online isoprene emission from ecophysiology module? 
+      ! (Joey Lam, 28 Oct 2020)
+      LIsop_from_Ecophy = Input_Opt%LIsop_from_Ecophy
+      Isop_from_Ecophy => State_Chm%Isop_from_Ecophy
+      Isop_from_Ecophy = 0.e+0_fp   ! Initialize value
 
       ! Size of drycoeff (ckeller, 05/19/14)
       NN = SIZE(DRYCOEFF)
@@ -1372,7 +1383,7 @@
 !$OMP+PRIVATE( C1X,    VK,     I,      J,      IW             )
 !$OMP+PRIVATE( DIAM,   DEN,    XLAI_FP, SUNCOS_FP, CFRAC_FP   )
 !$OMP+PRIVATE( SumLAI_PFT,     IUSE_PFT, RS,   PFT            )
-!$OMP+PRIVATE( id_O3,  RB_O3,  VD_PFT                         )
+!$OMP+PRIVATE( id_O3,  RB_O3,  VD_PFT, Isop_PFT               )
 #if defined( MODEL_GEOS )
 !$OMP+PRIVATE( RA2M,   Z0OBK2M, RA10M, Z0OBK10M               )
 #endif
@@ -1892,9 +1903,17 @@
                CALL DO_ECOPHY ( am_I_Root, Input_Opt,  State_Met, 
      &                          State_Chm, State_Diag, RC,         
      &                          I, J,      LDT, PFT,   RA, RB_O3,
-     &                          PRESSU(I,J),
+     &                          PRESSU(I,J), Isop_PFT,
      &                          RS,        SumLAI_PFT(PFT),          
      &                          IUSE_PFT(PFT)                     )
+
+               ! If we use online isoprene emission from ecophysiology
+               IF ( Input_Opt%LIsop_from_Ecophy ) THEN 
+                  ! The value of Isop_PFT is in kg C m-2 grid s-1
+                  ! Sum over different land types to get a grid total
+                  Isop_from_Ecophy( I,J ) = Isop_from_Ecophy( I,J ) 
+     &                                    + Isop_PFT
+               END IF
                RIX = RS
             ELSE
                RIX = RI(LDT)

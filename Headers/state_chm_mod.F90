@@ -192,6 +192,12 @@ MODULE State_Chm_Mod
      REAL(fp),          POINTER :: DryDepSav  (:,:,:  ) ! Dry deposition frequencies [s-1]
 
      !----------------------------------------------------------------------
+     ! Fields for photosynthesis-dependent isoprene emission 
+     ! (Joey Lam, 22 Oct 2020)
+     !----------------------------------------------------------------------
+     REAL(fp),          POINTER :: Isop_from_Ecophy(:,:) ! Isoprene emission 
+                                                         ! [kg m^-2 s^-1]
+     !----------------------------------------------------------------------
      ! Registry of variables contained within State_Chm
      !----------------------------------------------------------------------
      CHARACTER(LEN=4)           :: State     = 'CHEM'   ! Name of this state
@@ -470,6 +476,10 @@ CONTAINS
     State_Chm%HSO3_AQ     => NULL()
     State_Chm%SO3_AQ      => NULL()
     State_Chm%fupdateHOBr => NULL()
+
+    ! For photosynthesis-dependent isoprene emission
+    ! (Joey Lam, 22 Oct 2020)
+    State_Chm%Isop_from_Ecophy  => NULL()
 
     ! Local variables
     Ptr2data                => NULL()
@@ -1537,6 +1547,22 @@ CONTAINS
         IF ( RC /= GC_SUCCESS ) RETURN
     ENDIF
    
+
+    !------------------------------------------------------------------
+    ! Isop_from_Ecophy
+    !------------------------------------------------------------------
+    IF ( State_Chm%nDryDep > 0 ) THEN
+        chmID = 'Isop_from_Ecophy'
+        ALLOCATE( State_Chm%Isop_from_Ecophy( IM, JM ) , STAT=RC )
+        CALL GC_CheckVar( 'State_Chm%Isop_from_Ecophy', 0, RC )    
+        IF ( RC /= GC_SUCCESS ) RETURN
+        State_Chm%Isop_from_Ecophy = 0.0_fp
+        CALL Register_ChmField( am_I_Root, chmID, State_Chm%Isop_from_Ecophy,   &
+                               State_Chm, RC                                )
+        CALL GC_CheckVar( 'State_Chm%Isop_from_Ecophy', 1, RC )    
+        IF ( RC /= GC_SUCCESS ) RETURN
+    ENDIF
+
     !=======================================================================
     ! Print out the list of registered fields
     !=======================================================================
@@ -1998,6 +2024,13 @@ CONTAINS
        CALL GC_CheckVar( 'State_Chm%DryDepSav', 2, RC )
        IF ( RC /= GC_SUCCESS ) RETURN
        State_Chm%DryDepSav => NULL()
+    ENDIF
+
+    IF ( ASSOCIATED( State_Chm%Isop_from_Ecophy ) ) THEN
+       DEALLOCATE( State_Chm%Isop_from_Ecophy, STAT=RC )
+       CALL GC_CheckVar( 'State_Chm%Isop_from_Ecophy', 2, RC )
+       IF ( RC /= GC_SUCCESS ) RETURN
+       State_Chm%Isop_from_Ecophy => NULL()
     ENDIF
 
     !-----------------------------------------------------------------------
@@ -2634,6 +2667,11 @@ CONTAINS
           IF ( isDesc  ) Desc  = 'Dry deposition frequencies'
           IF ( isUnits ) Units = 's-1'
           IF ( isRank  ) Rank  = 3
+
+       CASE( 'ISOP_FROM_ECOPHY') 
+          IF ( isDesc  ) Desc  = 'Isoprene emission rate'
+          IF ( isUnits ) Units = 'kg m-2 s-1'
+          IF ( isRank  ) Rank  = 2
 
        CASE DEFAULT
           Found = .False.

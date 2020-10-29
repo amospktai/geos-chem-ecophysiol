@@ -152,6 +152,9 @@ MODULE State_Diag_Mod
      REAL(f4),  POINTER :: EcophyRATE_RUBISCO ( :,:,: ) ! Rubisco-limited photosynthetic rate
      REAL(f4),  POINTER :: EcophyRATE_PRODUCT ( :,:,: ) ! Product-limited photosynthetic rate
      REAL(f4),  POINTER :: EcophyA_GROSS      ( :,:,: ) ! Gross photosynthesis
+     REAL(f4),  POINTER :: EcophyISOP_EMIS    ( :,:,: ) ! Isoprene emission
+     REAL(f4),  POINTER :: EcophyISOP_EMIS2   ( :,:,: ) ! Isoprene emission
+     REAL(f4),  POINTER :: EcophyISOP_EMIS3   ( :,:,: ) ! Isoprene emission
      LOGICAL :: Archive_EcophyIUSE_PFT
      LOGICAL :: Archive_EcophyLAI
      LOGICAL :: Archive_EcophyRA
@@ -171,7 +174,10 @@ MODULE State_Diag_Mod
      LOGICAL :: Archive_EcophyRATE_LIGHT   
      LOGICAL :: Archive_EcophyRATE_RUBISCO 
      LOGICAL :: Archive_EcophyRATE_PRODUCT 
-     LOGICAL :: Archive_EcophyA_GROSS      
+     LOGICAL :: Archive_EcophyA_GROSS    
+     LOGICAL :: Archive_EcophyISOP_EMIS
+     LOGICAL :: Archive_EcophyISOP_EMIS2
+     LOGICAL :: Archive_EcophyISOP_EMIS3
 
      ! Waiting for inputs on new resistance diagnostics
      !REAL(f4),  POINTER :: DryDepRst_RA    (:,:,:  ) ! Aerodynamic resistance
@@ -897,6 +903,9 @@ CONTAINS
     State_Diag%EcophyRATE_RUBISCO                  => NULL()
     State_Diag%EcophyRATE_PRODUCT                  => NULL()
     State_Diag%EcophyA_GROSS                       => NULL()
+    State_Diag%EcophyISOP_EMIS                     => NULL()
+    State_Diag%EcophyISOP_EMIS2                    => NULL()
+    State_Diag%EcophyISOP_EMIS3                    => NULL()
     State_Diag%Archive_EcophyIUSE_PFT              = .FALSE.
     State_Diag%Archive_EcophyLAI                   = .FALSE.
     State_Diag%Archive_EcophyRA                    = .FALSE.
@@ -917,6 +926,9 @@ CONTAINS
     State_Diag%Archive_EcophyRATE_RUBISCO          = .FALSE.
     State_Diag%Archive_EcophyRATE_PRODUCT          = .FALSE.
     State_Diag%Archive_EcophyA_GROSS               = .FALSE.
+    State_Diag%Archive_EcophyISOP_EMIS             = .FALSE.
+    State_Diag%Archive_EcophyISOP_EMIS2            = .FALSE.
+    State_Diag%Archive_EcophyISOP_EMIS3            = .FALSE.
 
 #if defined( MODEL_GEOS )
     State_Diag%DryDepRa2m                          => NULL()
@@ -2314,6 +2326,60 @@ CONTAINS
        State_Diag%EcophyA_GROSS      = 0.0_f4
        State_Diag%Archive_EcophyA_GROSS      = .TRUE.
        CALL Register_DiagField( am_I_Root, diagID, State_Diag%EcophyA_GROSS,  &
+                                State_Chm, State_Diag, RC                    )
+       IF ( RC /= GC_SUCCESS ) RETURN
+    ENDIF
+
+    !-----------------------------------------------------------------------
+    ! Isoprene Emission
+    !-----------------------------------------------------------------------
+    arrayID = 'State_Diag%EcophyISOP_EMIS'
+    diagID  = 'EcophyISOP_EMIS'
+    CALL Check_DiagList( am_I_Root, Diag_List, diagID, Found, RC )
+    IF ( Found ) THEN
+       IF ( am_I_Root ) WRITE(6,20) ADJUSTL( arrayID ), TRIM( diagID )
+       ALLOCATE( State_Diag%EcophyISOP_EMIS ( IM,JM,nPFT ), STAT=RC )
+       CALL GC_CheckVar( arrayID, 0, RC )
+       IF ( RC /= GC_SUCCESS ) RETURN
+       State_Diag%EcophyISOP_EMIS    = 0.0_f4
+       State_Diag%Archive_EcophyISOP_EMIS    = .TRUE.
+       CALL Register_DiagField( am_I_Root, diagID, State_Diag%EcophyISOP_EMIS,  &
+                                State_Chm, State_Diag, RC                    )
+       IF ( RC /= GC_SUCCESS ) RETURN
+    ENDIF
+
+    !-----------------------------------------------------------------------
+    ! Isoprene emission
+    !-----------------------------------------------------------------------
+    arrayID = 'State_Diag%EcophyISOP_EMIS2'
+    diagID  = 'EcophyISOP_EMIS2'
+    CALL Check_DiagList( am_I_Root, Diag_List, diagID, Found, RC )
+    IF ( Found ) THEN
+       IF ( am_I_Root ) WRITE(6,20) ADJUSTL( arrayID ), TRIM( diagID )
+       ALLOCATE( State_Diag%EcophyISOP_EMIS2 ( IM,JM,nPFT ), STAT=RC )
+       CALL GC_CheckVar( arrayID, 0, RC )
+       IF ( RC /= GC_SUCCESS ) RETURN
+       State_Diag%EcophyISOP_EMIS2   = 0.0_f4
+       State_Diag%Archive_EcophyISOP_EMIS2   = .TRUE.
+       CALL Register_DiagField( am_I_Root, diagID, State_Diag%EcophyISOP_EMIS2,  &
+                                State_Chm, State_Diag, RC                    )
+       IF ( RC /= GC_SUCCESS ) RETURN
+    ENDIF
+
+    !-----------------------------------------------------------------------
+    ! Isoprene emission
+    !-----------------------------------------------------------------------
+    arrayID = 'State_Diag%EcophyISOP_EMIS3'
+    diagID  = 'EcophyISOP_EMIS3'
+    CALL Check_DiagList( am_I_Root, Diag_List, diagID, Found, RC )
+    IF ( Found ) THEN
+       IF ( am_I_Root ) WRITE(6,20) ADJUSTL( arrayID ), TRIM( diagID )
+       ALLOCATE( State_Diag%EcophyISOP_EMIS3 ( IM,JM,nPFT ), STAT=RC )
+       CALL GC_CheckVar( arrayID, 0, RC )
+       IF ( RC /= GC_SUCCESS ) RETURN
+       State_Diag%EcophyISOP_EMIS3   = 0.0_f4
+       State_Diag%Archive_EcophyISOP_EMIS3   = .TRUE.
+       CALL Register_DiagField( am_I_Root, diagID, State_Diag%EcophyISOP_EMIS3,  &
                                 State_Chm, State_Diag, RC                    )
        IF ( RC /= GC_SUCCESS ) RETURN
     ENDIF
@@ -7175,6 +7241,27 @@ CONTAINS
        State_Diag%EcophyA_GROSS => NULL()
     ENDIF
 
+    IF ( ASSOCIATED( State_Diag%EcophyISOP_EMIS ) ) THEN
+       DEALLOCATE( State_Diag%EcophyISOP_EMIS, STAT=RC )
+       CALL GC_CheckVar( 'EcophyISOP_EMIS', 2, RC )
+       IF ( RC /= GC_SUCCESS ) RETURN
+       State_Diag%EcophyISOP_EMIS => NULL()
+    ENDIF
+
+    IF ( ASSOCIATED( State_Diag%EcophyISOP_EMIS2 ) ) THEN
+       DEALLOCATE( State_Diag%EcophyISOP_EMIS2, STAT=RC )
+       CALL GC_CheckVar( 'EcophyISOP_EMIS2', 2, RC )
+       IF ( RC /= GC_SUCCESS ) RETURN
+       State_Diag%EcophyISOP_EMIS2 => NULL()
+    ENDIF
+
+    IF ( ASSOCIATED( State_Diag%EcophyISOP_EMIS3 ) ) THEN
+       DEALLOCATE( State_Diag%EcophyISOP_EMIS3, STAT=RC )
+       CALL GC_CheckVar( 'EcophyISOP_EMIS3', 2, RC )
+       IF ( RC /= GC_SUCCESS ) RETURN
+       State_Diag%EcophyISOP_EMIS3 => NULL()
+    ENDIF
+
 #if defined( MODEL_GEOS )
     IF ( ASSOCIATED( State_Diag%DryDepRa2m ) ) THEN
        DEALLOCATE( State_Diag%DryDepRa2m, STAT=RC )
@@ -8979,6 +9066,24 @@ CONTAINS
     ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYA_GROSS' ) THEN 
        IF ( isDesc    ) Desc  = 'Leaf level gross photosynthesis'
        IF ( isUnits   ) Units = 'mol m-2 s-1'
+       IF ( isRank    ) Rank  = 2
+       IF ( isTagged  ) TagID = 'PFT'
+
+    ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYISOP_EMIS' ) THEN 
+       IF ( isDesc    ) Desc  = 'Isoprene Emission'
+       IF ( isUnits   ) Units = 'kg C m-2 s-1'
+       IF ( isRank    ) Rank  = 2
+       IF ( isTagged  ) TagID = 'PFT'
+
+    ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYISOP_EMIS2' ) THEN 
+       IF ( isDesc    ) Desc  = 'Isoprene Emission'
+       IF ( isUnits   ) Units = 'kg C m-2 s-1'
+       IF ( isRank    ) Rank  = 2
+       IF ( isTagged  ) TagID = 'PFT'
+
+    ELSE IF ( TRIM( Name_AllCaps ) == 'ECOPHYISOP_EMIS3' ) THEN 
+       IF ( isDesc    ) Desc  = 'Isoprene Emission'
+       IF ( isUnits   ) Units = 'kg C m-2 leaf s-1'
        IF ( isRank    ) Rank  = 2
        IF ( isTagged  ) TagID = 'PFT'
 

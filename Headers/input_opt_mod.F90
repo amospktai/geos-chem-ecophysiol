@@ -232,6 +232,7 @@ MODULE Input_Opt_Mod
      LOGICAL                     :: PBL_DRYDEP
      LOGICAL                     :: LECOPHY
      CHARACTER(LEN=3)            :: O3dmg_opt 
+     LOGICAL                     :: LIsop_from_Ecophy
      REAL(fp)                    :: CO2_conc
      LOGICAL                     :: CO2_EFFECT
      REAL(fp)                    :: CO2_LEVEL, CO2_REF
@@ -934,6 +935,7 @@ CONTAINS
     Input_Opt%PBL_DRYDEP             = .FALSE.
     Input_Opt%LECOPHY                = .FALSE.
     Input_Opt%O3dmg_opt              = 'OFF'
+    Input_Opt%LIsop_from_Ecophy      = .FALSE.
     Input_Opt%CO2_conc               = 390.0
     Input_Opt%CO2_LEVEL              = 390.0_fp
     Input_Opt%CO2_REF                = 390.0_fp

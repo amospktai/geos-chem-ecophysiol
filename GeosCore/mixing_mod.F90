@@ -447,6 +447,7 @@ CONTAINS
     LOGICAL                 :: PBL_DRYDEP, LSCHEM, ChemGridOnly
     LOGICAL                 :: LEMIS,      LDRYD
     LOGICAL                 :: DryDepSpec, EmisSpec
+    LOGICAL                 :: LIsop_from_Ecophy
     CHARACTER(LEN=63)       :: OrigUnit
     CHARACTER(LEN=255)      :: MSG
 
@@ -462,7 +463,7 @@ CONTAINS
     INTEGER,           SAVE :: id_ALK4,  id_C2H6,  id_C3H8, id_CH2O 
     INTEGER,           SAVE :: id_PRPE,  id_O3,    id_HNO3, id_BrO 
     INTEGER,           SAVE :: id_Br2,   id_Br,    id_HOBr, id_HBr
-    INTEGER,           SAVE :: id_BrNO3
+    INTEGER,           SAVE :: id_BrNO3, id_ISOP
 
     ! Pointers and objects
     TYPE(Species), POINTER  :: SpcInfo
@@ -471,6 +472,9 @@ CONTAINS
     ! Temporary save for total ch4 (Xueying Yu, 12/08/2017)
     LOGICAL                 :: ITS_A_CH4_SIM
     REAL(fp)                :: total_ch4_pre_soil_absorp(IIPAR,JJPAR,LLPAR)
+
+    ! Pointer for online isoprene emission from ecophy_mod
+    REAL(fp), POINTER       :: Isop_from_Ecophy(:,:) => NULL() 
 
 #if defined( NC_DIAG )
     CHARACTER(LEN=255) :: ErrMsg, ThisLoc
@@ -497,11 +501,13 @@ CONTAINS
     LDRYD             = Input_Opt%LDRYD
     PBL_DRYDEP        = Input_Opt%PBL_DRYDEP
     ITS_A_CH4_SIM     = Input_Opt%ITS_A_CH4_SIM
+    LIsop_from_Ecophy = Input_Opt%LIsop_from_Ecophy
     nAdvect           = State_Chm%nAdvect
 
     ! Initialize pointer
     SpcInfo           => NULL()
     DEPSAV            => State_Chm%DryDepSav
+    Isop_from_Ecophy  => State_Chm%Isop_from_Ecophy
 
 #if defined( NC_DIAG )
     !----------------------------------------------------------
@@ -567,6 +573,7 @@ CONTAINS
        id_HOBr = Ind_('HOBr' )
        id_HBr  = Ind_('HBr'  )
        id_BrNO3= Ind_('BrNO3')
+       id_ISOP = Ind_('ISOP' )
 
        ! On first call, get pointers to the PARANOX loss fluxes. These are
        ! stored in diagnostics 'PARANOX_O3_DEPOSITION_FLUX' and 
@@ -891,20 +898,35 @@ CONTAINS
              !--------------------------------------------------------------
              IF ( EmisSpec .AND. ( L <= EMIS_TOP ) ) THEN
 
-                ! Get HEMCO emissions. Units are [kg/m2/s].
-                CALL GetHcoVal ( N, I, J, L, FND, emis=TMP )
-           
-                ! Add emissions (if any)
-                ! Bug fix: allow negative fluxes. (ckeller, 4/12/17)
-                !IF ( FND .AND. (TMP > 0.0_fp) ) THEN
-                IF ( FND ) THEN
+                ! If photosynthesis-dependent isoprene emission is turned on
+                ! in the ecophysiology module, then use it instead of the 
+                ! emission from HEMCO. (Joey Lam, 22 Oct 2020)
+                IF ( N==id_ISOP .AND. LIsop_from_Ecophy ) THEN
 
-                   ! Flux: [kg/m2] = [kg m-2 s-1 ] x [s]
-                   FLUX = TMP * TS
+                  ! Flux: [kg/m2] = [kg m-2 s-1 ] x [s]
+                  FLUX = Isop_from_Ecophy(I,J) * TS
 
-                   ! Add to species array
-                   State_Chm%Species(I,J,L,N) = State_Chm%Species(I,J,L,N) & 
-                                              + FLUX 
+                  ! Add to species array
+                  State_Chm%Species(I,J,L,N) = State_Chm%Species(I,J,L,N) & 
+                                             + FLUX 
+
+                ELSE 
+
+                   ! Get HEMCO emissions. Units are [kg/m2/s].
+                   CALL GetHcoVal ( N, I, J, L, FND, emis=TMP )
+              
+                   ! Add emissions (if any)
+                   ! Bug fix: allow negative fluxes. (ckeller, 4/12/17)
+                   !IF ( FND .AND. (TMP > 0.0_fp) ) THEN
+                   IF ( FND ) THEN
+
+                      ! Flux: [kg/m2] = [kg m-2 s-1 ] x [s]
+                      FLUX = TMP * TS
+
+                      ! Add to species array
+                      State_Chm%Species(I,J,L,N) = State_Chm%Species(I,J,L,N) & 
+                                                 + FLUX 
+                   ENDIF
                 ENDIF
              ENDIF
 

@@ -3456,6 +3456,14 @@
       ENDIF
       READ( SUBSTRS(1:N), * ) Input_Opt%CO2_conc
 
+      ! Turn on photosynthesis-dependent isoprene emission?
+      CALL SPLIT_ONE_LINE( SUBSTRS, N, 1, 'LIsop_from_Ecophy', RC )
+      IF ( RC /= GC_SUCCESS ) THEN
+         CALL GC_Error( ErrMsg, RC, ThisLoc )
+         RETURN
+      ENDIF
+      READ( SUBSTRS(1:N), * ) Input_Opt%LIsop_from_Ecophy
+
       ! Turn on wetdep?
       CALL SPLIT_ONE_LINE( SUBSTRS, N, 1, 'LWETD', RC )
       IF ( RC /= GC_SUCCESS ) THEN
@@ -3516,6 +3524,9 @@
 
       ! Turn off ozone damage scheme for simulations that don't need it
       IF ( .NOT. Input_Opt%LECOPHY ) Input_Opt%O3dmg_opt = 'OFF'
+      IF ( .NOT. Input_Opt%LECOPHY ) THEN
+         Input_Opt%LIsop_from_Ecophy = .FALSE.
+      ENDIF
 
       ! Set the PBL drydep flag. This determines if dry deposition is 
       ! applied (and drydep frequencies are calculated) over the entire 
@@ -3553,6 +3564,8 @@
      &                        Input_Opt%O3dmg_opt 
          WRITE( 6, 110     ) ' => CO2 conc. (ppmv)        : ', 
      &                        Input_Opt%CO2_conc   
+         WRITE( 6, 100     ) ' => Online isoprene emis?   : ', 
+     &                        Input_Opt%LIsop_from_Ecophy
          WRITE( 6, 100     ) 'Dry dep over full PBL?      : ', 
      &                        Input_Opt%PBL_DRYDEP
          WRITE( 6, 100     ) 'Turn on wet deposition?     : ', 
